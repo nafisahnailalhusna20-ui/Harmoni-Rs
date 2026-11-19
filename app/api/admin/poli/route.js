@@ -13,7 +13,6 @@ async function cekAdmin() {
     return user?.role === "admin";
 }
 
-// Mengambil data poli
 export async function GET() {
     try {
         if (!(await cekAdmin())) {
