@@ -7,6 +7,7 @@ export default function RekamMedisPage() {
     const router = useRouter();
 
     const [pasien, setPasien] = useState([]);
+    const [daftarObat, setDaftarObat] = useState([]);
     const [loading, setLoading] = useState(true);
     const [pasienDipilih, setPasienDipilih] = useState(null);
     const [pesan, setPesan] = useState("");
@@ -17,6 +18,10 @@ export default function RekamMedisPage() {
         tindakan: "",
         catatan: ""
     });
+
+    const [resep, setResep] = useState([
+        { obat_id: "", jumlah: 1 }
+    ]);
 
     async function ambilData() {
         try {
@@ -29,14 +34,15 @@ export default function RekamMedisPage() {
                     return;
                 }
 
-                setPesan(data.message || "Data pasien gagal dimuat.");
+                setPesan(data.message || "Data gagal dimuat.");
                 return;
             }
 
             setPasien(data.data || []);
+            setDaftarObat(data.medicines || []);
 
         } catch (error) {
-            setPesan("Terjadi kesalahan saat mengambil data pasien.");
+            setPesan("Terjadi kesalahan saat mengambil data.");
         } finally {
             setLoading(false);
         }
@@ -55,11 +61,17 @@ export default function RekamMedisPage() {
 
     function bukaForm(item) {
         setPasienDipilih(item);
+
         setForm({
             diagnosis: "",
             tindakan: "",
             catatan: ""
         });
+
+        setResep([
+            { obat_id: "", jumlah: 1 }
+        ]);
+
         setPesan("");
     }
 
@@ -68,9 +80,48 @@ export default function RekamMedisPage() {
         setPesan("");
     }
 
+    function tambahObat() {
+        setResep([
+            ...resep,
+            { obat_id: "", jumlah: 1 }
+        ]);
+    }
+
+    function hapusObat(index) {
+        setResep(resep.filter((item, i) => i !== index));
+    }
+
+    function ubahResep(index, field, value) {
+        const dataBaru = [...resep];
+
+        dataBaru[index] = {
+            ...dataBaru[index],
+            [field]: value
+        };
+
+        setResep(dataBaru);
+    }
+
     async function simpanRekamMedis(e) {
         e.preventDefault();
         setPesan("");
+
+        if (resep.length === 0 || resep.some(item => !item.obat_id)) {
+            setPesan("Pilih minimal satu obat.");
+            return;
+        }
+
+        if (resep.some(item => Number(item.jumlah) <= 0)) {
+            setPesan("Jumlah obat harus lebih dari 0.");
+            return;
+        }
+
+        const idObat = resep.map(item => item.obat_id);
+
+        if (new Set(idObat).size !== idObat.length) {
+            setPesan("Obat yang sama tidak boleh dipilih dua kali.");
+            return;
+        }
 
         setLoadingSimpan(true);
 
@@ -82,7 +133,8 @@ export default function RekamMedisPage() {
                 },
                 body: JSON.stringify({
                     appointment_id: pasienDipilih.appointment_id,
-                    ...form
+                    ...form,
+                    resep
                 })
             });
 
@@ -94,17 +146,23 @@ export default function RekamMedisPage() {
             }
 
             setPasienDipilih(null);
+
             setForm({
                 diagnosis: "",
                 tindakan: "",
                 catatan: ""
             });
 
-            setPesan("Rekam medis berhasil disimpan.");
+            setResep([
+                { obat_id: "", jumlah: 1 }
+            ]);
+
+            setPesan("Rekam medis dan resep berhasil disimpan.");
+
             await ambilData();
 
         } catch (error) {
-            setPesan("Terjadi kesalahan saat menyimpan rekam medis.");
+            setPesan("Terjadi kesalahan saat menyimpan data.");
         } finally {
             setLoadingSimpan(false);
         }
@@ -141,7 +199,7 @@ export default function RekamMedisPage() {
                 </h1>
 
                 <p className="mt-2 text-[#64776D]">
-                    Kelola hasil pemeriksaan dan catatan medis pasien.
+                    Kelola hasil pemeriksaan dan resep obat pasien.
                 </p>
 
                 <section className="mt-9 rounded-2xl border border-white bg-white/80 p-6 shadow-sm md:p-8">
@@ -298,7 +356,7 @@ export default function RekamMedisPage() {
 
                                 <div>
                                     <label className="mb-2 block text-sm font-medium text-[#263D34]">
-                                        Tindakan
+                                        Tindakan Medis
                                     </label>
 
                                     <textarea
@@ -327,6 +385,115 @@ export default function RekamMedisPage() {
                                     />
                                 </div>
 
+                                <div className="border-t border-[#E8F0EC] pt-5">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div>
+                                            <h3 className="font-semibold text-[#263D34]">
+                                                Resep Obat
+                                            </h3>
+
+                                            <p className="mt-1 text-xs text-[#64776D]">
+                                                Pilih obat dan masukkan jumlahnya.
+                                            </p>
+                                        </div>
+
+                                        <button
+                                            type="button"
+                                            onClick={tambahObat}
+                                            className="rounded-lg bg-[#E4EFE9] px-3 py-2 text-sm font-medium text-[#397A63] hover:bg-[#D6E7DD]"
+                                        >
+                                            + Tambah Obat
+                                        </button>
+                                    </div>
+
+                                    <div className="mt-4 space-y-4">
+                                        {resep.map((item, index) => (
+                                            <div
+                                                key={index}
+                                                className="rounded-xl border border-[#DCE8E0] bg-[#F8FAF9] p-4"
+                                            >
+                                                <div className="flex items-center justify-between gap-3">
+                                                    <p className="text-sm font-medium text-[#263D34]">
+                                                        Obat {index + 1}
+                                                    </p>
+
+                                                    {resep.length > 1 && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => hapusObat(index)}
+                                                            className="text-xs font-medium text-red-500 hover:text-red-700"
+                                                        >
+                                                            Hapus
+                                                        </button>
+                                                    )}
+                                                </div>
+
+                                                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                                    <div>
+                                                        <label className="mb-2 block text-xs font-medium text-[#64776D]">
+                                                            Nama Obat
+                                                        </label>
+
+                                                        <select
+                                                            value={item.obat_id}
+                                                            onChange={(e) =>
+                                                                ubahResep(index, "obat_id", e.target.value)
+                                                            }
+                                                            required
+                                                            className={inputStyle}
+                                                        >
+                                                            <option value="">
+                                                                Pilih obat
+                                                            </option>
+
+                                                            {daftarObat.map((obat) => (
+                                                                <option
+                                                                    key={obat.id}
+                                                                    value={obat.id}
+                                                                    disabled={
+                                                                        obat.stok <= 0 ||
+                                                                        resep.some((r, i) =>
+                                                                            i !== index &&
+                                                                            String(r.obat_id) === String(obat.id)
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    {obat.nama} — Stok: {obat.stok}
+                                                                    {obat.stok <= 0 ? " (Habis)" : ""}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+
+                                                    <div>
+                                                        <label className="mb-2 block text-xs font-medium text-[#64776D]">
+                                                            Jumlah
+                                                        </label>
+
+                                                        <input
+                                                            type="number"
+                                                            min="1"
+                                                            step="1"
+                                                            value={item.jumlah}
+                                                            onChange={(e) =>
+                                                                ubahResep(index, "jumlah", e.target.value)
+                                                            }
+                                                            required
+                                                            className={inputStyle}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {pesan && (
+                                    <div className="rounded-xl bg-red-50 p-3 text-sm text-red-600">
+                                        {pesan}
+                                    </div>
+                                )}
+
                                 <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row">
                                     <button
                                         type="button"
@@ -343,7 +510,7 @@ export default function RekamMedisPage() {
                                     >
                                         {loadingSimpan
                                             ? "Menyimpan..."
-                                            : "Simpan Rekam Medis"}
+                                            : "Simpan Rekam Medis & Resep"}
                                     </button>
                                 </div>
                             </form>

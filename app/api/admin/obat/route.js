@@ -40,7 +40,6 @@ export async function GET() {
     }
 }
 
-// Menambahkan data obat
 export async function POST(request) {
     try {
         if (!(await cekAdmin())) {

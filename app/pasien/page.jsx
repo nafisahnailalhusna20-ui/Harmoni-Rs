@@ -14,12 +14,7 @@ export default function PasienPage() {
                 const response = await fetch("/api/me");
                 const data = await response.json();
 
-                if (!response.ok || !data.success) {
-                    router.push("/login");
-                    return;
-                }
-
-                if (data.user.role !== "pasien") {
+                if (!response.ok || !data.success || data.user.role !== "pasien") {
                     router.push("/login");
                     return;
                 }
@@ -27,6 +22,7 @@ export default function PasienPage() {
                 setPasien(data.user);
             } catch (error) {
                 console.error("Gagal mengambil data pasien:", error);
+                router.push("/login");
             } finally {
                 setLoading(false);
             }
@@ -36,10 +32,7 @@ export default function PasienPage() {
     }, [router]);
 
     async function logout() {
-        await fetch("/api/logout", {
-            method: "POST"
-        });
-
+        await fetch("/api/logout", { method: "POST" });
         router.push("/login");
     }
 
@@ -103,6 +96,23 @@ export default function PasienPage() {
                             className="mt-5 bg-[#397A63] text-white px-5 py-2 rounded-xl hover:bg-[#2e6551]"
                         >
                             Buat Janji Temu
+                        </button>
+                    </div>
+
+                    <div className="bg-white/70 rounded-2xl p-6 shadow-sm border border-white">
+                        <h3 className="text-lg font-semibold text-[#263D34]">
+                            Riwayat Rekam Medis
+                        </h3>
+
+                        <p className="text-sm text-[#64776D] mt-2">
+                            Lihat hasil pemeriksaan, diagnosis, dan catatan medis dari dokter.
+                        </p>
+
+                        <button
+                            onClick={() => router.push("/pasien/rekam-medis")}
+                            className="mt-5 bg-[#397A63] text-white px-5 py-2 rounded-xl hover:bg-[#2e6551]"
+                        >
+                            Lihat Rekam Medis
                         </button>
                     </div>
 
