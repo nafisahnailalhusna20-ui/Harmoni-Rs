@@ -13,7 +13,6 @@ async function cekAdmin() {
     return user?.role === "admin";
 }
 
-// Mengedit jadwal dokter
 export async function PUT(request, { params }) {
     try {
         if (!(await cekAdmin())) {

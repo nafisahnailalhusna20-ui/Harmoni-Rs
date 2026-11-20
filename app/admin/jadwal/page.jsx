@@ -43,6 +43,7 @@ export default function JadwalPage() {
 
         } catch (error) {
             console.error("Gagal mengambil data:", error);
+            setPesan("Data jadwal gagal dimuat.");
         } finally {
             setLoading(false);
         }
@@ -77,6 +78,17 @@ export default function JadwalPage() {
 
         setPesan("");
         setTampilForm(true);
+    }
+
+    function keteranganJam(jam) {
+        if (!jam) return "";
+
+        const angkaJam = Number(jam.split(":")[0]);
+
+        if (angkaJam >= 4 && angkaJam < 11) return "Pagi";
+        if (angkaJam >= 11 && angkaJam < 15) return "Siang";
+        if (angkaJam >= 15 && angkaJam < 18) return "Sore";
+        return "Malam";
     }
 
     async function simpanJadwal(e) {
@@ -146,181 +158,261 @@ export default function JadwalPage() {
         )?.nama || "-";
     }
 
-    const inputStyle = "w-full p-3 rounded-xl border border-[#C8D8CF] bg-white/80 text-[#263D34] focus:outline-none focus:ring-2 focus:ring-[#397A63]";
+    const inputStyle =
+        "w-full rounded-xl border border-[#D7E3DC] bg-white px-4 py-3 text-[#263D34] outline-none transition focus:border-[#397A63] focus:ring-2 focus:ring-[#397A63]/15";
 
     return (
-        <main className="min-h-screen bg-[#E8F0EC] p-8">
-            <div className="max-w-6xl mx-auto">
+        <main className="min-h-screen bg-[#E8F0EC] px-5 py-10 md:px-10">
+            <div className="mx-auto max-w-6xl">
 
-                <h1 className="text-3xl font-bold text-[#263D34]">
-                    Manajemen Jadwal
-                </h1>
+                <div className="mb-8">
+                    <p className="mb-2 text-sm font-semibold tracking-widest text-[#397A63]">
+                        HARMONI HEALTHCARE
+                    </p>
 
-                <p className="text-[#64776D] mt-2">
-                    Atur jadwal praktik dokter rumah sakit.
-                </p>
+                    <h1 className="text-3xl font-bold text-[#263D34]">
+                        Manajemen Jadwal
+                    </h1>
 
-                <div className="mt-8 rounded-2xl bg-white/50 backdrop-blur-xl border border-white/70 p-6 shadow-lg">
+                    <p className="mt-2 text-[#718078]">
+                        Kelola waktu praktik dokter dengan mudah.
+                    </p>
+                </div>
 
-                    <div className="flex justify-between items-center gap-4">
-                        <h2 className="text-xl font-semibold text-[#263D34]">
-                            Daftar Jadwal Dokter
-                        </h2>
+                <section className="rounded-3xl border border-white bg-white/80 p-5 shadow-[0_8px_30px_rgba(38,61,52,0.06)] md:p-8">
+
+                    <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+                        <div>
+                            <h2 className="text-xl font-bold text-[#263D34]">
+                                Daftar Jadwal Dokter
+                            </h2>
+
+                            <p className="mt-1 text-sm text-[#819087]">
+                                Atur hari dan waktu praktik setiap dokter.
+                            </p>
+                        </div>
 
                         <button
                             onClick={bukaTambah}
-                            className="bg-[#397A63] text-white px-4 py-2 rounded-xl hover:bg-[#2e6551]"
+                            className="rounded-xl bg-[#397A63] px-5 py-3 font-semibold text-white transition hover:bg-[#2E6551]"
                         >
                             + Tambah Jadwal
                         </button>
                     </div>
 
                     {pesan && (
-                        <p className="mt-4 text-sm text-[#397A63]">
+                        <div className="mt-5 rounded-xl bg-[#E8F3EC] px-4 py-3 text-sm text-[#397A63]">
                             {pesan}
-                        </p>
+                        </div>
                     )}
 
                     {tampilForm && (
                         <form
                             onSubmit={simpanJadwal}
-                            className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4"
+                            className="mt-7 rounded-2xl border border-[#E1EAE4] bg-[#F8FAF8] p-5 md:p-6"
                         >
-                            <select
-                                name="dokter_id"
-                                value={form.dokter_id}
-                                onChange={handleChange}
-                                required
-                                className={inputStyle}
-                            >
-                                <option value="">Pilih Dokter</option>
+                            <div className="mb-6">
+                                <h3 className="text-lg font-bold text-[#263D34]">
+                                    {jadwalDipilih ? "Edit Jadwal" : "Tambah Jadwal Baru"}
+                                </h3>
 
-                                {dokter.map((item) => (
-                                    <option key={item.id} value={item.id}>
-                                        {item.full_name}
-                                    </option>
-                                ))}
-                            </select>
-
-                            <select
-                                name="hari"
-                                value={form.hari}
-                                onChange={handleChange}
-                                required
-                                className={inputStyle}
-                            >
-                                <option value="">Pilih Hari</option>
-
-                                {daftarHari.map((hari) => (
-                                    <option key={hari.id} value={hari.id}>
-                                        {hari.nama}
-                                    </option>
-                                ))}
-                            </select>
-
-                            <div className="md:col-span-2">
-                                <label className="block text-sm text-[#263D34] mb-2">
-                                    Jam Mulai Praktik
-                                </label>
-
-                                <input
-                                    type="time"
-                                    name="jam_mulai"
-                                    value={form.jam_mulai}
-                                    onChange={handleChange}
-                                    required
-                                    className={inputStyle}
-                                />
-
-                                <p className="text-sm text-[#64776D] mt-2">
-                                    Durasi setiap sesi praktik adalah 30 menit.
+                                <p className="mt-1 text-sm text-[#819087]">
+                                    Lengkapi informasi jadwal praktik dokter.
                                 </p>
                             </div>
 
-                            <div className="md:col-span-2 flex gap-3">
-                                <button
-                                    type="submit"
-                                    className="flex-1 bg-[#397A63] text-white p-3 rounded-xl hover:bg-[#2e6551]"
-                                >
-                                    {jadwalDipilih ? "Simpan Perubahan" : "Simpan Jadwal"}
-                                </button>
+                            <div className="grid gap-5 md:grid-cols-2">
 
+                                <div>
+                                    <label className="mb-2 block text-sm font-semibold text-[#40564A]">
+                                        Nama Dokter
+                                    </label>
+
+                                    <select
+                                        name="dokter_id"
+                                        value={form.dokter_id}
+                                        onChange={handleChange}
+                                        required
+                                        className={inputStyle}
+                                    >
+                                        <option value="">Pilih Dokter</option>
+
+                                        {dokter.map((item) => (
+                                            <option key={item.id} value={item.id}>
+                                                {item.full_name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="mb-2 block text-sm font-semibold text-[#40564A]">
+                                        Hari Praktik
+                                    </label>
+
+                                    <select
+                                        name="hari"
+                                        value={form.hari}
+                                        onChange={handleChange}
+                                        required
+                                        className={inputStyle}
+                                    >
+                                        <option value="">Pilih Hari</option>
+
+                                        {daftarHari.map((hari) => (
+                                            <option key={hari.id} value={hari.id}>
+                                                {hari.nama}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="md:col-span-2">
+                                    <label className="mb-2 block text-sm font-semibold text-[#40564A]">
+                                        Jam Mulai Praktik
+                                    </label>
+
+                                    <input
+                                        type="time"
+                                        name="jam_mulai"
+                                        value={form.jam_mulai}
+                                        onChange={handleChange}
+                                        required
+                                        className={inputStyle}
+                                    />
+
+                                    {form.jam_mulai && (
+                                        <div className="mt-3 flex items-center gap-3 rounded-xl bg-[#E8F3EC] px-4 py-3">
+                                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#397A63]">
+                                                ◷
+                                            </div>
+
+                                            <div>
+                                                <p className="text-sm font-bold text-[#263D34]">
+                                                    {form.jam_mulai} · {keteranganJam(form.jam_mulai)}
+                                                </p>
+
+                                                <p className="text-xs text-[#718078]">
+                                                    Durasi praktik 30 menit per sesi
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row">
                                 <button
                                     type="button"
                                     onClick={() => {
                                         setTampilForm(false);
                                         setJadwalDipilih(null);
+                                        setForm(formAwal);
                                     }}
-                                    className="px-5 bg-gray-200 text-gray-700 rounded-xl"
+                                    className="rounded-xl border border-[#D7E3DC] bg-white px-6 py-3 font-semibold text-[#64776D] transition hover:bg-[#F1F5F2]"
                                 >
                                     Batal
+                                </button>
+
+                                <button
+                                    type="submit"
+                                    className="flex-1 rounded-xl bg-[#397A63] px-6 py-3 font-semibold text-white transition hover:bg-[#2E6551]"
+                                >
+                                    {jadwalDipilih ? "Simpan Perubahan" : "Simpan Jadwal"}
                                 </button>
                             </div>
                         </form>
                     )}
 
-                    {loading ? (
-                        <p className="mt-6 text-[#64776D]">
-                            Memuat data...
-                        </p>
-                    ) : jadwal.length === 0 ? (
-                        <p className="mt-6 text-[#64776D]">
-                            Belum ada jadwal praktik dokter.
-                        </p>
-                    ) : (
-                        <div className="overflow-x-auto mt-6">
-                            <table className="w-full text-left">
-                                <thead>
-                                    <tr className="border-b text-[#397A63]">
-                                        <th className="p-3">No.</th>
-                                        <th className="p-3">Nama Dokter</th>
-                                        <th className="p-3">Poli</th>
-                                        <th className="p-3">Hari</th>
-                                        <th className="p-3">Jam Mulai</th>
-                                        <th className="p-3">Durasi</th>
-                                        <th className="p-3">Aksi</th>
-                                    </tr>
-                                </thead>
+                    <div className="mt-7">
+                        {loading ? (
+                            <div className="py-12 text-center text-[#819087]">
+                                Memuat data jadwal...
+                            </div>
+                        ) : jadwal.length === 0 ? (
+                            <div className="rounded-2xl border border-dashed border-[#D7E3DC] bg-[#F8FAF8] px-5 py-14 text-center">
+                                <div className="mb-3 text-4xl text-[#397A63]">
+                                    ◷
+                                </div>
 
-                                <tbody>
-                                    {jadwal.map((item, index) => (
-                                        <tr
-                                            key={item.id}
-                                            className="border-b border-gray-200 text-[#263D34]"
-                                        >
-                                            <td className="p-3">{index + 1}</td>
-                                            <td className="p-3">{item.nama_dokter}</td>
-                                            <td className="p-3">{item.nama_poli || "-"}</td>
-                                            <td className="p-3">{namaHari(item.hari)}</td>
-                                            <td className="p-3">
-                                                {String(item.jam_mulai).slice(0, 5)}
-                                            </td>
-                                            <td className="p-3">{item.durasi} menit</td>
-                                            <td className="p-3">
-                                                <div className="flex gap-2">
-                                                    <button
-                                                        onClick={() => bukaEdit(item)}
-                                                        className="bg-[#DCEBE2] text-[#397A63] px-3 py-1 rounded-lg"
-                                                    >
-                                                        Edit
-                                                    </button>
+                                <h3 className="font-semibold text-[#263D34]">
+                                    Belum Ada Jadwal
+                                </h3>
 
-                                                    <button
-                                                        onClick={() => hapusJadwal(item.id)}
-                                                        className="bg-red-100 text-red-600 px-3 py-1 rounded-lg"
-                                                    >
-                                                        Hapus
-                                                    </button>
-                                                </div>
-                                            </td>
+                                <p className="mt-2 text-sm text-[#819087]">
+                                    Jadwal praktik dokter yang ditambahkan akan muncul di sini.
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="w-full min-w-[750px] text-left">
+                                    <thead>
+                                        <tr className="border-b border-[#D7E3DC] text-sm text-[#397A63]">
+                                            <th className="px-4 py-4">No.</th>
+                                            <th className="px-4 py-4">Nama Dokter</th>
+                                            <th className="px-4 py-4">Poli</th>
+                                            <th className="px-4 py-4">Hari</th>
+                                            <th className="px-4 py-4">Jam Praktik</th>
+                                            <th className="px-4 py-4">Durasi</th>
+                                            <th className="px-4 py-4">Aksi</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
+                                    </thead>
 
-                </div>
+                                    <tbody>
+                                        {jadwal.map((item, index) => (
+                                            <tr
+                                                key={item.id}
+                                                className="border-b border-[#EDF1EE] text-sm text-[#40564A] transition hover:bg-[#F8FAF8]"
+                                            >
+                                                <td className="px-4 py-4">{index + 1}</td>
+
+                                                <td className="px-4 py-4 font-semibold">
+                                                    {item.nama_dokter}
+                                                </td>
+
+                                                <td className="px-4 py-4">
+                                                    {item.nama_poli || "-"}
+                                                </td>
+
+                                                <td className="px-4 py-4">
+                                                    {namaHari(item.hari)}
+                                                </td>
+
+                                                <td className="px-4 py-4">
+                                                    <span className="rounded-lg bg-[#E8F3EC] px-3 py-1.5 font-semibold text-[#397A63]">
+                                                        {String(item.jam_mulai).slice(0, 5)}
+                                                    </span>
+                                                </td>
+
+                                                <td className="px-4 py-4">
+                                                    {item.durasi} menit
+                                                </td>
+
+                                                <td className="px-4 py-4">
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => bukaEdit(item)}
+                                                            className="rounded-lg bg-[#E8F3EC] px-3 py-2 font-medium text-[#397A63] hover:bg-[#D8EADF]"
+                                                        >
+                                                            Edit
+                                                        </button>
+
+                                                        <button
+                                                            onClick={() => hapusJadwal(item.id)}
+                                                            className="rounded-lg bg-[#FCE9E9] px-3 py-2 font-medium text-[#C45B5B] hover:bg-[#F8DADA]"
+                                                        >
+                                                            Hapus
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+                </section>
             </div>
         </main>
     );
