@@ -14,6 +14,17 @@ async function cekAdmin() {
     return user?.role === "admin";
 }
 
+function validasiEmail(email) {
+    const formatEmail = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+    return formatEmail.test(email);
+}
+
+function validasiTelepon(phone) {
+    if (!phone) return true;
+
+    return /^[0-9]{10,15}$/.test(phone);
+}
+
 export async function PUT(request, { params }) {
     try {
         if (!(await cekAdmin())) {
@@ -24,13 +35,57 @@ export async function PUT(request, { params }) {
         }
 
         const { id } = await params;
-        const { username, email, password, full_name, phone, poli_id } =
-            await request.json();
 
-        if (!username?.trim() || !email?.trim() ||
-            !full_name?.trim() || !poli_id) {
+        const {
+            username,
+            email,
+            password,
+            full_name,
+            phone,
+            poli_id
+        } = await request.json();
+
+        const usernameBersih =
+            typeof username === "string" ? username.trim() : "";
+
+        const emailBersih =
+            typeof email === "string" ? email.trim() : "";
+
+        const namaBersih =
+            typeof full_name === "string" ? full_name.trim() : "";
+
+        const teleponBersih =
+            typeof phone === "string" ? phone.trim() : "";
+
+        if (
+            !usernameBersih ||
+            !emailBersih ||
+            !namaBersih ||
+            !poli_id
+        ) {
             return NextResponse.json(
                 { message: "Data wajib diisi." },
+                { status: 400 }
+            );
+        }
+
+        if (!validasiEmail(emailBersih)) {
+            return NextResponse.json(
+                { message: "Format email tidak valid." },
+                { status: 400 }
+            );
+        }
+
+        if (phone != null && typeof phone !== "string") {
+            return NextResponse.json(
+                { message: "Nomor telepon harus berupa angka." },
+                { status: 400 }
+            );
+        }
+
+        if (!validasiTelepon(teleponBersih)) {
+            return NextResponse.json(
+                { message: "Nomor telepon harus terdiri dari 10–15 digit angka." },
                 { status: 400 }
             );
         }
@@ -53,9 +108,17 @@ export async function PUT(request, { params }) {
                      full_name=$4, phone=$5, poli_id=$6
                  WHERE id=$7 AND role='dokter'
                  RETURNING id, username, email, full_name, phone, poli_id`,
-                [username.trim(), email.trim(), passwordHash,
-                full_name.trim(), phone?.trim() || null, poli_id, id]
+                [
+                    usernameBersih,
+                    emailBersih,
+                    passwordHash,
+                    namaBersih,
+                    teleponBersih || null,
+                    poli_id,
+                    id
+                ]
             );
+
         } else {
             result = await pool.query(
                 `UPDATE users
@@ -63,8 +126,14 @@ export async function PUT(request, { params }) {
                      phone=$4, poli_id=$5
                  WHERE id=$6 AND role='dokter'
                  RETURNING id, username, email, full_name, phone, poli_id`,
-                [username.trim(), email.trim(), full_name.trim(),
-                phone?.trim() || null, poli_id, id]
+                [
+                    usernameBersih,
+                    emailBersih,
+                    namaBersih,
+                    teleponBersih || null,
+                    poli_id,
+                    id
+                ]
             );
         }
 

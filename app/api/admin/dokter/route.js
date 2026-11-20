@@ -14,6 +14,17 @@ async function cekAdmin() {
     return user?.role === "admin";
 }
 
+function validasiEmail(email) {
+    const formatEmail = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+    return formatEmail.test(email);
+}
+
+function validasiTelepon(phone) {
+    if (!phone) return true;
+
+    return /^[0-9]{10,15}$/.test(phone);
+}
+
 export async function GET() {
     try {
         if (!(await cekAdmin())) {
@@ -66,15 +77,53 @@ export async function POST(request) {
             poli_id
         } = await request.json();
 
-        if (!username?.trim() || !email?.trim() ||
-            !password || !full_name?.trim() || !poli_id) {
+        const usernameBersih =
+            typeof username === "string" ? username.trim() : "";
+
+        const emailBersih =
+            typeof email === "string" ? email.trim() : "";
+
+        const namaBersih =
+            typeof full_name === "string" ? full_name.trim() : "";
+
+        const teleponBersih =
+            typeof phone === "string" ? phone.trim() : "";
+
+        if (
+            !usernameBersih ||
+            !emailBersih ||
+            !password ||
+            !namaBersih ||
+            !poli_id
+        ) {
             return NextResponse.json(
                 { message: "Semua data wajib diisi." },
                 { status: 400 }
             );
         }
 
-        if (password.length < 6) {
+        if (!validasiEmail(emailBersih)) {
+            return NextResponse.json(
+                { message: "Format email tidak valid." },
+                { status: 400 }
+            );
+        }
+
+        if (phone != null && typeof phone !== "string") {
+            return NextResponse.json(
+                { message: "Nomor telepon harus berupa angka." },
+                { status: 400 }
+            );
+        }
+
+        if (!validasiTelepon(teleponBersih)) {
+            return NextResponse.json(
+                { message: "Nomor telepon harus terdiri dari 10–15 digit angka." },
+                { status: 400 }
+            );
+        }
+
+        if (typeof password !== "string" || password.length < 6) {
             return NextResponse.json(
                 { message: "Password minimal 6 karakter." },
                 { status: 400 }
@@ -89,11 +138,11 @@ export async function POST(request) {
             VALUES ($1, $2, $3, 'dokter', $4, $5, $6)
             RETURNING id, username, email, full_name, role, poli_id`,
             [
-                username.trim(),
-                email.trim(),
+                usernameBersih,
+                emailBersih,
                 passwordHash,
-                full_name.trim(),
-                phone?.trim() || null,
+                namaBersih,
+                teleponBersih || null,
                 poli_id
             ]
         );
