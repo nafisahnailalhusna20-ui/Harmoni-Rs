@@ -28,11 +28,14 @@ export default function JanjiTemuPage() {
 
     async function ambilJadwal() {
         try {
+            setLoading(true);
+
             const response = await fetch("/api/pasien/janji-temu");
             const data = await response.json();
 
             if (response.ok && data.success) {
                 setJadwal(data.data);
+                setPesan("");
             } else {
                 setPesan(data.message || "Jadwal gagal dimuat.");
             }
@@ -60,6 +63,7 @@ export default function JanjiTemuPage() {
                 hasil[item.dokter_id] = {
                     id: item.dokter_id,
                     nama: item.nama_dokter,
+                    foto: item.foto_dokter,
                     poli: item.nama_poli,
                     jadwal: []
                 };
@@ -210,9 +214,21 @@ export default function JanjiTemuPage() {
                                 key={dokter.id}
                                 className="flex flex-col rounded-2xl border border-white/70 bg-white/70 p-6 shadow-lg backdrop-blur-xl transition hover:-translate-y-1 hover:shadow-xl"
                             >
+
                                 <div className="flex items-center gap-4">
-                                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[#DCEBE3] text-2xl font-bold text-[#397A63]">
-                                        {dokter.nama?.charAt(0)?.toUpperCase() || "D"}
+
+                                    <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#DCEBE3]">
+                                        {dokter.foto ? (
+                                            <img
+                                                src={dokter.foto}
+                                                alt={dokter.nama}
+                                                className="h-full w-full object-cover"
+                                            />
+                                        ) : (
+                                            <span className="text-2xl font-bold text-[#397A63]">
+                                                {dokter.nama?.charAt(0)?.toUpperCase() || "D"}
+                                            </span>
+                                        )}
                                     </div>
 
                                     <div>

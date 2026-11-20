@@ -31,7 +31,6 @@ function tanggalMakassar() {
     return `${tahun}-${bulan}-${hari}`;
 }
 
-// Mengambil jadwal praktik dan tanggal yang tersedia
 export async function GET() {
     try {
         const user = await cekPasien();
@@ -61,7 +60,10 @@ export async function GET() {
                 s.hari,
                 s.jam_mulai,
                 s.durasi,
+
                 dokter.full_name AS nama_dokter,
+                dokter.photo AS foto_dokter,
+
                 p.nama AS nama_poli,
 
                 COALESCE(
@@ -116,7 +118,6 @@ export async function GET() {
     }
 }
 
-// Mendaftarkan janji temu
 export async function POST(request) {
     try {
         const user = await cekPasien();
