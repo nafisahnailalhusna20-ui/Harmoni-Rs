@@ -2,25 +2,63 @@
 
 import { useEffect, useState } from "react";
 
+const namaHari = [
+    "Minggu", "Senin", "Selasa", "Rabu",
+    "Kamis", "Jumat", "Sabtu"
+];
+
+const namaBulan = [
+    "Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
+    "Jul", "Agu", "Sep", "Okt", "Nov", "Des"
+];
+
+function buatTanggal(tanggal) {
+    const [tahun, bulan, hari] = tanggal.split("-").map(Number);
+    return new Date(tahun, bulan - 1, hari);
+}
+
+function formatTanggal(tanggal) {
+    const date = buatTanggal(tanggal);
+    return `${date.getDate()} ${[
+        "Januari", "Februari", "Maret", "April",
+        "Mei", "Juni", "Juli", "Agustus",
+        "September", "Oktober", "November", "Desember"
+    ][date.getMonth()]} ${date.getFullYear()}`;
+}
+
+function formatTanggalSingkat(tanggal) {
+    const date = buatTanggal(tanggal);
+    return `${namaHari[date.getDay()].slice(0, 3)}, ${date.getDate()} ${namaBulan[date.getMonth()]}`;
+}
+
+function formatJam(jam) {
+    return String(jam).slice(0, 5);
+}
+
+function tambahMenit(jam, menit) {
+    const [jamAngka, menitAngka] = jam.split(":").map(Number);
+    const total = jamAngka * 60 + menitAngka + menit;
+
+    const hasilJam = Math.floor(total / 60) % 24;
+    const hasilMenit = total % 60;
+
+    return `${String(hasilJam).padStart(2, "0")}:${String(hasilMenit).padStart(2, "0")}`;
+}
+
 export default function JanjiTemuPage() {
     const [jadwal, setJadwal] = useState([]);
     const [loading, setLoading] = useState(true);
     const [poliDipilih, setPoliDipilih] = useState("Semua Poli");
+
     const [dokterDipilih, setDokterDipilih] = useState(null);
+    const [tanggalDipilih, setTanggalDipilih] = useState("");
+    const [scheduleId, setScheduleId] = useState("");
+    const [keluhan, setKeluhan] = useState("");
+
+    const [tampilkanSemuaTanggal, setTampilkanSemuaTanggal] = useState(false);
     const [menyimpan, setMenyimpan] = useState(false);
     const [pesan, setPesan] = useState("");
     const [berhasil, setBerhasil] = useState(false);
-
-    const [form, setForm] = useState({
-        schedule_id: "",
-        tanggal_booking: "",
-        keluhan: ""
-    });
-
-    const daftarHari = [
-        "-", "Senin", "Selasa", "Rabu",
-        "Kamis", "Jumat", "Sabtu", "Minggu"
-    ];
 
     useEffect(() => {
         ambilJadwal();
@@ -45,7 +83,7 @@ export default function JanjiTemuPage() {
 
     const daftarPoli = [
         "Semua Poli",
-        ...new Set(jadwal.map((item) => item.nama_poli))
+        ...new Set(jadwal.map((item) => item.nama_poli).filter(Boolean))
     ];
 
     const jadwalFilter = jadwal.filter((item) =>
@@ -70,56 +108,52 @@ export default function JanjiTemuPage() {
         }, {})
     );
 
-    function formatTanggal(tanggal) {
-        const [tahun, bulan, hari] = tanggal.split("-");
-
-        const namaBulan = [
-            "Januari", "Februari", "Maret", "April",
-            "Mei", "Juni", "Juli", "Agustus",
-            "September", "Oktober", "November", "Desember"
-        ];
-
-        return `${Number(hari)} ${namaBulan[Number(bulan) - 1]} ${tahun}`;
-    }
-
-    function bukaForm(dokter) {
-        setDokterDipilih(dokter);
-
-        setForm({
-            schedule_id: String(dokter.jadwal[0].id),
-            tanggal_booking: "",
-            keluhan: ""
+    function daftarTanggal(dokter) {
+        const semuaTanggal = dokter.jadwal.flatMap((item) => {
+            return item.tanggal_tersedia || [];
         });
 
-        setPesan("");
-        setBerhasil(false);
+        return [...new Set(semuaTanggal)].sort();
     }
 
-    function handleChange(e) {
-        const { name, value } = e.target;
+    function bukaPemesanan(dokter) {
+        const tanggal = daftarTanggal(dokter);
 
-        setForm((formSebelumnya) => ({
-            ...formSebelumnya,
-            [name]: value,
-            ...(name === "schedule_id" ? {
-                tanggal_booking: ""
-            } : {})
-        }));
-
+        setDokterDipilih(dokter);
+        setTanggalDipilih(tanggal[0] || "");
+        setScheduleId("");
+        setKeluhan("");
         setPesan("");
         setBerhasil(false);
+        setTampilkanSemuaTanggal(false);
     }
 
-    const jadwalTerpilih = dokterDipilih?.jadwal.find(
-        (item) => String(item.id) === form.schedule_id
+    const jadwalTersedia = dokterDipilih
+        ? dokterDipilih.jadwal.filter((item) =>
+            (item.tanggal_tersedia || []).includes(tanggalDipilih)
+        )
+        : [];
+
+    const jadwalTerpilih = jadwalTersedia.find(
+        (item) => String(item.id) === String(scheduleId)
     );
 
-    async function daftarJanjiTemu(e) {
+    function pilihTanggal(tanggal) {
+        setTanggalDipilih(tanggal);
+        setScheduleId("");
+        setPesan("");
+    }
+
+    async function pesanJanjiTemu(e) {
         e.preventDefault();
 
-        setPesan("");
-        setBerhasil(false);
+        if (!tanggalDipilih || !scheduleId || !keluhan.trim()) {
+            setPesan("Lengkapi tanggal, waktu, dan keluhan terlebih dahulu.");
+            return;
+        }
+
         setMenyimpan(true);
+        setPesan("");
 
         try {
             const response = await fetch("/api/pasien/janji-temu", {
@@ -127,26 +161,24 @@ export default function JanjiTemuPage() {
                 headers: {
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify(form)
+                body: JSON.stringify({
+                    schedule_id: Number(scheduleId),
+                    tanggal_booking: tanggalDipilih,
+                    keluhan: keluhan
+                })
             });
 
             const data = await response.json();
 
             if (!response.ok) {
-                setPesan(data.message || "Pendaftaran gagal.");
+                setPesan(data.message || "Pemesanan gagal.");
                 return;
             }
 
-            setPesan("Janji temu berhasil didaftarkan!");
             setBerhasil(true);
+            setPesan("Janji temu berhasil didaftarkan.");
 
             await ambilJadwal();
-
-            setForm({
-                schedule_id: "",
-                tanggal_booking: "",
-                keluhan: ""
-            });
 
         } catch (error) {
             setPesan("Terjadi kesalahan saat mendaftar.");
@@ -155,12 +187,15 @@ export default function JanjiTemuPage() {
         }
     }
 
-    const inputStyle =
-        "w-full rounded-xl border border-[#C8D8CF] bg-white p-3 text-[#263D34] focus:outline-none focus:ring-2 focus:ring-[#397A63]";
+    const hariIni = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Makassar",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+    }).format(new Date());
 
     return (
         <main className="min-h-screen bg-[#E8F0EC] px-5 py-10">
-
             <div className="mx-auto max-w-7xl">
 
                 <div className="mb-8">
@@ -178,7 +213,6 @@ export default function JanjiTemuPage() {
                 </div>
 
                 <div className="mb-8 flex flex-wrap items-center gap-3">
-
                     <label className="font-medium text-[#263D34]">
                         Pilih Poli:
                     </label>
@@ -194,37 +228,31 @@ export default function JanjiTemuPage() {
                             </option>
                         ))}
                     </select>
-
                 </div>
 
                 {loading ? (
-                    <div className="rounded-2xl bg-white/60 p-10 text-center text-[#64776D]">
+                    <div className="rounded-2xl bg-white p-10 text-center text-[#64776D]">
                         Memuat daftar dokter...
                     </div>
                 ) : daftarDokter.length === 0 ? (
-                    <div className="rounded-2xl bg-white/60 p-10 text-center text-[#64776D]">
+                    <div className="rounded-2xl bg-white p-10 text-center text-[#64776D]">
                         Belum ada dokter dengan jadwal praktik tersedia.
                     </div>
                 ) : (
-
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-
                         {daftarDokter.map((dokter) => (
-
                             <div
                                 key={dokter.id}
-                                className="flex flex-col rounded-2xl border border-white/70 bg-white/70 p-6 shadow-lg backdrop-blur-xl transition hover:-translate-y-1 hover:shadow-xl"
+                                className="rounded-2xl border border-white bg-white p-6 shadow-sm"
                             >
-
                                 <div className="flex items-center gap-4">
-
-                                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[#DCEBE3] text-2xl font-bold text-[#397A63]">
-                                        {dokter.nama?.charAt(0)?.toUpperCase() || "D"}
+                                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#DCEBE3] text-2xl font-bold text-[#397A63]">
+                                        {dokter.nama?.charAt(0)?.toUpperCase()}
                                     </div>
 
                                     <div>
                                         <p className="text-sm text-[#81948A]">
-                                            Dokter Spesialis
+                                            Dokter
                                         </p>
 
                                         <h2 className="text-lg font-bold text-[#263D34]">
@@ -235,79 +263,51 @@ export default function JanjiTemuPage() {
                                             {dokter.poli}
                                         </p>
                                     </div>
-
                                 </div>
 
                                 <div className="my-5 border-t border-[#DCE5DF]" />
 
-                                <div className="flex-1">
+                                <h3 className="mb-3 font-semibold text-[#263D34]">
+                                    Jadwal Praktik
+                                </h3>
 
-                                    <h3 className="mb-3 font-semibold text-[#263D34]">
-                                        Jadwal Praktik
-                                    </h3>
+                                <div className="space-y-2">
+                                    {dokter.jadwal.map((item) => (
+                                        <div
+                                            key={item.id}
+                                            className="flex justify-between rounded-lg bg-[#F0F6F2] px-3 py-2 text-sm"
+                                        >
+                                            <span className="text-[#64776D]">
+                                                {namaHari[Number(item.hari)]}
+                                            </span>
 
-                                    <div className="space-y-3">
-
-                                        {dokter.jadwal.map((item) => (
-
-                                            <div
-                                                key={item.id}
-                                                className="rounded-xl bg-[#E8F0EC] p-3"
-                                            >
-                                                <p className="font-medium text-[#263D34]">
-                                                    {daftarHari[Number(item.hari)]}
-                                                </p>
-
-                                                <p className="mt-1 text-sm text-[#64776D]">
-                                                    Pukul {String(item.jam_mulai).slice(0, 5)}
-                                                </p>
-
-                                                <p className="mt-1 text-xs text-[#64776D]">
-                                                    Durasi konsultasi 30 menit
-                                                </p>
-
-                                            </div>
-
-                                        ))}
-
-                                    </div>
-
+                                            <span className="font-medium text-[#397A63]">
+                                                {formatJam(item.jam_mulai)}
+                                            </span>
+                                        </div>
+                                    ))}
                                 </div>
 
                                 <button
-                                    onClick={() => bukaForm(dokter)}
-                                    className="mt-6 w-full rounded-xl bg-[#397A63] px-4 py-3 font-semibold text-white transition hover:bg-[#2e6551]"
+                                    onClick={() => bukaPemesanan(dokter)}
+                                    className="mt-6 w-full rounded-xl bg-[#397A63] px-4 py-3 font-semibold text-white transition hover:bg-[#2E6551]"
                                 >
-                                    Pesan Janji Temu
+                                    Lihat Jadwal & Pesan
                                 </button>
-
                             </div>
-
                         ))}
-
                     </div>
-
                 )}
-
-                {pesan && !dokterDipilih && (
-                    <p className="mt-5 text-center text-red-600">
-                        {pesan}
-                    </p>
-                )}
-
             </div>
 
             {dokterDipilih && (
-
                 <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4">
-
-                    <div className="my-8 w-full max-w-xl rounded-2xl border border-white/70 bg-[#F7FAF8] p-6 shadow-2xl">
+                    <div className="my-6 w-full max-w-xl rounded-2xl bg-[#F7FAF8] p-6 shadow-2xl">
 
                         <div className="mb-6 flex items-center justify-between">
-
                             <div>
                                 <h2 className="text-2xl font-bold text-[#263D34]">
-                                    Pesan Janji Temu
+                                    Jadwal & Buat Janji Temu
                                 </h2>
 
                                 <p className="mt-1 text-sm text-[#64776D]">
@@ -317,118 +317,133 @@ export default function JanjiTemuPage() {
 
                             <button
                                 onClick={() => setDokterDipilih(null)}
-                                className="text-2xl text-[#64776D] hover:text-red-500"
+                                className="text-2xl text-[#64776D]"
                             >
                                 ×
                             </button>
-
                         </div>
 
-                        {pesan && (
-                            <p className={`mb-4 text-sm ${berhasil ? "text-[#397A63]" : "text-red-600"
-                                }`}>
-                                {pesan}
-                            </p>
-                        )}
+                        {berhasil ? (
+                            <div className="py-8 text-center">
+                                <h3 className="text-xl font-bold text-[#397A63]">
+                                    Janji Temu Berhasil
+                                </h3>
 
-                        {!berhasil && (
+                                <p className="mt-3 text-[#64776D]">
+                                    {pesan}
+                                </p>
 
-                            <form onSubmit={daftarJanjiTemu} className="space-y-5">
+                                <button
+                                    onClick={() => setDokterDipilih(null)}
+                                    className="mt-6 rounded-xl bg-[#397A63] px-8 py-3 font-semibold text-white"
+                                >
+                                    Selesai
+                                </button>
+                            </div>
+                        ) : (
+                            <form onSubmit={pesanJanjiTemu}>
 
-                                <div>
-                                    <label className="mb-2 block text-sm font-medium text-[#263D34]">
-                                        Pilih Jadwal Praktik
-                                    </label>
+                                <div className="mb-6">
+                                    <h3 className="mb-3 font-semibold text-[#263D34]">
+                                        Pilih Tanggal
+                                    </h3>
 
-                                    <select
-                                        name="schedule_id"
-                                        value={form.schedule_id}
-                                        onChange={handleChange}
-                                        required
-                                        className={inputStyle}
-                                    >
-                                        {dokterDipilih.jadwal.map((item) => (
-                                            <option key={item.id} value={item.id}>
-                                                {daftarHari[Number(item.hari)]} - {String(item.jam_mulai).slice(0, 5)}
-                                            </option>
-                                        ))}
-                                    </select>
+                                    <div className="flex flex-wrap gap-3">
+                                        {daftarTanggal(dokterDipilih)
+                                            .slice(
+                                                0,
+                                                tampilkanSemuaTanggal ? undefined : 6
+                                            )
+                                            .map((tanggal) => (
+                                                <button
+                                                    type="button"
+                                                    key={tanggal}
+                                                    onClick={() => pilihTanggal(tanggal)}
+                                                    className={`rounded-full border px-4 py-2 text-sm transition ${tanggalDipilih === tanggal
+                                                            ? "border-[#397A63] bg-[#397A63] text-white"
+                                                            : "border-[#397A63] text-[#397A63] hover:bg-[#E1EEE7]"
+                                                        }`}
+                                                >
+                                                    {tanggal === hariIni
+                                                        ? "Hari Ini"
+                                                        : formatTanggalSingkat(tanggal)}
+                                                </button>
+                                            ))}
+
+                                        {daftarTanggal(dokterDipilih).length > 6 && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setTampilkanSemuaTanggal(!tampilkanSemuaTanggal)}
+                                                className="rounded-full border border-[#263D8A] px-4 py-2 text-sm text-[#263D8A]"
+                                            >
+                                                {tampilkanSemuaTanggal ? "Tutup" : "Lainnya"}
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
 
-                                <div>
-                                    <label className="mb-2 block text-sm font-medium text-[#263D34]">
-                                        Pilih Tanggal Kunjungan
+                                <div className="mb-5">
+                                    <label className="mb-2 block font-medium text-[#263D34]">
+                                        Waktu
                                     </label>
 
                                     <select
-                                        name="tanggal_booking"
-                                        value={form.tanggal_booking}
-                                        onChange={handleChange}
+                                        value={scheduleId}
+                                        onChange={(e) => setScheduleId(e.target.value)}
                                         required
-                                        disabled={!jadwalTerpilih}
-                                        className={inputStyle}
+                                        disabled={!tanggalDipilih || jadwalTersedia.length === 0}
+                                        className="w-full rounded-lg border border-[#C8D8CF] bg-white p-4 text-[#263D34] outline-none focus:border-[#397A63]"
                                     >
                                         <option value="">
-                                            Pilih tanggal kunjungan
+                                            Pilih waktu konsultasi
                                         </option>
 
-                                        {jadwalTerpilih?.tanggal_tersedia?.map((tanggal) => (
-                                            <option key={tanggal} value={tanggal}>
-                                                {formatTanggal(tanggal)}
+                                        {jadwalTersedia.map((item) => (
+                                            <option key={item.id} value={item.id}>
+                                                {formatJam(item.jam_mulai)} - {tambahMenit(formatJam(item.jam_mulai), Number(item.durasi || 30))}
                                             </option>
                                         ))}
                                     </select>
 
-                                    {jadwalTerpilih?.tanggal_tersedia?.length === 0 && (
-                                        <p className="mt-2 text-sm text-red-500">
-                                            Belum ada tanggal praktik yang tersedia.
-                                        </p>
-                                    )}
+                                    <p className="mt-2 text-sm text-[#64776D]">
+                                        Setiap sesi konsultasi berlangsung selama 30 menit.
+                                    </p>
                                 </div>
 
-                                <div>
-                                    <label className="mb-2 block text-sm font-medium text-[#263D34]">
+                                <div className="mb-5">
+                                    <label className="mb-2 block font-medium text-[#263D34]">
                                         Keluhan
                                     </label>
 
                                     <textarea
-                                        name="keluhan"
-                                        value={form.keluhan}
-                                        onChange={handleChange}
+                                        value={keluhan}
+                                        onChange={(e) => setKeluhan(e.target.value)}
                                         rows="4"
                                         required
                                         placeholder="Ceritakan keluhan yang sedang Anda rasakan..."
-                                        className={inputStyle}
+                                        className="w-full rounded-lg border border-[#C8D8CF] bg-white p-4 text-[#263D34] outline-none focus:border-[#397A63]"
                                     />
                                 </div>
 
+                                {pesan && (
+                                    <p className="mb-4 text-sm text-red-600">
+                                        {pesan}
+                                    </p>
+                                )}
+
                                 <button
                                     type="submit"
-                                    disabled={menyimpan}
-                                    className="w-full rounded-xl bg-[#397A63] p-3 font-semibold text-white hover:bg-[#2e6551] disabled:opacity-50"
+                                    disabled={menyimpan || !jadwalTerpilih}
+                                    className="w-full rounded-xl bg-[#397A63] p-4 font-semibold text-white transition hover:bg-[#2E6551] disabled:cursor-not-allowed disabled:opacity-50"
                                 >
-                                    {menyimpan ? "Mengirim..." : "Konfirmasi Janji Temu"}
+                                    {menyimpan ? "Memproses..." : "Pesan Janji Temu"}
                                 </button>
 
                             </form>
-
                         )}
-
-                        {berhasil && (
-                            <button
-                                onClick={() => setDokterDipilih(null)}
-                                className="mt-4 w-full rounded-xl bg-[#397A63] p-3 font-semibold text-white"
-                            >
-                                Selesai
-                            </button>
-                        )}
-
                     </div>
-
                 </div>
-
             )}
-
         </main>
     );
 }

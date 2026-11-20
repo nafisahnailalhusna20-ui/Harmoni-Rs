@@ -17,15 +17,21 @@ async function cekPasien() {
 }
 
 function tanggalMakassar() {
-    return new Intl.DateTimeFormat("en-CA", {
+    const bagianTanggal = new Intl.DateTimeFormat("en-US", {
         timeZone: "Asia/Makassar",
         year: "numeric",
         month: "2-digit",
         day: "2-digit"
-    }).format(new Date());
+    }).formatToParts(new Date());
+
+    const tahun = bagianTanggal.find(item => item.type === "year").value;
+    const bulan = bagianTanggal.find(item => item.type === "month").value;
+    const hari = bagianTanggal.find(item => item.type === "day").value;
+
+    return `${tahun}-${bulan}-${hari}`;
 }
 
-// Mengambil jadwal dan tanggal praktik yang tersedia
+// Mengambil jadwal praktik dan tanggal yang tersedia
 export async function GET() {
     try {
         const user = await cekPasien();
@@ -54,6 +60,7 @@ export async function GET() {
                 s.dokter_id,
                 s.hari,
                 s.jam_mulai,
+                s.durasi,
                 dokter.full_name AS nama_dokter,
                 p.nama AS nama_poli,
 
@@ -62,7 +69,7 @@ export async function GET() {
                         TO_CHAR(t.tanggal, 'YYYY-MM-DD')
                         ORDER BY t.tanggal
                     ) FILTER (WHERE t.tanggal IS NOT NULL),
-                    '[]'
+                    '[]'::json
                 ) AS tanggal_tersedia
 
             FROM schedules s
@@ -130,6 +137,13 @@ export async function POST(request) {
         if (!schedule_id || !tanggal_booking || !keluhan?.trim()) {
             return NextResponse.json(
                 { message: "Semua data wajib diisi." },
+                { status: 400 }
+            );
+        }
+
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(tanggal_booking)) {
+            return NextResponse.json(
+                { message: "Format tanggal tidak valid." },
                 { status: 400 }
             );
         }

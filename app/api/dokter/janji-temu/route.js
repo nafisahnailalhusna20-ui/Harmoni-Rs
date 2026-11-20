@@ -41,8 +41,9 @@ export async function GET() {
                 p.nama AS nama_poli
             FROM appointments a
             JOIN users pasien ON a.pasien_id = pasien.id
+            JOIN users dokter ON a.dokter_id = dokter.id
             JOIN schedules s ON a.schedule_id = s.id
-            LEFT JOIN poli p ON pasien.poli_id = p.id
+            LEFT JOIN poli p ON dokter.poli_id = p.id
             WHERE a.dokter_id = $1
             ORDER BY a.tanggal_booking DESC, a.id DESC`,
             [dokter.id]
@@ -62,7 +63,6 @@ export async function GET() {
         );
     }
 }
-
 export async function PUT(request) {
     try {
         const dokter = await cekDokter();
@@ -89,8 +89,10 @@ export async function PUT(request) {
 
         if (
             status === "Rejected" &&
-            (typeof alasan_penolakan !== "string" ||
-                !alasan_penolakan.trim())
+            (
+                typeof alasan_penolakan !== "string" ||
+                !alasan_penolakan.trim()
+            )
         ) {
             return NextResponse.json(
                 { message: "Alasan penolakan wajib diisi." },
