@@ -53,7 +53,9 @@ export default function DokterPage() {
     }
 
     function handlePhoneChange(e) {
-        const nomor = e.target.value.replace(/\D/g, "").slice(0, 15);
+        const nomor = e.target.value
+            .replace(/\D/g, "")
+            .slice(0, 15);
 
         setForm({
             ...form,
@@ -70,6 +72,7 @@ export default function DokterPage() {
 
     function bukaEdit(item) {
         setDokterDipilih(item);
+
         setForm({
             username: item.username,
             email: item.email,
@@ -78,6 +81,7 @@ export default function DokterPage() {
             phone: item.phone || "",
             poli_id: item.poli_id || ""
         });
+
         setPesan("");
         setTampilForm(true);
     }
@@ -85,6 +89,14 @@ export default function DokterPage() {
     async function simpanDokter(e) {
         e.preventDefault();
         setPesan("");
+
+        const formatEmail =
+            /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+
+        if (!formatEmail.test(form.email.trim())) {
+            setPesan("Format email tidak valid. Contoh: nama@gmail.com");
+            return;
+        }
 
         if (form.phone && !/^[0-9]{10,15}$/.test(form.phone)) {
             setPesan("Nomor telepon harus terdiri dari 10–15 digit angka.");
@@ -101,7 +113,10 @@ export default function DokterPage() {
                 headers: {
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify(form)
+                body: JSON.stringify({
+                    ...form,
+                    email: form.email.trim()
+                })
             });
 
             const data = await response.json();
@@ -115,6 +130,7 @@ export default function DokterPage() {
             setTampilForm(false);
             setDokterDipilih(null);
             setForm(formAwal);
+
             await ambilData();
 
         } catch (error) {
@@ -143,11 +159,12 @@ export default function DokterPage() {
             await ambilData();
 
         } catch (error) {
-            setPesan("Terjadi kesalahan saat menghapus dokter.");
+            setPesan("Terjadi kesalahan saat menghapus data.");
         }
     }
 
-    const inputStyle = "w-full p-3 rounded-xl border border-[#C8D8CF] bg-white/80 text-[#263D34] placeholder:text-[#84968C] focus:outline-none focus:ring-2 focus:ring-[#397A63]";
+    const inputStyle =
+        "w-full p-3 rounded-xl border border-[#C8D8CF] bg-white/80 text-[#263D34] placeholder:text-[#84968C] focus:outline-none focus:ring-2 focus:ring-[#397A63]";
 
     return (
         <main className="min-h-screen bg-[#E8F0EC] p-8">
@@ -187,6 +204,7 @@ export default function DokterPage() {
                             onSubmit={simpanDokter}
                             className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4"
                         >
+
                             <input
                                 name="full_name"
                                 placeholder="Nama lengkap dokter"
@@ -208,17 +226,23 @@ export default function DokterPage() {
                             <input
                                 name="email"
                                 type="email"
-                                placeholder="Email"
+                                placeholder="Contoh: nama@gmail.com"
                                 value={form.email}
                                 onChange={handleChange}
                                 required
+                                pattern="[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"
+                                title="Masukkan email lengkap, contoh nama@gmail.com"
                                 className={inputStyle}
                             />
 
                             <input
                                 name="password"
                                 type="password"
-                                placeholder={dokterDipilih ? "Password baru (kosongkan jika tidak diubah)" : "Password (minimal 6 karakter)"}
+                                placeholder={
+                                    dokterDipilih
+                                        ? "Password baru (kosongkan jika tidak diubah)"
+                                        : "Password (minimal 6 karakter)"
+                                }
                                 value={form.password}
                                 onChange={handleChange}
                                 required={!dokterDipilih}
@@ -239,6 +263,7 @@ export default function DokterPage() {
                                     title="Nomor telepon harus terdiri dari 10–15 digit angka."
                                     className={inputStyle}
                                 />
+
                                 <p className="text-xs text-[#64776D] mt-1">
                                     Masukkan 10–15 digit angka.
                                 </p>
@@ -261,11 +286,14 @@ export default function DokterPage() {
                             </select>
 
                             <div className="md:col-span-2 flex gap-3">
+
                                 <button
                                     type="submit"
                                     className="flex-1 bg-[#397A63] text-white p-3 rounded-xl hover:bg-[#2e6551]"
                                 >
-                                    {dokterDipilih ? "Simpan Perubahan" : "Simpan Dokter"}
+                                    {dokterDipilih
+                                        ? "Simpan Perubahan"
+                                        : "Simpan Dokter"}
                                 </button>
 
                                 <button
@@ -275,12 +303,15 @@ export default function DokterPage() {
                                 >
                                     Batal
                                 </button>
+
                             </div>
                         </form>
                     )}
 
                     {loading ? (
-                        <p className="mt-4 text-[#64776D]">Memuat data...</p>
+                        <p className="mt-4 text-[#64776D]">
+                            Memuat data...
+                        </p>
                     ) : dokter.length === 0 ? (
                         <p className="mt-6 text-[#64776D]">
                             Belum ada dokter terdaftar.
@@ -288,6 +319,7 @@ export default function DokterPage() {
                     ) : (
                         <div className="overflow-x-auto mt-6">
                             <table className="w-full text-left">
+
                                 <thead>
                                     <tr className="border-b text-[#397A63]">
                                         <th className="p-3">No.</th>
@@ -309,9 +341,13 @@ export default function DokterPage() {
                                             <td className="p-3">{item.full_name}</td>
                                             <td className="p-3">{item.username}</td>
                                             <td className="p-3">{item.email}</td>
-                                            <td className="p-3">{item.nama_poli || "-"}</td>
+                                            <td className="p-3">
+                                                {item.nama_poli || "-"}
+                                            </td>
+
                                             <td className="p-3">
                                                 <div className="flex gap-2">
+
                                                     <button
                                                         onClick={() => bukaEdit(item)}
                                                         className="bg-[#DCEBE2] text-[#397A63] px-3 py-1 rounded-lg"
@@ -325,11 +361,13 @@ export default function DokterPage() {
                                                     >
                                                         Hapus
                                                     </button>
+
                                                 </div>
                                             </td>
                                         </tr>
                                     ))}
                                 </tbody>
+
                             </table>
                         </div>
                     )}
