@@ -2,12 +2,11 @@
 
 import { useEffect, useState } from "react";
 
-export default function DokterPage() {
-    const [dokter, setDokter] = useState([]);
-    const [poli, setPoli] = useState([]);
+export default function PasienPage() {
+    const [pasien, setPasien] = useState([]);
     const [loading, setLoading] = useState(true);
     const [tampilForm, setTampilForm] = useState(false);
-    const [dokterDipilih, setDokterDipilih] = useState(null);
+    const [pasienDipilih, setPasienDipilih] = useState(null);
     const [pesan, setPesan] = useState("");
 
     const formAwal = {
@@ -16,26 +15,26 @@ export default function DokterPage() {
         password: "",
         full_name: "",
         phone: "",
-        poli_id: ""
+        address: "",
+        birth_date: ""
     };
 
     const [form, setForm] = useState(formAwal);
 
     async function ambilData() {
         try {
-            const [resDokter, resPoli] = await Promise.all([
-                fetch("/api/admin/dokter"),
-                fetch("/api/admin/poli")
-            ]);
+            const response = await fetch("/api/admin/pasien");
+            const data = await response.json();
 
-            const dataDokter = await resDokter.json();
-            const dataPoli = await resPoli.json();
-
-            if (dataDokter.success) setDokter(dataDokter.data);
-            if (dataPoli.success) setPoli(dataPoli.data);
+            if (data.success) {
+                setPasien(data.data);
+            } else {
+                setPesan(data.message || "Gagal mengambil data pasien.");
+            }
 
         } catch (error) {
             console.error("Gagal mengambil data:", error);
+            setPesan("Terjadi kesalahan saat mengambil data pasien.");
         } finally {
             setLoading(false);
         }
@@ -64,29 +63,32 @@ export default function DokterPage() {
     }
 
     function bukaTambah() {
-        setDokterDipilih(null);
+        setPasienDipilih(null);
         setForm(formAwal);
         setPesan("");
         setTampilForm(true);
     }
 
     function bukaEdit(item) {
-        setDokterDipilih(item);
+        setPasienDipilih(item);
 
         setForm({
-            username: item.username,
-            email: item.email,
+            username: item.username || "",
+            email: item.email || "",
             password: "",
             full_name: item.full_name || "",
             phone: item.phone || "",
-            poli_id: item.poli_id || ""
+            address: item.address || "",
+            birth_date: item.birth_date
+                ? String(item.birth_date).slice(0, 10)
+                : ""
         });
 
         setPesan("");
         setTampilForm(true);
     }
 
-    async function simpanDokter(e) {
+    async function simpanPasien(e) {
         e.preventDefault();
         setPesan("");
 
@@ -104,12 +106,12 @@ export default function DokterPage() {
         }
 
         try {
-            const url = dokterDipilih
-                ? `/api/admin/dokter/${dokterDipilih.id}`
-                : "/api/admin/dokter";
+            const url = pasienDipilih
+                ? `/api/admin/pasien/${pasienDipilih.id}`
+                : "/api/admin/pasien";
 
             const response = await fetch(url, {
-                method: dokterDipilih ? "PUT" : "POST",
+                method: pasienDipilih ? "PUT" : "POST",
                 headers: {
                     "Content-Type": "application/json"
                 },
@@ -128,7 +130,7 @@ export default function DokterPage() {
 
             setPesan(data.message);
             setTampilForm(false);
-            setDokterDipilih(null);
+            setPasienDipilih(null);
             setForm(formAwal);
 
             await ambilData();
@@ -138,20 +140,20 @@ export default function DokterPage() {
         }
     }
 
-    async function hapusDokter(id) {
-        const yakin = confirm("Yakin ingin menghapus dokter ini?");
+    async function hapusPasien(id) {
+        const yakin = confirm("Yakin ingin menghapus data pasien ini?");
 
         if (!yakin) return;
 
         try {
-            const response = await fetch(`/api/admin/dokter/${id}`, {
+            const response = await fetch(`/api/admin/pasien/${id}`, {
                 method: "DELETE"
             });
 
             const data = await response.json();
 
             if (!response.ok) {
-                setPesan(data.message || "Dokter gagal dihapus.");
+                setPesan(data.message || "Pasien gagal dihapus.");
                 return;
             }
 
@@ -171,25 +173,25 @@ export default function DokterPage() {
             <div className="max-w-6xl mx-auto">
 
                 <h1 className="text-3xl font-bold text-[#263D34]">
-                    Manajemen Dokter
+                    Manajemen Pasien
                 </h1>
 
                 <p className="text-[#64776D] mt-2">
-                    Kelola data dokter dan poli rumah sakit.
+                    Kelola data pasien rumah sakit.
                 </p>
 
                 <div className="mt-8 rounded-2xl bg-white/50 backdrop-blur-xl border border-white/70 p-6 shadow-lg">
 
                     <div className="flex justify-between items-center gap-4">
                         <h2 className="text-xl font-semibold text-[#263D34]">
-                            Daftar Dokter
+                            Daftar Pasien
                         </h2>
 
                         <button
                             onClick={bukaTambah}
                             className="bg-[#397A63] text-white px-4 py-2 rounded-xl hover:bg-[#2e6551]"
                         >
-                            + Tambah Dokter
+                            + Tambah Pasien
                         </button>
                     </div>
 
@@ -201,13 +203,13 @@ export default function DokterPage() {
 
                     {tampilForm && (
                         <form
-                            onSubmit={simpanDokter}
+                            onSubmit={simpanPasien}
                             className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4"
                         >
 
                             <input
                                 name="full_name"
-                                placeholder="Nama lengkap dokter"
+                                placeholder="Nama lengkap pasien"
                                 value={form.full_name}
                                 onChange={handleChange}
                                 required
@@ -239,13 +241,13 @@ export default function DokterPage() {
                                 name="password"
                                 type="password"
                                 placeholder={
-                                    dokterDipilih
+                                    pasienDipilih
                                         ? "Password baru (kosongkan jika tidak diubah)"
                                         : "Password (minimal 6 karakter)"
                                 }
                                 value={form.password}
                                 onChange={handleChange}
-                                required={!dokterDipilih}
+                                required={!pasienDipilih}
                                 minLength={6}
                                 className={inputStyle}
                             />
@@ -269,21 +271,22 @@ export default function DokterPage() {
                                 </p>
                             </div>
 
-                            <select
-                                name="poli_id"
-                                value={form.poli_id}
+                            <input
+                                name="birth_date"
+                                type="date"
+                                value={form.birth_date}
                                 onChange={handleChange}
-                                required
                                 className={inputStyle}
-                            >
-                                <option value="">Pilih Poli</option>
+                            />
 
-                                {poli.map((item) => (
-                                    <option key={item.id} value={item.id}>
-                                        {item.nama}
-                                    </option>
-                                ))}
-                            </select>
+                            <textarea
+                                name="address"
+                                placeholder="Alamat pasien"
+                                value={form.address}
+                                onChange={handleChange}
+                                rows={3}
+                                className={`${inputStyle} md:col-span-2`}
+                            />
 
                             <div className="md:col-span-2 flex gap-3">
 
@@ -291,9 +294,9 @@ export default function DokterPage() {
                                     type="submit"
                                     className="flex-1 bg-[#397A63] text-white p-3 rounded-xl hover:bg-[#2e6551]"
                                 >
-                                    {dokterDipilih
+                                    {pasienDipilih
                                         ? "Simpan Perubahan"
-                                        : "Simpan Dokter"}
+                                        : "Simpan Pasien"}
                                 </button>
 
                                 <button
@@ -312,9 +315,9 @@ export default function DokterPage() {
                         <p className="mt-4 text-[#64776D]">
                             Memuat data...
                         </p>
-                    ) : dokter.length === 0 ? (
+                    ) : pasien.length === 0 ? (
                         <p className="mt-6 text-[#64776D]">
-                            Belum ada dokter terdaftar.
+                            Belum ada pasien terdaftar.
                         </p>
                     ) : (
                         <div className="overflow-x-auto mt-6">
@@ -323,26 +326,38 @@ export default function DokterPage() {
                                 <thead>
                                     <tr className="border-b text-[#397A63]">
                                         <th className="p-3">No.</th>
-                                        <th className="p-3">Nama Dokter</th>
+                                        <th className="p-3">Nama Pasien</th>
                                         <th className="p-3">Username</th>
                                         <th className="p-3">Email</th>
-                                        <th className="p-3">Poli</th>
+                                        <th className="p-3">Telepon</th>
                                         <th className="p-3">Aksi</th>
                                     </tr>
                                 </thead>
 
                                 <tbody>
-                                    {dokter.map((item, index) => (
+                                    {pasien.map((item, index) => (
                                         <tr
                                             key={item.id}
                                             className="border-b border-gray-200 text-[#263D34]"
                                         >
-                                            <td className="p-3">{index + 1}</td>
-                                            <td className="p-3">{item.full_name}</td>
-                                            <td className="p-3">{item.username}</td>
-                                            <td className="p-3">{item.email}</td>
                                             <td className="p-3">
-                                                {item.nama_poli || "-"}
+                                                {index + 1}
+                                            </td>
+
+                                            <td className="p-3">
+                                                {item.full_name}
+                                            </td>
+
+                                            <td className="p-3">
+                                                {item.username}
+                                            </td>
+
+                                            <td className="p-3">
+                                                {item.email}
+                                            </td>
+
+                                            <td className="p-3">
+                                                {item.phone || "-"}
                                             </td>
 
                                             <td className="p-3">
@@ -356,7 +371,7 @@ export default function DokterPage() {
                                                     </button>
 
                                                     <button
-                                                        onClick={() => hapusDokter(item.id)}
+                                                        onClick={() => hapusPasien(item.id)}
                                                         className="bg-red-100 text-red-600 px-3 py-1 rounded-lg"
                                                     >
                                                         Hapus
