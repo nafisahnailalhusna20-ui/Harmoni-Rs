@@ -19,7 +19,6 @@ export default function PoliPage() {
         ikon: "",
     });
 
-    // Mengambil data poli
     async function ambilPoli() {
         try {
             const response = await fetch("/api/admin/poli");
@@ -56,7 +55,6 @@ export default function PoliPage() {
         cekAdmin();
     }, [router]);
 
-    // Membuka form tambah atau edit
     function bukaForm(poli = null) {
         setPoliDipilih(poli);
 
@@ -124,8 +122,6 @@ export default function PoliPage() {
             setMenyimpan(false);
         }
     }
-
-    // Menghapus data poli
     async function hapusPoli(id) {
         const yakin = window.confirm(
             "Yakin ingin menghapus data poli ini?"

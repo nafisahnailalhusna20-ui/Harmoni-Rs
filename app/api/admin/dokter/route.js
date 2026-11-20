@@ -14,7 +14,6 @@ async function cekAdmin() {
     return user?.role === "admin";
 }
 
-// Mengambil data dokter
 export async function GET() {
     try {
         if (!(await cekAdmin())) {
@@ -49,7 +48,6 @@ export async function GET() {
     }
 }
 
-// Menambahkan dokter
 export async function POST(request) {
     try {
         if (!(await cekAdmin())) {
