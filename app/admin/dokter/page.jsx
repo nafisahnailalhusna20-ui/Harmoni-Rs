@@ -52,6 +52,15 @@ export default function DokterPage() {
         });
     }
 
+    function handlePhoneChange(e) {
+        const nomor = e.target.value.replace(/\D/g, "").slice(0, 15);
+
+        setForm({
+            ...form,
+            phone: nomor
+        });
+    }
+
     function bukaTambah() {
         setDokterDipilih(null);
         setForm(formAwal);
@@ -76,6 +85,11 @@ export default function DokterPage() {
     async function simpanDokter(e) {
         e.preventDefault();
         setPesan("");
+
+        if (form.phone && !/^[0-9]{10,15}$/.test(form.phone)) {
+            setPesan("Nomor telepon harus terdiri dari 10–15 digit angka.");
+            return;
+        }
 
         try {
             const url = dokterDipilih
@@ -212,13 +226,23 @@ export default function DokterPage() {
                                 className={inputStyle}
                             />
 
-                            <input
-                                name="phone"
-                                placeholder="Nomor telepon"
-                                value={form.phone}
-                                onChange={handleChange}
-                                className={inputStyle}
-                            />
+                            <div>
+                                <input
+                                    name="phone"
+                                    type="tel"
+                                    placeholder="Nomor telepon (10–15 digit)"
+                                    value={form.phone}
+                                    onChange={handlePhoneChange}
+                                    minLength={10}
+                                    maxLength={15}
+                                    pattern="[0-9]{10,15}"
+                                    title="Nomor telepon harus terdiri dari 10–15 digit angka."
+                                    className={inputStyle}
+                                />
+                                <p className="text-xs text-[#64776D] mt-1">
+                                    Masukkan 10–15 digit angka.
+                                </p>
+                            </div>
 
                             <select
                                 name="poli_id"
@@ -277,7 +301,10 @@ export default function DokterPage() {
 
                                 <tbody>
                                     {dokter.map((item, index) => (
-                                        <tr key={item.id} className="border-b border-gray-200 text-[#263D34]">
+                                        <tr
+                                            key={item.id}
+                                            className="border-b border-gray-200 text-[#263D34]"
+                                        >
                                             <td className="p-3">{index + 1}</td>
                                             <td className="p-3">{item.full_name}</td>
                                             <td className="p-3">{item.username}</td>

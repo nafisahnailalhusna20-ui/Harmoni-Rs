@@ -16,6 +16,16 @@ async function cekPasien() {
     return user;
 }
 
+function tanggalMakassar() {
+    return new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Makassar",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+    }).format(new Date());
+}
+
+// Mengambil jadwal dan tanggal praktik yang tersedia
 export async function GET() {
     try {
         const user = await cekPasien();
@@ -27,20 +37,62 @@ export async function GET() {
             );
         }
 
+        const hariIni = tanggalMakassar();
+        const batasTanggal = "2026-12-31";
+
         const result = await pool.query(`
+            WITH daftar_tanggal AS (
+                SELECT generate_series(
+                    $1::date,
+                    $2::date,
+                    INTERVAL '1 day'
+                )::date AS tanggal
+            )
+
             SELECT
                 s.id,
                 s.dokter_id,
                 s.hari,
                 s.jam_mulai,
                 dokter.full_name AS nama_dokter,
-                p.nama AS nama_poli
+                p.nama AS nama_poli,
+
+                COALESCE(
+                    json_agg(
+                        TO_CHAR(t.tanggal, 'YYYY-MM-DD')
+                        ORDER BY t.tanggal
+                    ) FILTER (WHERE t.tanggal IS NOT NULL),
+                    '[]'
+                ) AS tanggal_tersedia
+
             FROM schedules s
-            JOIN users dokter ON s.dokter_id = dokter.id
-            LEFT JOIN poli p ON dokter.poli_id = p.id
-            WHERE dokter.role = 'dokter'
-            ORDER BY s.hari, s.jam_mulai
-        `);
+
+            JOIN users dokter
+                ON s.dokter_id = dokter.id
+
+            LEFT JOIN poli p
+                ON dokter.poli_id = p.id
+
+            LEFT JOIN daftar_tanggal t
+                ON EXTRACT(ISODOW FROM t.tanggal) = s.hari
+
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM appointments a
+                    WHERE a.schedule_id = s.id
+                    AND a.tanggal_booking = t.tanggal
+                    AND a.status NOT IN ('Rejected', 'Dibatalkan')
+                )
+
+            GROUP BY
+                s.id,
+                dokter.id,
+                p.id
+
+            ORDER BY
+                s.hari,
+                s.jam_mulai
+        `, [hariIni, batasTanggal]);
 
         return NextResponse.json({
             success: true,
@@ -57,6 +109,7 @@ export async function GET() {
     }
 }
 
+// Mendaftarkan janji temu
 export async function POST(request) {
     try {
         const user = await cekPasien();
@@ -68,8 +121,11 @@ export async function POST(request) {
             );
         }
 
-        const { schedule_id, tanggal_booking, keluhan } =
-            await request.json();
+        const {
+            schedule_id,
+            tanggal_booking,
+            keluhan
+        } = await request.json();
 
         if (!schedule_id || !tanggal_booking || !keluhan?.trim()) {
             return NextResponse.json(
@@ -78,11 +134,11 @@ export async function POST(request) {
             );
         }
 
-        const tanggal = new Date(`${tanggal_booking}T00:00:00Z`);
+        const hariIni = tanggalMakassar();
 
         if (
-            Number.isNaN(tanggal.getTime()) ||
-            tanggal.toISOString().slice(0, 10) !== tanggal_booking
+            tanggal_booking < hariIni ||
+            tanggal_booking > "2026-12-31"
         ) {
             return NextResponse.json(
                 { message: "Tanggal kunjungan tidak valid." },
@@ -90,68 +146,54 @@ export async function POST(request) {
             );
         }
 
-        const jadwal = await pool.query(
-            `SELECT id, dokter_id, hari
-             FROM schedules
-             WHERE id = $1`,
-            [schedule_id]
-        );
+        const jadwal = await pool.query(`
+            SELECT id, dokter_id
+            FROM schedules
+            WHERE id = $1
+            AND hari = EXTRACT(ISODOW FROM $2::date)
+        `, [schedule_id, tanggal_booking]);
 
         if (jadwal.rowCount === 0) {
-            return NextResponse.json(
-                { message: "Jadwal dokter tidak ditemukan." },
-                { status: 404 }
-            );
-        }
-
-        const hariTanggal = tanggal.getUTCDay() || 7;
-
-        if (hariTanggal !== Number(jadwal.rows[0].hari)) {
             return NextResponse.json(
                 { message: "Tanggal tidak sesuai dengan hari praktik dokter." },
                 { status: 400 }
             );
         }
 
-        const tanggalHariIni = new Date().toLocaleDateString("en-CA", {
-            timeZone: "Asia/Makassar"
-        });
+        const dokterId = jadwal.rows[0].dokter_id;
 
-        if (tanggal_booking < tanggalHariIni) {
+        const sudahDipesan = await pool.query(`
+            SELECT id
+            FROM appointments
+            WHERE schedule_id = $1
+            AND tanggal_booking = $2
+            AND status NOT IN ('Rejected', 'Dibatalkan')
+        `, [schedule_id, tanggal_booking]);
+
+        if (sudahDipesan.rowCount > 0) {
             return NextResponse.json(
-                { message: "Tanggal kunjungan tidak boleh di masa lalu." },
-                { status: 400 }
-            );
-        }
-
-        const bentrok = await pool.query(
-            `SELECT id FROM appointments
-             WHERE schedule_id = $1
-             AND tanggal_booking = $2
-             AND status IN ('Pending', 'Approved')`,
-            [schedule_id, tanggal_booking]
-        );
-
-        if (bentrok.rowCount > 0) {
-            return NextResponse.json(
-                { message: "Jadwal tersebut sudah dipesan pasien lain." },
+                { message: "Jadwal pada tanggal tersebut sudah dipesan." },
                 { status: 409 }
             );
         }
 
-        const result = await pool.query(
-            `INSERT INTO appointments
-                (pasien_id, dokter_id, schedule_id, tanggal_booking, keluhan)
-             VALUES ($1, $2, $3, $4, $5)
-             RETURNING *`,
-            [
-                user.id,
-                jadwal.rows[0].dokter_id,
+        const result = await pool.query(`
+            INSERT INTO appointments (
+                pasien_id,
+                dokter_id,
                 schedule_id,
                 tanggal_booking,
-                keluhan.trim()
-            ]
-        );
+                keluhan
+            )
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING *
+        `, [
+            user.id,
+            dokterId,
+            schedule_id,
+            tanggal_booking,
+            keluhan.trim()
+        ]);
 
         return NextResponse.json({
             success: true,
@@ -160,7 +202,7 @@ export async function POST(request) {
         }, { status: 201 });
 
     } catch (error) {
-        console.error("Gagal mendaftarkan janji temu:", error);
+        console.error("Gagal mendaftar janji temu:", error);
 
         return NextResponse.json(
             { message: "Pendaftaran janji temu gagal." },
