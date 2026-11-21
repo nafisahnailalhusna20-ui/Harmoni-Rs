@@ -35,11 +35,17 @@ export async function GET() {
                 s.hari,
                 s.jam_mulai
             FROM appointments a
-            JOIN users pasien ON a.pasien_id = pasien.id
-            JOIN users dokter ON a.dokter_id = dokter.id
-            JOIN schedules s ON a.schedule_id = s.id
-            LEFT JOIN poli p ON dokter.poli_id = p.id
-            ORDER BY a.tanggal_booking DESC, a.id DESC
+            JOIN users pasien
+                ON a.pasien_id = pasien.id
+            JOIN users dokter
+                ON a.dokter_id = dokter.id
+            JOIN schedules s
+                ON a.schedule_id = s.id
+            LEFT JOIN poli p
+                ON dokter.poli_id = p.id
+            ORDER BY
+                a.tanggal_booking DESC,
+                a.id DESC
         `);
 
         return NextResponse.json({
@@ -66,16 +72,30 @@ export async function PUT(request) {
             );
         }
 
-        const { id, status, alasan_penolakan } = await request.json();
+        const {
+            id,
+            status,
+            alasan_penolakan
+        } = await request.json();
 
-        if (!id || !["Approved", "Rejected"].includes(status)) {
+        if (
+            !Number.isInteger(Number(id)) ||
+            Number(id) <= 0 ||
+            !["Approved", "Rejected"].includes(status)
+        ) {
             return NextResponse.json(
                 { message: "Data perubahan tidak valid." },
                 { status: 400 }
             );
         }
 
-        if (status === "Rejected" && !alasan_penolakan?.trim()) {
+        if (
+            status === "Rejected" &&
+            (
+                typeof alasan_penolakan !== "string" ||
+                !alasan_penolakan.trim()
+            )
+        ) {
             return NextResponse.json(
                 { message: "Alasan penolakan wajib diisi." },
                 { status: 400 }
@@ -84,19 +104,25 @@ export async function PUT(request) {
 
         const result = await pool.query(
             `UPDATE appointments
-             SET status = $1, alasan_penolakan = $2
-             WHERE id = $3 AND status = 'Pending'
+             SET status = $1,
+                 alasan_penolakan = $2
+             WHERE id = $3
+               AND status = 'Pending'
              RETURNING *`,
             [
                 status,
-                status === "Rejected" ? alasan_penolakan.trim() : null,
-                id
+                status === "Rejected"
+                    ? alasan_penolakan.trim()
+                    : null,
+                Number(id)
             ]
         );
 
         if (result.rowCount === 0) {
             return NextResponse.json(
-                { message: "Janji temu tidak ditemukan atau sudah diproses." },
+                {
+                    message: "Janji temu tidak ditemukan atau sudah diproses."
+                },
                 { status: 404 }
             );
         }
