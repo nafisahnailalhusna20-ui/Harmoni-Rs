@@ -79,7 +79,7 @@ export async function GET() {
 }
 
 export async function PUT(request) {
-    const client = await pool.connect();
+    let client;
 
     try {
         if (!(await cekAdmin())) {
@@ -89,14 +89,23 @@ export async function PUT(request) {
             );
         }
 
-        const { prescription_id, status } = await request.json();
+        const {
+            prescription_id,
+            status
+        } = await request.json();
 
-        if (!prescription_id || !["Siap Diambil", "Sudah Diambil"].includes(status)) {
+        if (
+            !Number.isInteger(Number(prescription_id)) ||
+            Number(prescription_id) <= 0 ||
+            !["Siap Diambil", "Sudah Diambil"].includes(status)
+        ) {
             return NextResponse.json(
                 { message: "Data perubahan status tidak valid." },
                 { status: 400 }
             );
         }
+
+        client = await pool.connect();
 
         await client.query("BEGIN");
 
@@ -105,7 +114,7 @@ export async function PUT(request) {
              FROM prescriptions
              WHERE id = $1
              FOR UPDATE`,
-            [prescription_id]
+            [Number(prescription_id)]
         );
 
         if (resep.rowCount === 0) {
@@ -119,64 +128,151 @@ export async function PUT(request) {
 
         const statusSekarang = resep.rows[0].status;
 
-        if (
-            status === "Siap Diambil" &&
-            statusSekarang !== "Menunggu Diproses"
-        ) {
-            await client.query("ROLLBACK");
-
-            return NextResponse.json(
-                { message: "Resep ini sudah diproses sebelumnya." },
-                { status: 400 }
-            );
-        }
-
-        if (
-            status === "Sudah Diambil" &&
-            statusSekarang !== "Siap Diambil"
-        ) {
-            await client.query("ROLLBACK");
-
-            return NextResponse.json(
-                { message: "Resep harus berstatus Siap Diambil terlebih dahulu." },
-                { status: 400 }
-            );
-        }
-
+        // Tahap 1: Resep diproses dan disiapkan.
         if (status === "Siap Diambil") {
+            if (statusSekarang !== "Menunggu Diproses") {
+                await client.query("ROLLBACK");
+
+                return NextResponse.json(
+                    { message: "Resep ini sudah diproses sebelumnya." },
+                    { status: 409 }
+                );
+            }
+
             const obat = await client.query(
                 `SELECT
                     pi.medicine_id,
                     pi.jumlah,
                     m.nama,
-                    m.stok
+                    m.stok,
+                    m.tanggal_kadaluarsa
                  FROM prescription_items pi
                  JOIN medicines m
                     ON pi.medicine_id = m.id
                  WHERE pi.prescription_id = $1
                  FOR UPDATE OF m`,
-                [prescription_id]
+                [Number(prescription_id)]
             );
 
             if (obat.rowCount === 0) {
-                throw new Error("Resep belum memiliki daftar obat.");
+                await client.query("ROLLBACK");
+
+                return NextResponse.json(
+                    { message: "Resep belum memiliki daftar obat." },
+                    { status: 400 }
+                );
             }
 
             for (const item of obat.rows) {
                 if (item.stok < item.jumlah) {
-                    throw new Error(
-                        `Stok ${item.nama} tidak mencukupi. Stok tersedia: ${item.stok}.`
+                    await client.query("ROLLBACK");
+
+                    return NextResponse.json(
+                        {
+                            message: `Stok ${item.nama} tidak mencukupi. Stok tersedia: ${item.stok}.`
+                        },
+                        { status: 400 }
+                    );
+                }
+
+                if (
+                    item.tanggal_kadaluarsa &&
+                    new Date(item.tanggal_kadaluarsa) < new Date()
+                ) {
+                    await client.query("ROLLBACK");
+
+                    return NextResponse.json(
+                        {
+                            message: `Obat ${item.nama} sudah melewati tanggal kedaluwarsa.`
+                        },
+                        { status: 400 }
                     );
                 }
             }
 
+            // Stok belum dikurangi pada tahap ini.
+        }
+
+        // Tahap 2: Obat diserahkan kepada pasien.
+        if (status === "Sudah Diambil") {
+            if (statusSekarang !== "Siap Diambil") {
+                await client.query("ROLLBACK");
+
+                return NextResponse.json(
+                    {
+                        message: "Resep harus berstatus Siap Diambil terlebih dahulu."
+                    },
+                    { status: 409 }
+                );
+            }
+
+            const obat = await client.query(
+                `SELECT
+                    pi.medicine_id,
+                    pi.jumlah,
+                    m.nama,
+                    m.stok,
+                    m.tanggal_kadaluarsa
+                 FROM prescription_items pi
+                 JOIN medicines m
+                    ON pi.medicine_id = m.id
+                 WHERE pi.prescription_id = $1
+                 FOR UPDATE OF m`,
+                [Number(prescription_id)]
+            );
+
+            if (obat.rowCount === 0) {
+                await client.query("ROLLBACK");
+
+                return NextResponse.json(
+                    { message: "Resep belum memiliki daftar obat." },
+                    { status: 400 }
+                );
+            }
+
             for (const item of obat.rows) {
-                await client.query(
+                if (item.stok < item.jumlah) {
+                    await client.query("ROLLBACK");
+
+                    return NextResponse.json(
+                        {
+                            message: `Stok ${item.nama} tidak mencukupi. Stok tersedia: ${item.stok}.`
+                        },
+                        { status: 400 }
+                    );
+                }
+
+                if (
+                    item.tanggal_kadaluarsa &&
+                    new Date(item.tanggal_kadalu) < new Date()
+                ) {
+                    await client.query("ROLLBACK");
+
+                    return NextResponse.json(
+                        {
+                            message: `Obat ${item.nama} sudah melewati tanggal kedaluwarsa.`
+                        },
+                        { status: 400 }
+                    );
+                }
+            }
+
+            // Kurangi stok hanya ketika obat benar-benar diserahkan.
+            for (const item of obat.rows) {
+                const hasilStok = await client.query(
                     `UPDATE medicines
                      SET stok = stok - $1
-                     WHERE id = $2`,
+                     WHERE id = $2
+                       AND stok >= $1
+                     RETURNING id`,
                     [item.jumlah, item.medicine_id]
                 );
+
+                if (hasilStok.rowCount === 0) {
+                    throw new Error(
+                        `Stok ${item.nama} tidak mencukupi.`
+                    );
+                }
             }
         }
 
@@ -185,18 +281,22 @@ export async function PUT(request) {
              SET status = $1,
                  updated_at = CURRENT_TIMESTAMP
              WHERE id = $2`,
-            [status, prescription_id]
+            [status, Number(prescription_id)]
         );
 
         await client.query("COMMIT");
 
         return NextResponse.json({
             success: true,
-            message: `Status resep berhasil diubah menjadi ${status}.`
+            message: status === "Siap Diambil"
+                ? "Resep berhasil diproses dan siap diambil."
+                : "Obat berhasil diserahkan. Stok telah diperbarui."
         });
 
     } catch (error) {
-        await client.query("ROLLBACK");
+        if (client) {
+            await client.query("ROLLBACK");
+        }
 
         console.error("Gagal memproses resep:", error);
 
@@ -206,6 +306,8 @@ export async function PUT(request) {
         );
 
     } finally {
-        client.release();
+        if (client) {
+            client.release();
+        }
     }
 }
