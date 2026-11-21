@@ -61,6 +61,7 @@ export async function GET(request) {
                     a.tanggal_booking,
                     a.keluhan,
                     a.status,
+                    a.alasan_penolakan,
 
                     dokter.full_name AS nama_dokter,
                     p.nama AS nama_poli,
@@ -92,7 +93,7 @@ export async function GET(request) {
             });
         }
 
-        // Mengambil jadwal dokter yang masih aktif untuk booking
+        // Mengambil jadwal dokter untuk booking
         const hariIni = tanggalMakassar();
         const batasTanggal = "2026-12-31";
 
@@ -143,8 +144,6 @@ export async function GET(request) {
                     AND a.tanggal_booking = t.tanggal
                     AND a.status NOT IN ('Rejected', 'Dibatalkan')
                 )
-
-            WHERE s.is_active = TRUE
 
             GROUP BY
                 s.id,
@@ -214,20 +213,17 @@ export async function POST(request) {
             );
         }
 
-        // Pastikan jadwal tersedia dan masih aktif
         const jadwal = await pool.query(`
             SELECT id, dokter_id
             FROM schedules
             WHERE id = $1
-            AND is_active = TRUE
             AND hari = EXTRACT(ISODOW FROM $2::date)
         `, [schedule_id, tanggal_booking]);
 
         if (jadwal.rowCount === 0) {
             return NextResponse.json(
                 {
-                    message:
-                        "Jadwal tidak tersedia atau sudah dinonaktifkan."
+                    message: "Tanggal tidak sesuai dengan hari praktik dokter."
                 },
                 { status: 400 }
             );

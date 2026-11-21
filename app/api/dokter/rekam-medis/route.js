@@ -11,76 +11,82 @@ async function cekDokter() {
 
     const user = await verifyToken(token);
 
-    if (user?.role !== "dokter") return null;
+    if (user?.role !== "dokter") {
+        return null;
+    }
 
     return user;
 }
 
-// Mengambil antrean pasien dan daftar obat
+// GET: Mengambil daftar pasien dan obat
 export async function GET() {
     try {
-        const dokter = await cekDokter();
+        const user = await cekDokter();
 
-        if (!dokter) {
+        if (!user) {
             return NextResponse.json(
                 { message: "Akses ditolak." },
                 { status: 401 }
             );
         }
 
-        const result = await pool.query(
+        // Mengambil pasien yang janji temunya sudah disetujui
+        const hasilPasien = await pool.query(
             `SELECT
                 a.id AS appointment_id,
+                u.full_name AS nama_pasien,
+                u.phone AS telepon_pasien,
                 a.tanggal_booking,
                 a.keluhan,
-                pasien.full_name AS nama_pasien,
-                pasien.phone AS telepon_pasien,
                 p.nama AS nama_poli
-            FROM appointments a
-            JOIN users pasien ON a.pasien_id = pasien.id
-            JOIN users dokter ON a.dokter_id = dokter.id
-            LEFT JOIN poli p ON dokter.poli_id = p.id
-            LEFT JOIN medical_records mr
-                ON a.id = mr.appointment_id
-            WHERE a.dokter_id = $1
-            AND a.status = 'Approved'
-            AND mr.id IS NULL
-            ORDER BY a.tanggal_booking ASC`,
-            [dokter.id]
+             FROM appointments a
+             JOIN users u ON a.pasien_id = u.id
+             JOIN schedules s ON a.schedule_id = s.id
+             JOIN users d ON s.dokter_id = d.id
+             LEFT JOIN poli p ON d.poli_id = p.id
+             WHERE s.dokter_id = $1
+             AND a.status = 'Approved'
+             AND NOT EXISTS (
+                 SELECT 1
+                 FROM medical_records mr
+                 WHERE mr.appointment_id = a.id
+             )
+             ORDER BY a.tanggal_booking ASC`,
+            [user.id]
         );
 
-        const obat = await pool.query(
-            `SELECT id, nama, stok, tanggal_kadaluarsa
+        // Mengambil daftar obat yang tersedia
+        const hasilObat = await pool.query(
+            `SELECT id, nama, stok
              FROM medicines
-             WHERE tanggal_kadaluarsa IS NULL
-                OR tanggal_kadaluarsa >= CURRENT_DATE
              ORDER BY nama ASC`
         );
 
         return NextResponse.json({
             success: true,
-            data: result.rows,
-            medicines: obat.rows
+            data: hasilPasien.rows,
+            medicines: hasilObat.rows
         });
 
     } catch (error) {
-        console.error("Gagal mengambil data:", error);
+        console.error("Gagal mengambil data rekam medis:", error);
 
         return NextResponse.json(
-            { message: "Data gagal dimuat." },
+            { message: "Gagal mengambil data pasien dan obat." },
             { status: 500 }
         );
     }
 }
 
-// Menyimpan rekam medis sekaligus resep
+// POST: Menyimpan rekam medis
 export async function POST(request) {
-    const client = await pool.connect();
+    let client;
+    let transaksiDimulai = false;
 
     try {
-        const dokter = await cekDokter();
+        const user = await cekDokter();
 
-        if (!dokter) {
+        if (!user) {
             return NextResponse.json(
                 { message: "Akses ditolak." },
                 { status: 401 }
@@ -91,119 +97,100 @@ export async function POST(request) {
             appointment_id,
             diagnosis,
             tindakan,
-            catatan,
-            resep
+            catatan
         } = await request.json();
 
         if (
             !appointment_id ||
-            !diagnosis?.trim() ||
-            !tindakan?.trim() ||
-            !Array.isArray(resep) ||
-            resep.length === 0
+            !String(diagnosis || "").trim() ||
+            !String(tindakan || "").trim()
         ) {
             return NextResponse.json(
-                { message: "Diagnosis, tindakan, dan minimal satu obat wajib diisi." },
+                {
+                    message: "Diagnosis dan tindakan wajib diisi."
+                },
                 { status: 400 }
             );
         }
 
-        const obatTerpilih = new Set();
-
-        for (const item of resep) {
-            const obatId = Number(item.obat_id);
-            const jumlah = Number(item.jumlah);
-
-            if (
-                !Number.isInteger(obatId) ||
-                obatId <= 0 ||
-                !Number.isInteger(jumlah) ||
-                jumlah <= 0 ||
-                obatTerpilih.has(obatId)
-            ) {
-                return NextResponse.json(
-                    { message: "Data obat atau jumlah obat tidak valid." },
-                    { status: 400 }
-                );
-            }
-
-            obatTerpilih.add(obatId);
-        }
+        client = await pool.connect();
 
         await client.query("BEGIN");
+        transaksiDimulai = true;
 
-        const cekJanji = await client.query(
-            `SELECT id
+        // Memastikan janji temu milik dokter yang login
+        const janjiTemu = await client.query(
+            `SELECT id, status
              FROM appointments
              WHERE id = $1
              AND dokter_id = $2
-             AND status = 'Approved'
              FOR UPDATE`,
-            [appointment_id, dokter.id]
+            [appointment_id, user.id]
         );
 
-        if (cekJanji.rowCount === 0) {
+        if (janjiTemu.rowCount === 0) {
             await client.query("ROLLBACK");
+            transaksiDimulai = false;
 
             return NextResponse.json(
-                { message: "Janji temu tidak ditemukan atau sudah diproses." },
+                { message: "Janji temu tidak ditemukan." },
                 { status: 404 }
             );
         }
 
-        for (const item of resep) {
-            const cekObat = await client.query(
-                `SELECT id
-                 FROM medicines
-                 WHERE id = $1
-                 AND (
-                    tanggal_kadaluarsa IS NULL
-                    OR tanggal_kadaluarsa >= CURRENT_DATE
-                 )`,
-                [Number(item.obat_id)]
-            );
+        if (janjiTemu.rows[0].status !== "Approved") {
+            await client.query("ROLLBACK");
+            transaksiDimulai = false;
 
-            if (cekObat.rowCount === 0) {
-                throw new Error("Salah satu obat tidak ditemukan atau sudah kedaluwarsa.");
-            }
+            return NextResponse.json(
+                {
+                    message: "Janji temu belum disetujui atau sudah selesai."
+                },
+                { status: 400 }
+            );
         }
+
+        // Memastikan rekam medis belum dibuat
+        const cekRekamMedis = await client.query(
+            `SELECT id
+             FROM medical_records
+             WHERE appointment_id = $1`,
+            [appointment_id]
+        );
+
+        if (cekRekamMedis.rowCount > 0) {
+            await client.query("ROLLBACK");
+            transaksiDimulai = false;
+
+            return NextResponse.json(
+                {
+                    message: "Rekam medis untuk janji temu ini sudah tersedia."
+                },
+                { status: 409 }
+            );
+        }
+
+        // Menyimpan rekam medis
         const rekamMedis = await client.query(
-            `INSERT INTO medical_records
-                (appointment_id, diagnosis, tindakan, catatan)
-             VALUES ($1, $2, $3, $4)
-             RETURNING id`,
+            `INSERT INTO medical_records (
+                appointment_id,
+                diagnosis,
+                tindakan,
+                catatan
+            )
+            VALUES ($1, $2, $3, $4)
+            RETURNING *`,
             [
                 appointment_id,
-                diagnosis.trim(),
-                tindakan.trim(),
-                typeof catatan === "string" ? catatan.trim() : ""
+                String(diagnosis).trim(),
+                String(tindakan).trim(),
+                typeof catatan === "string"
+                    ? catatan.trim() || null
+                    : null
             ]
         );
 
-        const medicalRecordId = rekamMedis.rows[0].id;
-
-        const hasilResep = await client.query(
-            `INSERT INTO prescriptions (medical_record_id)
-             VALUES ($1)
-             RETURNING id`,
-            [medicalRecordId]
-        );
-
-        const prescriptionId = hasilResep.rows[0].id;
-
-        for (const item of resep) {
-            await client.query(
-                `INSERT INTO prescription_items
-                    (prescription_id, medicine_id, jumlah)
-                 VALUES ($1, $2, $3)`,
-                [
-                    prescriptionId,
-                    Number(item.obat_id),
-                    Number(item.jumlah)
-                ]
-            );
-        }
-
+        // Mengubah status janji temu menjadi selesai
         await client.query(
             `UPDATE appointments
              SET status = 'Selesai'
@@ -212,30 +199,36 @@ export async function POST(request) {
         );
 
         await client.query("COMMIT");
+        transaksiDimulai = false;
 
-        return NextResponse.json({
-            success: true,
-            message: "Rekam medis dan resep berhasil disimpan."
-        }, { status: 201 });
+        return NextResponse.json(
+            {
+                success: true,
+                message: "Rekam medis berhasil disimpan.",
+                data: rekamMedis.rows[0]
+            },
+            { status: 201 }
+        );
 
     } catch (error) {
-        await client.query("ROLLBACK");
+        if (client && transaksiDimulai) {
+            try {
+                await client.query("ROLLBACK");
+            } catch (rollbackError) {
+                console.error("Gagal melakukan rollback:", rollbackError);
+            }
+        }
 
         console.error("Gagal menyimpan rekam medis:", error);
 
-        if (error.code === "23505") {
-            return NextResponse.json(
-                { message: "Rekam medis untuk janji temu ini sudah dibuat." },
-                { status: 409 }
-            );
-        }
-
         return NextResponse.json(
-            { message: error.message || "Rekam medis dan resep gagal disimpan." },
+            { message: "Rekam medis gagal disimpan." },
             { status: 500 }
         );
 
     } finally {
-        client.release();
+        if (client) {
+            client.release();
+        }
     }
 }
