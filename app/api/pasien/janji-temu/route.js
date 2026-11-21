@@ -39,6 +39,7 @@ function tanggalMakassar() {
     return `${tahun}-${bulan}-${hari}`;
 }
 
+// Mengambil riwayat dan jadwal booking pasien
 export async function GET(request) {
     try {
         const user = await cekPasien();
@@ -93,7 +94,7 @@ export async function GET(request) {
             });
         }
 
-        // Mengambil jadwal dokter untuk booking
+        // Mengambil jadwal dokter yang masih aktif
         const hariIni = tanggalMakassar();
         const batasTanggal = "2026-12-31";
 
@@ -145,6 +146,8 @@ export async function GET(request) {
                     AND a.status NOT IN ('Rejected', 'Dibatalkan')
                 )
 
+            WHERE COALESCE(s.is_active, TRUE) = TRUE
+
             GROUP BY
                 s.id,
                 dokter.id,
@@ -170,6 +173,7 @@ export async function GET(request) {
     }
 }
 
+// Mendaftarkan janji temu pasien
 export async function POST(request) {
     try {
         const user = await cekPasien();
@@ -213,17 +217,21 @@ export async function POST(request) {
             );
         }
 
+        // Memastikan jadwal masih aktif dan sesuai hari
         const jadwal = await pool.query(`
-            SELECT id, dokter_id
+            SELECT
+                id,
+                dokter_id
             FROM schedules
             WHERE id = $1
             AND hari = EXTRACT(ISODOW FROM $2::date)
+            AND COALESCE(is_active, TRUE) = TRUE
         `, [schedule_id, tanggal_booking]);
 
         if (jadwal.rowCount === 0) {
             return NextResponse.json(
                 {
-                    message: "Tanggal tidak sesuai dengan hari praktik dokter."
+                    message: "Jadwal tidak aktif atau tanggal tidak sesuai hari praktik dokter."
                 },
                 { status: 400 }
             );
@@ -231,6 +239,7 @@ export async function POST(request) {
 
         const dokterId = jadwal.rows[0].dokter_id;
 
+        // Memastikan jadwal belum dipesan pasien lain
         const sudahDipesan = await pool.query(`
             SELECT id
             FROM appointments
