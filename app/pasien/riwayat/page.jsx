@@ -7,31 +7,81 @@ export default function RiwayatJanjiTemuPage() {
     const [riwayat, setRiwayat] = useState([]);
     const [loading, setLoading] = useState(true);
     const [pesan, setPesan] = useState("");
+    const [pesanPembatalan, setPesanPembatalan] = useState("");
+    const [sedangMembatalkan, setSedangMembatalkan] = useState(null);
+
+    async function ambilRiwayat() {
+        try {
+            const response = await fetch(
+                "/api/pasien/janji-temu?riwayat=true"
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                setPesan(data.message || "Riwayat gagal dimuat.");
+                return;
+            }
+
+            setRiwayat(data.data || []);
+            setPesan("");
+        } catch (error) {
+            setPesan("Terjadi kesalahan saat mengambil riwayat.");
+        } finally {
+            setLoading(false);
+        }
+    }
 
     useEffect(() => {
-        async function ambilRiwayat() {
-            try {
-                const response = await fetch(
-                    "/api/pasien/janji-temu?riwayat=true"
-                );
-
-                const data = await response.json();
-
-                if (!response.ok) {
-                    setPesan(data.message || "Riwayat gagal dimuat.");
-                    return;
-                }
-
-                setRiwayat(data.data || []);
-            } catch (error) {
-                setPesan("Terjadi kesalahan saat mengambil riwayat.");
-            } finally {
-                setLoading(false);
-            }
-        }
-
         ambilRiwayat();
     }, []);
+
+    async function batalkanJanjiTemu(id) {
+        const yakin = window.confirm(
+            "Apakah kamu yakin ingin membatalkan janji temu ini?"
+        );
+
+        if (!yakin) return;
+
+        setSedangMembatalkan(id);
+        setPesanPembatalan("");
+
+        try {
+            const response = await fetch(
+                `/api/pasien/janji-temu/${id}`,
+                {
+                    method: "PATCH"
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                setPesanPembatalan(
+                    data.message || "Janji temu gagal dibatalkan."
+                );
+                return;
+            }
+
+            setRiwayat((dataLama) =>
+                dataLama.map((item) =>
+                    item.id === id
+                        ? { ...item, status: "Dibatalkan" }
+                        : item
+                )
+            );
+
+            setPesanPembatalan(
+                "Janji temu berhasil dibatalkan."
+            );
+        } catch (error) {
+            setPesanPembatalan(
+                "Terjadi kesalahan saat membatalkan janji temu."
+            );
+        } finally {
+            setSedangMembatalkan(null);
+        }
+    }
 
     function formatTanggal(tanggal) {
         return new Date(tanggal).toLocaleDateString("id-ID", {
@@ -90,6 +140,12 @@ export default function RiwayatJanjiTemuPage() {
                         Buat Janji Temu
                     </Link>
                 </div>
+
+                {pesanPembatalan && (
+                    <div className="mt-5 bg-white p-4 rounded-xl text-sm text-[#397A63]">
+                        {pesanPembatalan}
+                    </div>
+                )}
 
                 {loading ? (
                     <p className="mt-8 text-[#64776D]">
@@ -169,6 +225,19 @@ export default function RiwayatJanjiTemuPage() {
                                         </p>
                                     </div>
                                 </div>
+
+                                {["Pending", "Approved"].includes(item.status) && (
+                                    <button
+                                        type="button"
+                                        onClick={() => batalkanJanjiTemu(item.id)}
+                                        disabled={sedangMembatalkan === item.id}
+                                        className="w-full mt-5 bg-red-50 text-red-600 px-4 py-3 rounded-xl font-medium hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {sedangMembatalkan === item.id
+                                            ? "Sedang membatalkan..."
+                                            : "Batalkan Janji Temu"}
+                                    </button>
+                                )}
                             </div>
                         ))}
                     </div>
