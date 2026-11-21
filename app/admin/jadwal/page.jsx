@@ -9,6 +9,7 @@ export default function JadwalPage() {
     const [tampilForm, setTampilForm] = useState(false);
     const [jadwalDipilih, setJadwalDipilih] = useState(null);
     const [pesan, setPesan] = useState("");
+    const [loadingStatus, setLoadingStatus] = useState(null);
 
     const formAwal = {
         dokter_id: "",
@@ -38,9 +39,13 @@ export default function JadwalPage() {
             const dataJadwal = await resJadwal.json();
             const dataDokter = await resDokter.json();
 
-            if (dataJadwal.success) setJadwal(dataJadwal.data);
-            if (dataDokter.success) setDokter(dataDokter.data);
+            if (dataJadwal.success) {
+                setJadwal(dataJadwal.data);
+            }
 
+            if (dataDokter.success) {
+                setDokter(dataDokter.data);
+            }
         } catch (error) {
             console.error("Gagal mengambil data:", error);
             setPesan("Data jadwal gagal dimuat.");
@@ -88,6 +93,7 @@ export default function JadwalPage() {
         if (angkaJam >= 4 && angkaJam < 11) return "Pagi";
         if (angkaJam >= 11 && angkaJam < 15) return "Siang";
         if (angkaJam >= 15 && angkaJam < 18) return "Sore";
+
         return "Malam";
     }
 
@@ -121,9 +127,54 @@ export default function JadwalPage() {
             setForm(formAwal);
 
             await ambilData();
-
         } catch (error) {
+            console.error("Simpan jadwal:", error);
             setPesan("Terjadi kesalahan saat menyimpan jadwal.");
+        }
+    }
+
+    async function ubahStatusJadwal(item) {
+        const statusBaru = !item.is_active;
+
+        const konfirmasi = confirm(
+            statusBaru
+                ? "Aktifkan kembali jadwal dokter ini?"
+                : "Nonaktifkan jadwal dokter ini?"
+        );
+
+        if (!konfirmasi) return;
+
+        setLoadingStatus(item.id);
+        setPesan("");
+
+        try {
+            const response = await fetch(
+                `/api/admin/jadwal/${item.id}`,
+                {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        is_active: statusBaru
+                    })
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                setPesan(data.message || "Status jadwal gagal diubah.");
+                return;
+            }
+
+            setPesan(data.message);
+            await ambilData();
+        } catch (error) {
+            console.error("Ubah status jadwal:", error);
+            setPesan("Terjadi kesalahan saat mengubah status jadwal.");
+        } finally {
+            setLoadingStatus(null);
         }
     }
 
@@ -146,8 +197,8 @@ export default function JadwalPage() {
 
             setPesan(data.message);
             await ambilData();
-
         } catch (error) {
+            console.error("Hapus jadwal:", error);
             setPesan("Terjadi kesalahan saat menghapus jadwal.");
         }
     }
@@ -213,7 +264,9 @@ export default function JadwalPage() {
                         >
                             <div className="mb-6">
                                 <h3 className="text-lg font-bold text-[#263D34]">
-                                    {jadwalDipilih ? "Edit Jadwal" : "Tambah Jadwal Baru"}
+                                    {jadwalDipilih
+                                        ? "Edit Jadwal"
+                                        : "Tambah Jadwal Baru"}
                                 </h3>
 
                                 <p className="mt-1 text-sm text-[#819087]">
@@ -238,7 +291,10 @@ export default function JadwalPage() {
                                         <option value="">Pilih Dokter</option>
 
                                         {dokter.map((item) => (
-                                            <option key={item.id} value={item.id}>
+                                            <option
+                                                key={item.id}
+                                                value={item.id}
+                                            >
                                                 {item.full_name}
                                             </option>
                                         ))}
@@ -260,7 +316,10 @@ export default function JadwalPage() {
                                         <option value="">Pilih Hari</option>
 
                                         {daftarHari.map((hari) => (
-                                            <option key={hari.id} value={hari.id}>
+                                            <option
+                                                key={hari.id}
+                                                value={hari.id}
+                                            >
                                                 {hari.nama}
                                             </option>
                                         ))}
@@ -289,7 +348,8 @@ export default function JadwalPage() {
 
                                             <div>
                                                 <p className="text-sm font-bold text-[#263D34]">
-                                                    {form.jam_mulai} · {keteranganJam(form.jam_mulai)}
+                                                    {form.jam_mulai} ·{" "}
+                                                    {keteranganJam(form.jam_mulai)}
                                                 </p>
 
                                                 <p className="text-xs text-[#718078]">
@@ -318,7 +378,9 @@ export default function JadwalPage() {
                                     type="submit"
                                     className="flex-1 rounded-xl bg-[#397A63] px-6 py-3 font-semibold text-white transition hover:bg-[#2E6551]"
                                 >
-                                    {jadwalDipilih ? "Simpan Perubahan" : "Simpan Jadwal"}
+                                    {jadwalDipilih
+                                        ? "Simpan Perubahan"
+                                        : "Simpan Jadwal"}
                                 </button>
                             </div>
                         </form>
@@ -345,7 +407,7 @@ export default function JadwalPage() {
                             </div>
                         ) : (
                             <div className="overflow-x-auto">
-                                <table className="w-full min-w-[750px] text-left">
+                                <table className="w-full min-w-[950px] text-left">
                                     <thead>
                                         <tr className="border-b border-[#D7E3DC] text-sm text-[#397A63]">
                                             <th className="px-4 py-4">No.</th>
@@ -354,6 +416,7 @@ export default function JadwalPage() {
                                             <th className="px-4 py-4">Hari</th>
                                             <th className="px-4 py-4">Jam Praktik</th>
                                             <th className="px-4 py-4">Durasi</th>
+                                            <th className="px-4 py-4">Status</th>
                                             <th className="px-4 py-4">Aksi</th>
                                         </tr>
                                     </thead>
@@ -364,7 +427,9 @@ export default function JadwalPage() {
                                                 key={item.id}
                                                 className="border-b border-[#EDF1EE] text-sm text-[#40564A] transition hover:bg-[#F8FAF8]"
                                             >
-                                                <td className="px-4 py-4">{index + 1}</td>
+                                                <td className="px-4 py-4">
+                                                    {index + 1}
+                                                </td>
 
                                                 <td className="px-4 py-4 font-semibold">
                                                     {item.nama_dokter}
@@ -389,12 +454,39 @@ export default function JadwalPage() {
                                                 </td>
 
                                                 <td className="px-4 py-4">
-                                                    <div className="flex gap-2">
+                                                    {item.is_active ? (
+                                                        <span className="rounded-full bg-[#E4F4E8] px-3 py-1.5 text-xs font-semibold text-[#287A45]">
+                                                            Aktif
+                                                        </span>
+                                                    ) : (
+                                                        <span className="rounded-full bg-[#F1E8E8] px-3 py-1.5 text-xs font-semibold text-[#A34D4D]">
+                                                            Nonaktif
+                                                        </span>
+                                                    )}
+                                                </td>
+
+                                                <td className="px-4 py-4">
+                                                    <div className="flex flex-wrap gap-2">
                                                         <button
                                                             onClick={() => bukaEdit(item)}
                                                             className="rounded-lg bg-[#E8F3EC] px-3 py-2 font-medium text-[#397A63] hover:bg-[#D8EADF]"
                                                         >
                                                             Edit
+                                                        </button>
+
+                                                        <button
+                                                            onClick={() => ubahStatusJadwal(item)}
+                                                            disabled={loadingStatus === item.id}
+                                                            className={`rounded-lg px-3 py-2 font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${item.is_active
+                                                                    ? "bg-[#FFF2D9] text-[#9A6A17] hover:bg-[#F9E5B8]"
+                                                                    : "bg-[#E4F4E8] text-[#287A45] hover:bg-[#D1EBD8]"
+                                                                }`}
+                                                        >
+                                                            {loadingStatus === item.id
+                                                                ? "Memproses..."
+                                                                : item.is_active
+                                                                    ? "Nonaktifkan"
+                                                                    : "Aktifkan"}
                                                         </button>
 
                                                         <button

@@ -31,7 +31,8 @@ export async function GET() {
                 poli.nama AS nama_poli,
                 schedules.hari,
                 schedules.jam_mulai,
-                schedules.durasi
+                schedules.durasi,
+                COALESCE(schedules.is_active, TRUE) AS is_active
             FROM schedules
             JOIN users ON schedules.dokter_id = users.id
             LEFT JOIN poli ON users.poli_id = poli.id
@@ -119,8 +120,8 @@ export async function POST(request) {
 
         const result = await pool.query(
             `INSERT INTO schedules
-            (dokter_id, hari, jam_mulai, durasi)
-            VALUES ($1, $2, $3, 30)
+            (dokter_id, hari, jam_mulai, durasi, is_active)
+            VALUES ($1, $2, $3, 30, TRUE)
             RETURNING *`,
             [dokter_id, nomorHari, jam_mulai]
         );
