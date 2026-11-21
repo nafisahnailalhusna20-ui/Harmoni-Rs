@@ -13,6 +13,7 @@ async function cekAdmin() {
     return user?.role === "admin";
 }
 
+// Mengedit jadwal dokter
 export async function PUT(request, { params }) {
     try {
         if (!(await cekAdmin())) {
@@ -34,7 +35,11 @@ export async function PUT(request, { params }) {
 
         const nomorHari = Number(hari);
 
-        if (!Number.isInteger(nomorHari) || nomorHari < 1 || nomorHari > 7) {
+        if (
+            !Number.isInteger(nomorHari) ||
+            nomorHari < 1 ||
+            nomorHari > 7
+        ) {
             return NextResponse.json(
                 { message: "Hari tidak valid." },
                 { status: 400 }
@@ -73,7 +78,9 @@ export async function PUT(request, { params }) {
 
         if (cekBentrok.rowCount > 0) {
             return NextResponse.json(
-                { message: "Jadwal dokter bertabrakan dengan jadwal lain." },
+                {
+                    message: "Jadwal dokter bertabrakan dengan jadwal lain."
+                },
                 { status: 409 }
             );
         }
@@ -121,17 +128,43 @@ export async function DELETE(request, { params }) {
 
         const { id } = await params;
 
-        const result = await pool.query(
-            "DELETE FROM schedules WHERE id = $1 RETURNING id",
+        // Pastikan jadwalnya memang ada
+        const cekJadwal = await pool.query(
+            "SELECT id FROM schedules WHERE id = $1",
             [id]
         );
 
-        if (result.rowCount === 0) {
+        if (cekJadwal.rowCount === 0) {
             return NextResponse.json(
                 { message: "Jadwal tidak ditemukan." },
                 { status: 404 }
             );
         }
+
+        // Cek apakah jadwal sudah digunakan untuk booking
+        const cekBooking = await pool.query(
+            `SELECT id
+             FROM appointments
+             WHERE schedule_id = $1
+             LIMIT 1`,
+            [id]
+        );
+
+        if (cekBooking.rowCount > 0) {
+            return NextResponse.json(
+                {
+                    message:
+                        "Jadwal tidak dapat dihapus karena sudah digunakan dalam janji temu pasien. Riwayat booking harus tetap tersimpan."
+                },
+                { status: 409 }
+            );
+        }
+
+        // Hapus jadwal jika belum pernah digunakan
+        await pool.query(
+            "DELETE FROM schedules WHERE id = $1",
+            [id]
+        );
 
         return NextResponse.json({
             success: true,
@@ -140,6 +173,17 @@ export async function DELETE(request, { params }) {
 
     } catch (error) {
         console.error("Hapus jadwal:", error);
+
+        // Penanganan jika database menolak karena relasi
+        if (error.code === "23503") {
+            return NextResponse.json(
+                {
+                    message:
+                        "Jadwal tidak dapat dihapus karena masih terhubung dengan data lain."
+                },
+                { status: 409 }
+            );
+        }
 
         return NextResponse.json(
             { message: "Jadwal gagal dihapus." },

@@ -6,11 +6,16 @@ import { verifyToken } from "@/lib/auth";
 async function cekPasien() {
     const cookieStore = await cookies();
     const token = cookieStore.get("token")?.value;
+
     if (!token) return null;
+
     const user = await verifyToken(token);
+
     if (user?.role !== "pasien") return null;
+
     return user;
 }
+
 function tanggalMakassar() {
     const bagianTanggal = new Intl.DateTimeFormat("en-US", {
         timeZone: "Asia/Makassar",
@@ -19,14 +24,22 @@ function tanggalMakassar() {
         day: "2-digit"
     }).formatToParts(new Date());
 
-    const tahun = bagianTanggal.find(item => item.type === "year").value;
-    const bulan = bagianTanggal.find(item => item.type === "month").value;
-    const hari = bagianTanggal.find(item => item.type === "day").value;
+    const tahun = bagianTanggal.find(
+        item => item.type === "year"
+    ).value;
+
+    const bulan = bagianTanggal.find(
+        item => item.type === "month"
+    ).value;
+
+    const hari = bagianTanggal.find(
+        item => item.type === "day"
+    ).value;
 
     return `${tahun}-${bulan}-${hari}`;
 }
 
-export async function GET() {
+export async function GET(request) {
     try {
         const user = await cekPasien();
 
@@ -37,6 +50,49 @@ export async function GET() {
             );
         }
 
+        const { searchParams } = new URL(request.url);
+        const riwayat = searchParams.get("riwayat");
+
+        // Mengambil riwayat janji temu pasien
+        if (riwayat === "true") {
+            const result = await pool.query(`
+                SELECT
+                    a.id,
+                    a.tanggal_booking,
+                    a.keluhan,
+                    a.status,
+
+                    dokter.full_name AS nama_dokter,
+                    p.nama AS nama_poli,
+
+                    s.jam_mulai,
+                    s.durasi
+
+                FROM appointments a
+
+                LEFT JOIN users dokter
+                    ON a.dokter_id = dokter.id
+
+                LEFT JOIN poli p
+                    ON dokter.poli_id = p.id
+
+                LEFT JOIN schedules s
+                    ON a.schedule_id = s.id
+
+                WHERE a.pasien_id = $1
+
+                ORDER BY
+                    a.tanggal_booking DESC,
+                    a.id DESC
+            `, [user.id]);
+
+            return NextResponse.json({
+                success: true,
+                data: result.rows
+            });
+        }
+
+        // Mengambil jadwal dokter untuk booking
         const hariIni = tanggalMakassar();
         const batasTanggal = "2026-12-31";
 
@@ -104,10 +160,10 @@ export async function GET() {
         });
 
     } catch (error) {
-        console.error("Gagal mengambil jadwal:", error);
+        console.error("Gagal mengambil data janji temu:", error);
 
         return NextResponse.json(
-            { message: "Jadwal dokter gagal dimuat." },
+            { message: "Data janji temu gagal dimuat." },
             { status: 500 }
         );
     }
@@ -165,7 +221,9 @@ export async function POST(request) {
 
         if (jadwal.rowCount === 0) {
             return NextResponse.json(
-                { message: "Tanggal tidak sesuai dengan hari praktik dokter." },
+                {
+                    message: "Tanggal tidak sesuai dengan hari praktik dokter."
+                },
                 { status: 400 }
             );
         }
@@ -182,7 +240,9 @@ export async function POST(request) {
 
         if (sudahDipesan.rowCount > 0) {
             return NextResponse.json(
-                { message: "Jadwal pada tanggal tersebut sudah dipesan." },
+                {
+                    message: "Jadwal pada tanggal tersebut sudah dipesan."
+                },
                 { status: 409 }
             );
         }
