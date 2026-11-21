@@ -1,423 +1,776 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-export default function PasienPage() {
+export default function ManajemenPasienPage() {
     const [pasien, setPasien] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [tampilForm, setTampilForm] = useState(false);
-    const [pasienDipilih, setPasienDipilih] = useState(null);
-    const [pesan, setPesan] = useState("");
+    const [search, setSearch] = useState("");
+    const [modalOpen, setModalOpen] = useState(false);
+    const [editing, setEditing] = useState(null);
+    const [saving, setSaving] = useState(false);
 
-    const formAwal = {
+    const [form, setForm] = useState({
         username: "",
         email: "",
-        password: "",
         full_name: "",
         phone: "",
-        address: "",
-        birth_date: ""
-    };
+        password: "",
+    });
 
-    const [form, setForm] = useState(formAwal);
+    const [message, setMessage] = useState("");
 
-    async function ambilData() {
+    // Ambil data pasien
+    async function loadPasien() {
         try {
-            const response = await fetch("/api/admin/pasien");
-            const data = await response.json();
+            setLoading(true);
 
-            if (data.success) {
-                setPasien(data.data);
-            } else {
-                setPesan(data.message || "Gagal mengambil data pasien.");
+            const response = await fetch("/api/admin/pasien", {
+                cache: "no-store",
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.message || "Gagal mengambil data pasien.");
             }
+
+            const data =
+                result.pasien ||
+                result.dataPasien ||
+                result.data ||
+                result;
+
+            setPasien(Array.isArray(data) ? data : []);
         } catch (error) {
-            console.error("Gagal mengambil data:", error);
-            setPesan("Terjadi kesalahan saat mengambil data pasien.");
+            console.error("Gagal mengambil pasien:", error);
+            setMessage(error.message || "Gagal memuat data pasien.");
         } finally {
             setLoading(false);
         }
     }
 
     useEffect(() => {
-        ambilData();
+        loadPasien();
     }, []);
 
-    function handleChange(e) {
-        setForm({
-            ...form,
-            [e.target.name]: e.target.value
+    // Pencarian pasien
+    const filteredPasien = useMemo(() => {
+        const keyword = search.toLowerCase().trim();
+
+        if (!keyword) return pasien;
+
+        return pasien.filter((item) => {
+            const nama = item.full_name || item.nama || "";
+            const username = item.username || "";
+            const email = item.email || "";
+            const telepon = item.phone || item.telepon || "";
+
+            return (
+                nama.toLowerCase().includes(keyword) ||
+                username.toLowerCase().includes(keyword) ||
+                email.toLowerCase().includes(keyword) ||
+                String(telepon).includes(keyword)
+            );
         });
-    }
+    }, [pasien, search]);
 
-    function handlePhoneChange(e) {
-        const nomor = e.target.value
-            .replace(/\D/g, "")
-            .slice(0, 15);
+    // Buka form tambah
+    function openAddModal() {
+        setEditing(null);
 
         setForm({
-            ...form,
-            phone: nomor
+            username: "",
+            email: "",
+            full_name: "",
+            phone: "",
+            password: "",
         });
+
+        setModalOpen(true);
     }
 
-    function bukaTambah() {
-        setPasienDipilih(null);
-        setForm(formAwal);
-        setPesan("");
-        setTampilForm(true);
-    }
-
-    function bukaEdit(item) {
-        setPasienDipilih(item);
+    // Buka form edit
+    function openEditModal(item) {
+        setEditing(item);
 
         setForm({
             username: item.username || "",
             email: item.email || "",
+            full_name: item.full_name || item.nama || "",
+            phone: item.phone || item.telepon || "",
             password: "",
-            full_name: item.full_name || "",
-            phone: item.phone || "",
-            address: item.address || "",
-            birth_date: item.birth_date
-                ? String(item.birth_date).slice(0, 10)
-                : ""
         });
 
-        setPesan("");
-        setTampilForm(true);
+        setModalOpen(true);
     }
 
-    async function simpanPasien(e) {
-        e.preventDefault();
-        setPesan("");
-
-        const formatEmail =
-            /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
-
-        if (!formatEmail.test(form.email.trim())) {
-            setPesan("Format email tidak valid. Contoh: nama@gmail.com");
-            return;
-        }
-
-        if (form.phone && !/^[0-9]{10,15}$/.test(form.phone)) {
-            setPesan("Nomor telepon harus terdiri dari 10–15 digit angka.");
-            return;
-        }
-
-        if (
-            form.birth_date &&
-            (
-                form.birth_date < "1945-01-01" ||
-                form.birth_date > "2026-12-31"
-            )
-        ) {
-            setPesan("Tanggal lahir harus berada antara tahun 1945–2026.");
-            return;
-        }
+    // Simpan pasien
+    async function handleSubmit(event) {
+        event.preventDefault();
 
         try {
-            const url = pasienDipilih
-                ? `/api/admin/pasien/${pasienDipilih.id}`
+            setSaving(true);
+            setMessage("");
+
+            const id = editing?.id || editing?.user_id;
+
+            const url = editing
+                ? `/api/admin/pasien/${id}`
                 : "/api/admin/pasien";
 
             const response = await fetch(url, {
-                method: pasienDipilih ? "PUT" : "POST",
+                method: editing ? "PUT" : "POST",
                 headers: {
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
                 },
-                body: JSON.stringify({
-                    ...form,
-                    email: form.email.trim()
-                })
+                body: JSON.stringify(form),
             });
 
-            const data = await response.json();
+            const result = await response.json();
 
             if (!response.ok) {
-                setPesan(data.message || "Data gagal disimpan.");
-                return;
+                throw new Error(
+                    result.message ||
+                    result.error ||
+                    "Gagal menyimpan data pasien."
+                );
             }
 
-            setPesan(data.message);
-            setTampilForm(false);
-            setPasienDipilih(null);
-            setForm(formAwal);
+            setModalOpen(false);
+            await loadPasien();
 
-            await ambilData();
-
+            setMessage(
+                editing
+                    ? "Data pasien berhasil diperbarui."
+                    : "Pasien berhasil ditambahkan."
+            );
         } catch (error) {
-            console.error("Gagal menyimpan pasien:", error);
-            setPesan("Terjadi kesalahan saat menyimpan data.");
+            setMessage(error.message || "Terjadi kesalahan.");
+        } finally {
+            setSaving(false);
         }
     }
 
-    async function hapusPasien(id) {
-        const yakin = confirm("Yakin ingin menghapus data pasien ini?");
+    // Hapus pasien
+    async function handleDelete(item) {
+        const nama = item.full_name || item.nama || "pasien";
 
-        if (!yakin) return;
+        const confirmed = window.confirm(
+            `Yakin ingin menghapus data ${nama}?`
+        );
+
+        if (!confirmed) return;
 
         try {
-            const response = await fetch(`/api/admin/pasien/${id}`, {
-                method: "DELETE"
-            });
+            const id = item.id || item.user_id;
 
-            const data = await response.json();
+            const response = await fetch(
+                `/api/admin/pasien/${id}`,
+                {
+                    method: "DELETE",
+                }
+            );
+
+            const result = await response.json();
 
             if (!response.ok) {
-                setPesan(data.message || "Pasien gagal dihapus.");
-                return;
+                throw new Error(
+                    result.message ||
+                    result.error ||
+                    "Gagal menghapus pasien."
+                );
             }
 
-            setPesan(data.message);
-            setTampilForm(false);
-            setPasienDipilih(null);
-            setForm(formAwal);
-
-            await ambilData();
-
+            await loadPasien();
+            setMessage("Data pasien berhasil dihapus.");
         } catch (error) {
-            console.error("Gagal menghapus pasien:", error);
-            setPesan("Terjadi kesalahan saat menghapus data.");
+            setMessage(error.message || "Gagal menghapus pasien.");
         }
     }
 
-    const inputStyle =
-        "w-full p-3 rounded-xl border border-[#C8D8CF] bg-white/80 text-[#263D34] placeholder:text-[#84968C] focus:outline-none focus:ring-2 focus:ring-[#397A63]";
-
     return (
-        <main className="min-h-screen bg-[#E8F0EC] p-8">
-            <div className="max-w-6xl mx-auto">
+        <main className="pasien-page">
+            <style jsx global>{`
+        * {
+          box-sizing: border-box;
+        }
 
-                <h1 className="text-3xl font-bold text-[#263D34]">
-                    Manajemen Pasien
-                </h1>
+        body {
+          background: #eaf2fb !important;
+        }
 
-                <p className="text-[#64776D] mt-2">
-                    Kelola data pasien rumah sakit.
-                </p>
+        .pasien-page {
+          min-height: 100vh;
+          padding: 42px clamp(18px, 4vw, 64px);
+          color: #193653;
+          background:
+            radial-gradient(
+              circle at 12% 8%,
+              rgba(180, 211, 245, 0.38),
+              transparent 32%
+            ),
+            radial-gradient(
+              circle at 88% 75%,
+              rgba(196, 220, 247, 0.3),
+              transparent 35%
+            ),
+            #eaf2fb;
+        }
 
-                <div className="mt-8 rounded-2xl bg-white/50 backdrop-blur-xl border border-white/70 p-6 shadow-lg">
+        .glass-panel {
+          background: rgba(255, 255, 255, 0.28);
+          border: 1px solid rgba(255, 255, 255, 0.78);
+          backdrop-filter: blur(24px) saturate(145%);
+          -webkit-backdrop-filter: blur(24px) saturate(145%);
+          border-radius: 28px;
+        }
 
-                    <div className="flex justify-between items-center gap-4">
-                        <h2 className="text-xl font-semibold text-[#263D34]">
+        .glass-soft {
+          background: rgba(255, 255, 255, 0.2);
+          border: 1px solid rgba(255, 255, 255, 0.68);
+          backdrop-filter: blur(18px) saturate(140%);
+          -webkit-backdrop-filter: blur(18px) saturate(140%);
+        }
+
+        .pasien-input {
+          width: 100%;
+          border: 1px solid rgba(255, 255, 255, 0.9);
+          background: rgba(255, 255, 255, 0.42);
+          border-radius: 16px;
+          padding: 13px 16px;
+          color: #193653;
+          outline: none;
+          transition: border 0.2s, background 0.2s;
+        }
+
+        .pasien-input:focus {
+          border-color: #8eb5df;
+          background: rgba(255, 255, 255, 0.68);
+        }
+
+        .pasien-input::placeholder {
+          color: #829bb8;
+        }
+
+        .pasien-table {
+          width: 100%;
+          border-collapse: collapse;
+        }
+
+        .pasien-table th {
+          text-align: left;
+          padding: 17px 24px;
+          color: #7895b6;
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.7);
+        }
+
+        .pasien-table td {
+          padding: 20px 24px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.52);
+          color: #527395;
+          font-size: 14px;
+        }
+
+        .pasien-table tbody tr {
+          transition: background 0.2s;
+        }
+
+        .pasien-table tbody tr:hover {
+          background: rgba(255, 255, 255, 0.22);
+        }
+
+        .pasien-table tbody tr:last-child td {
+          border-bottom: none;
+        }
+
+        .btn-glass {
+          border: 1px solid rgba(255, 255, 255, 0.8);
+          background: rgba(255, 255, 255, 0.34);
+          color: #315d88;
+          border-radius: 999px;
+          padding: 10px 17px;
+          font-size: 13px;
+          font-weight: 600;
+          transition: background 0.2s;
+        }
+
+        .btn-glass:hover {
+          background: rgba(255, 255, 255, 0.72);
+        }
+
+        .btn-primary {
+          border: 1px solid rgba(255, 255, 255, 0.22);
+          background: #244f7b;
+          color: white;
+          border-radius: 999px;
+          padding: 14px 23px;
+          font-size: 14px;
+          font-weight: 600;
+          transition: background 0.2s;
+        }
+
+        .btn-primary:hover {
+          background: #193e66;
+        }
+
+        .btn-delete {
+          border: 1px solid rgba(225, 157, 176, 0.5);
+          background: rgba(255, 238, 243, 0.45);
+          color: #b75e7b;
+          border-radius: 999px;
+          padding: 9px 15px;
+          font-size: 12px;
+          font-weight: 600;
+        }
+
+        .btn-delete:hover {
+          background: rgba(255, 238, 243, 0.85);
+        }
+
+        .modal-backdrop {
+          position: fixed;
+          inset: 0;
+          z-index: 100;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+          background: rgba(22, 43, 67, 0.22);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+        }
+
+        .modal-glass {
+          width: 100%;
+          max-width: 520px;
+          max-height: 90vh;
+          overflow-y: auto;
+          background: rgba(239, 247, 255, 0.78);
+          border: 1px solid rgba(255, 255, 255, 0.9);
+          backdrop-filter: blur(32px) saturate(150%);
+          -webkit-backdrop-filter: blur(32px) saturate(150%);
+          border-radius: 28px;
+        }
+
+        @media (max-width: 760px) {
+          .pasien-page {
+            padding: 26px 16px;
+          }
+
+          .pasien-table th,
+          .pasien-table td {
+            padding: 15px 16px;
+          }
+
+          .table-wrapper {
+            overflow-x: auto;
+          }
+        }
+      `}</style>
+
+            {/* Header */}
+            <header className="flex flex-wrap items-center justify-between gap-6 mb-9">
+                <div className="flex items-center gap-4">
+                    <div
+                        className="glass-panel flex items-center justify-center"
+                        style={{
+                            width: 58,
+                            height: 58,
+                            borderRadius: 19,
+                            color: "#315d88",
+                            fontSize: 24,
+                            fontWeight: 700,
+                        }}
+                    >
+                        H
+                    </div>
+
+                    <div>
+                        <p className="text-xs font-bold tracking-[0.2em] text-[#7195bd]">
+                            HARMONI HEALTHCARE
+                        </p>
+
+                        <h1 className="mt-1 text-3xl font-semibold tracking-tight text-[#193653]">
+                            Manajemen Pasien
+                        </h1>
+
+                        <p className="mt-1 text-sm text-[#7895b6]">
+                            Kelola informasi pasien dengan lebih mudah.
+                        </p>
+                    </div>
+                </div>
+
+                <button
+                    onClick={openAddModal}
+                    className="btn-primary"
+                >
+                    <span className="mr-2">＋</span>
+                    Tambah Pasien
+                </button>
+            </header>
+
+            {/* Statistik ringkas */}
+            <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-7">
+                <div className="glass-panel p-6">
+                    <p className="text-sm text-[#7895b6]">
+                        Total Pasien
+                    </p>
+
+                    <div className="flex items-end justify-between mt-3">
+                        <span className="text-3xl font-semibold text-[#193653]">
+                            {pasien.length}
+                        </span>
+
+                        <span className="text-xs text-[#6e91b9]">
+                            Terdaftar
+                        </span>
+                    </div>
+                </div>
+
+                <div className="glass-panel p-6">
+                    <p className="text-sm text-[#7895b6]">
+                        Hasil Pencarian
+                    </p>
+
+                    <div className="flex items-end justify-between mt-3">
+                        <span className="text-3xl font-semibold text-[#193653]">
+                            {filteredPasien.length}
+                        </span>
+
+                        <span className="text-xs text-[#6e91b9]">
+                            Data ditemukan
+                        </span>
+                    </div>
+                </div>
+
+                <div className="glass-panel p-6">
+                    <p className="text-sm text-[#7895b6]">
+                        Pengelolaan Data
+                    </p>
+
+                    <div className="flex items-end justify-between mt-3">
+                        <span className="text-2xl font-semibold text-[#193653]">
+                            Pasien
+                        </span>
+
+                        <span className="text-xs text-[#6e91b9]">
+                            Admin
+                        </span>
+                    </div>
+                </div>
+            </section>
+
+            {/* Tabel pasien */}
+            <section className="glass-panel overflow-hidden">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 p-7">
+                    <div>
+                        <p className="text-xs font-bold tracking-[0.18em] text-[#7195bd]">
+                            DATA RUMAH SAKIT
+                        </p>
+
+                        <h2 className="text-2xl font-semibold text-[#193653] mt-2">
                             Daftar Pasien
                         </h2>
 
-                        <button
-                            onClick={bukaTambah}
-                            className="bg-[#397A63] text-white px-4 py-2 rounded-xl hover:bg-[#2e6551]"
-                        >
-                            + Tambah Pasien
-                        </button>
+                        <p className="text-sm text-[#7895b6] mt-2">
+                            Informasi akun dan kontak pasien.
+                        </p>
                     </div>
 
-                    {pesan && (
-                        <p className="mt-4 text-sm text-[#397A63]">
-                            {pesan}
-                        </p>
-                    )}
+                    <div className="w-full md:max-w-sm">
+                        <input
+                            type="text"
+                            value={search}
+                            onChange={(event) => setSearch(event.target.value)}
+                            placeholder="Cari nama, username, email..."
+                            className="pasien-input"
+                        />
+                    </div>
+                </div>
 
-                    {tampilForm && (
-                        <form
-                            onSubmit={simpanPasien}
-                            className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4"
-                        >
+                <div className="table-wrapper">
+                    <table className="pasien-table">
+                        <thead>
+                            <tr>
+                                <th>No.</th>
+                                <th>Pasien</th>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Telepon</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
 
-                            <input
-                                name="full_name"
-                                placeholder="Nama lengkap pasien"
-                                value={form.full_name}
-                                onChange={handleChange}
-                                required
-                                className={inputStyle}
-                            />
+                        <tbody>
+                            {loading ? (
+                                <tr>
+                                    <td colSpan="6" className="text-center py-12">
+                                        Memuat data pasien...
+                                    </td>
+                                </tr>
+                            ) : filteredPasien.length === 0 ? (
+                                <tr>
+                                    <td colSpan="6" className="text-center py-12">
+                                        Tidak ada data pasien yang ditemukan.
+                                    </td>
+                                </tr>
+                            ) : (
+                                filteredPasien.map((item, index) => {
+                                    const nama =
+                                        item.full_name || item.nama || "Pasien";
 
-                            <input
-                                name="username"
-                                placeholder="Username"
-                                value={form.username}
-                                onChange={handleChange}
-                                required
-                                className={inputStyle}
-                            />
-
-                            <input
-                                name="email"
-                                type="email"
-                                placeholder="Contoh: nama@gmail.com"
-                                value={form.email}
-                                onChange={handleChange}
-                                required
-                                pattern="[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"
-                                title="Masukkan email lengkap, contoh nama@gmail.com"
-                                className={inputStyle}
-                            />
-
-                            <input
-                                name="password"
-                                type="password"
-                                placeholder={
-                                    pasienDipilih
-                                        ? "Password baru (kosongkan jika tidak diubah)"
-                                        : "Password (minimal 6 karakter)"
-                                }
-                                value={form.password}
-                                onChange={handleChange}
-                                required={!pasienDipilih}
-                                minLength={6}
-                                className={inputStyle}
-                            />
-
-                            <div>
-                                <input
-                                    name="phone"
-                                    type="tel"
-                                    placeholder="Nomor telepon (10–15 digit)"
-                                    value={form.phone}
-                                    onChange={handlePhoneChange}
-                                    minLength={10}
-                                    maxLength={15}
-                                    pattern="[0-9]{10,15}"
-                                    title="Nomor telepon harus terdiri dari 10–15 digit angka."
-                                    className={inputStyle}
-                                />
-
-                                <p className="text-xs text-[#64776D] mt-1">
-                                    Masukkan 10–15 digit angka.
-                                </p>
-                            </div>
-
-                            <div>
-                                <input
-                                    name="birth_date"
-                                    type="date"
-                                    value={form.birth_date}
-                                    onChange={handleChange}
-                                    min="1945-01-01"
-                                    max="2026-12-31"
-                                    className={inputStyle}
-                                />
-
-                                <p className="text-xs text-[#64776D] mt-1">
-                                    Tahun lahir 1945–2026.
-                                </p>
-                            </div>
-
-                            <textarea
-                                name="address"
-                                placeholder="Alamat pasien"
-                                value={form.address}
-                                onChange={handleChange}
-                                rows={3}
-                                className={`${inputStyle} md:col-span-2`}
-                            />
-
-                            <div className="md:col-span-2 flex gap-3">
-
-                                <button
-                                    type="submit"
-                                    className="flex-1 bg-[#397A63] text-white p-3 rounded-xl hover:bg-[#2e6551]"
-                                >
-                                    {pasienDipilih
-                                        ? "Simpan Perubahan"
-                                        : "Simpan Pasien"}
-                                </button>
-
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setTampilForm(false);
-                                        setPasienDipilih(null);
-                                        setForm(formAwal);
-                                        setPesan("");
-                                    }}
-                                    className="px-5 bg-gray-200 text-gray-700 rounded-xl"
-                                >
-                                    Batal
-                                </button>
-
-                            </div>
-                        </form>
-                    )}
-
-                    {loading ? (
-                        <p className="mt-4 text-[#64776D]">
-                            Memuat data...
-                        </p>
-                    ) : pasien.length === 0 ? (
-                        <p className="mt-6 text-[#64776D]">
-                            Belum ada pasien terdaftar.
-                        </p>
-                    ) : (
-                        <div className="overflow-x-auto mt-6">
-                            <table className="w-full text-left">
-
-                                <thead>
-                                    <tr className="border-b text-[#397A63]">
-                                        <th className="p-3">No.</th>
-                                        <th className="p-3">Nama Pasien</th>
-                                        <th className="p-3">Username</th>
-                                        <th className="p-3">Email</th>
-                                        <th className="p-3">Telepon</th>
-                                        <th className="p-3">Aksi</th>
-                                    </tr>
-                                </thead>
-
-                                <tbody>
-                                    {pasien.map((item, index) => (
-                                        <tr
-                                            key={item.id}
-                                            className="border-b border-gray-200 text-[#263D34]"
-                                        >
-                                            <td className="p-3">
-                                                {index + 1}
+                                    return (
+                                        <tr key={item.id || item.user_id || index}>
+                                            <td>
+                                                {String(index + 1).padStart(2, "0")}
                                             </td>
 
-                                            <td className="p-3">
-                                                {item.full_name}
+                                            <td>
+                                                <div className="flex items-center gap-3 min-w-[190px]">
+                                                    <div
+                                                        className="glass-soft flex items-center justify-center shrink-0"
+                                                        style={{
+                                                            width: 42,
+                                                            height: 42,
+                                                            borderRadius: 14,
+                                                            color: "#4777a8",
+                                                            fontWeight: 700,
+                                                        }}
+                                                    >
+                                                        {nama.charAt(0).toUpperCase()}
+                                                    </div>
+
+                                                    <div>
+                                                        <p className="font-semibold text-[#244766]">
+                                                            {nama}
+                                                        </p>
+
+                                                        <p className="text-xs text-[#8aa3bf] mt-1">
+                                                            Pasien HARMONI
+                                                        </p>
+                                                    </div>
+                                                </div>
                                             </td>
 
-                                            <td className="p-3">
-                                                {item.username}
-                                            </td>
+                                            <td>{item.username || "-"}</td>
+                                            <td>{item.email || "-"}</td>
+                                            <td>{item.phone || item.telepon || "-"}</td>
 
-                                            <td className="p-3">
-                                                {item.email}
-                                            </td>
-
-                                            <td className="p-3">
-                                                {item.phone || "-"}
-                                            </td>
-
-                                            <td className="p-3">
-                                                <div className="flex gap-2">
-
+                                            <td>
+                                                <div className="flex items-center gap-2">
                                                     <button
-                                                        onClick={() => bukaEdit(item)}
-                                                        className="bg-[#DCEBE2] text-[#397A63] px-3 py-1 rounded-lg"
+                                                        onClick={() => openEditModal(item)}
+                                                        className="btn-glass"
                                                     >
                                                         Edit
                                                     </button>
 
                                                     <button
-                                                        onClick={() => hapusPasien(item.id)}
-                                                        className="bg-red-100 text-red-600 px-3 py-1 rounded-lg"
+                                                        onClick={() => handleDelete(item)}
+                                                        className="btn-delete"
                                                     >
                                                         Hapus
                                                     </button>
-
                                                 </div>
                                             </td>
                                         </tr>
-                                    ))}
-                                </tbody>
-
-                            </table>
-                        </div>
-                    )}
-
+                                    );
+                                })
+                            )}
+                        </tbody>
+                    </table>
                 </div>
-            </div>
+
+                <div className="flex flex-wrap justify-between gap-3 px-7 py-5 border-t border-white/60 text-xs text-[#7895b6]">
+                    <span>
+                        Menampilkan {filteredPasien.length} dari {pasien.length} pasien
+                    </span>
+
+                    <span>HARMONI Healthcare</span>
+                </div>
+            </section>
+
+            {/* Pesan */}
+            {message && (
+                <div className="glass-panel mt-5 px-5 py-4 text-sm text-[#315d88]">
+                    {message}
+
+                    <button
+                        onClick={() => setMessage("")}
+                        className="ml-4 font-semibold"
+                    >
+                        ✕
+                    </button>
+                </div>
+            )}
+
+            {/* Modal tambah / edit */}
+            {modalOpen && (
+                <div
+                    className="modal-backdrop"
+                    onClick={() => setModalOpen(false)}
+                >
+                    <div
+                        className="modal-glass p-7"
+                        onClick={(event) => event.stopPropagation()}
+                    >
+                        <div className="flex items-start justify-between mb-6">
+                            <div>
+                                <p className="text-xs font-bold tracking-[0.18em] text-[#7195bd]">
+                                    HARMONI HEALTHCARE
+                                </p>
+
+                                <h2 className="text-2xl font-semibold text-[#193653] mt-2">
+                                    {editing ? "Edit Pasien" : "Tambah Pasien"}
+                                </h2>
+
+                                <p className="text-sm text-[#7895b6] mt-2">
+                                    Lengkapi informasi pasien berikut.
+                                </p>
+                            </div>
+
+                            <button
+                                onClick={() => setModalOpen(false)}
+                                className="btn-glass"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-sm text-[#527395] mb-2">
+                                    Nama Lengkap
+                                </label>
+
+                                <input
+                                    required
+                                    type="text"
+                                    value={form.full_name}
+                                    onChange={(event) =>
+                                        setForm({
+                                            ...form,
+                                            full_name: event.target.value,
+                                        })
+                                    }
+                                    className="pasien-input"
+                                    placeholder="Nama lengkap pasien"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm text-[#527395] mb-2">
+                                    Username
+                                </label>
+
+                                <input
+                                    required
+                                    type="text"
+                                    value={form.username}
+                                    onChange={(event) =>
+                                        setForm({
+                                            ...form,
+                                            username: event.target.value,
+                                        })
+                                    }
+                                    className="pasien-input"
+                                    placeholder="Username pasien"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm text-[#527395] mb-2">
+                                    Email
+                                </label>
+
+                                <input
+                                    required
+                                    type="email"
+                                    value={form.email}
+                                    onChange={(event) =>
+                                        setForm({
+                                            ...form,
+                                            email: event.target.value,
+                                        })
+                                    }
+                                    className="pasien-input"
+                                    placeholder="email@gmail.com"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm text-[#527395] mb-2">
+                                    Nomor Telepon
+                                </label>
+
+                                <input
+                                    required
+                                    type="tel"
+                                    value={form.phone}
+                                    onChange={(event) =>
+                                        setForm({
+                                            ...form,
+                                            phone: event.target.value,
+                                        })
+                                    }
+                                    className="pasien-input"
+                                    placeholder="Nomor telepon"
+                                />
+                            </div>
+
+                            {!editing && (
+                                <div>
+                                    <label className="block text-sm text-[#527395] mb-2">
+                                        Password
+                                    </label>
+
+                                    <input
+                                        required
+                                        minLength={6}
+                                        type="password"
+                                        value={form.password}
+                                        onChange={(event) =>
+                                            setForm({
+                                                ...form,
+                                                password: event.target.value,
+                                            })
+                                        }
+                                        className="pasien-input"
+                                        placeholder="Minimal 6 karakter"
+                                    />
+                                </div>
+                            )}
+
+                            <div className="flex justify-end gap-3 pt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => setModalOpen(false)}
+                                    className="btn-glass"
+                                >
+                                    Batal
+                                </button>
+
+                                <button
+                                    type="submit"
+                                    disabled={saving}
+                                    className="btn-primary"
+                                >
+                                    {saving
+                                        ? "Menyimpan..."
+                                        : editing
+                                            ? "Simpan Perubahan"
+                                            : "Tambah Pasien"}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </main>
     );
 }
