@@ -6,16 +6,11 @@ import { verifyToken } from "@/lib/auth";
 async function cekPasien() {
     const cookieStore = await cookies();
     const token = cookieStore.get("token")?.value;
-
     if (!token) return null;
-
     const user = await verifyToken(token);
-
     if (user?.role !== "pasien") return null;
-
     return user;
 }
-
 function tanggalMakassar() {
     const bagianTanggal = new Intl.DateTimeFormat("en-US", {
         timeZone: "Asia/Makassar",

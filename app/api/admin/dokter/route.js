@@ -1,43 +1,51 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import bcrypt from "bcryptjs";
 import pool from "@/lib/db";
+import bcrypt from "bcryptjs";
 import { verifyToken } from "@/lib/auth";
 
-async function cekAdmin() {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
+function cekAdmin(request) {
+    const token = request.cookies.get("token")?.value;
 
-    if (!token) return false;
+    if (!token) {
+        return null;
+    }
 
-    const user = await verifyToken(token);
-    return user?.role === "admin";
+    return token;
 }
 
-function validasiEmail(email) {
-    const formatEmail = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
-    return formatEmail.test(email);
+function emailGmailValid(email) {
+    return /^[A-Za-z0-9._%+-]+@gmail\.com$/i.test(email);
 }
 
-function validasiTelepon(phone) {
-    if (!phone) return true;
-
-    return /^[0-9]{10,15}$/.test(phone);
-}
-
-export async function GET() {
+export async function GET(request) {
     try {
-        if (!(await cekAdmin())) {
+        const token = cekAdmin(request);
+
+        if (!token) {
             return NextResponse.json(
-                { message: "Akses ditolak." },
+                { success: false, message: "Silakan login terlebih dahulu." },
                 { status: 401 }
             );
         }
 
+        const user = await verifyToken(token);
+
+        if (!user || user.role !== "admin") {
+            return NextResponse.json(
+                { success: false, message: "Akses hanya untuk admin." },
+                { status: 403 }
+            );
+        }
+
         const result = await pool.query(`
-            SELECT users.id, users.username, users.email,
-                   users.full_name, users.phone, users.poli_id,
-                   poli.nama AS nama_poli
+            SELECT
+                users.id,
+                users.username,
+                users.email,
+                users.full_name,
+                users.phone,
+                users.poli_id,
+                poli.nama AS nama_poli
             FROM users
             LEFT JOIN poli ON users.poli_id = poli.id
             WHERE users.role = 'dokter'
@@ -53,7 +61,7 @@ export async function GET() {
         console.error("Gagal mengambil data dokter:", error);
 
         return NextResponse.json(
-            { message: "Data dokter gagal dimuat." },
+            { success: false, message: "Data dokter gagal diambil." },
             { status: 500 }
         );
     }
@@ -61,107 +69,135 @@ export async function GET() {
 
 export async function POST(request) {
     try {
-        if (!(await cekAdmin())) {
+        const token = cekAdmin(request);
+
+        if (!token) {
             return NextResponse.json(
-                { message: "Akses ditolak." },
+                { success: false, message: "Silakan login terlebih dahulu." },
                 { status: 401 }
             );
         }
 
-        const {
-            username,
-            email,
-            password,
-            full_name,
-            phone,
-            poli_id
-        } = await request.json();
+        const user = await verifyToken(token);
 
-        const usernameBersih =
-            typeof username === "string" ? username.trim() : "";
-
-        const emailBersih =
-            typeof email === "string" ? email.trim() : "";
-
-        const namaBersih =
-            typeof full_name === "string" ? full_name.trim() : "";
-
-        const teleponBersih =
-            typeof phone === "string" ? phone.trim() : "";
-
-        if (
-            !usernameBersih ||
-            !emailBersih ||
-            !password ||
-            !namaBersih ||
-            !poli_id
-        ) {
+        if (!user || user.role !== "admin") {
             return NextResponse.json(
-                { message: "Semua data wajib diisi." },
+                { success: false, message: "Akses hanya untuk admin." },
+                { status: 403 }
+            );
+        }
+
+        const body = await request.json();
+
+        const username = String(body.username || "").trim();
+        const email = String(body.email || "").trim();
+        const password = String(body.password || "");
+        const full_name = String(body.full_name || "").trim();
+        const phone = String(body.phone || "").trim();
+        const poli_id = Number(body.poli_id);
+
+        if (!username || !email || !password || !full_name || !poli_id) {
+            return NextResponse.json(
+                { success: false, message: "Semua data wajib diisi." },
                 { status: 400 }
             );
         }
 
-        if (!validasiEmail(emailBersih)) {
+        if (username.length < 3 || username.length > 30) {
             return NextResponse.json(
-                { message: "Format email tidak valid." },
+                {
+                    success: false,
+                    message: "Username harus terdiri dari 3–30 karakter."
+                },
                 { status: 400 }
             );
         }
 
-        if (phone != null && typeof phone !== "string") {
+        if (!emailGmailValid(email)) {
             return NextResponse.json(
-                { message: "Nomor telepon harus berupa angka." },
+                {
+                    success: false,
+                    message: "Email wajib menggunakan @gmail.com."
+                },
                 { status: 400 }
             );
         }
 
-        if (!validasiTelepon(teleponBersih)) {
+        if (password.length < 6) {
             return NextResponse.json(
-                { message: "Nomor telepon harus terdiri dari 10–15 digit angka." },
+                {
+                    success: false,
+                    message: "Password minimal 6 karakter."
+                },
                 { status: 400 }
             );
         }
 
-        if (typeof password !== "string" || password.length < 6) {
+        if (phone && !/^[0-9]{10,15}$/.test(phone)) {
             return NextResponse.json(
-                { message: "Password minimal 6 karakter." },
+                {
+                    success: false,
+                    message: "Nomor telepon harus terdiri dari 10–15 digit."
+                },
                 { status: 400 }
             );
         }
 
-        const passwordHash = await bcrypt.hash(password, 10);
+        const poli = await pool.query(
+            "SELECT id FROM poli WHERE id = $1",
+            [poli_id]
+        );
 
-        const result = await pool.query(
+        if (poli.rows.length === 0) {
+            return NextResponse.json(
+                { success: false, message: "Poli tidak ditemukan." },
+                { status: 400 }
+            );
+        }
+
+        const password_hash = await bcrypt.hash(password, 10);
+
+        await pool.query(
             `INSERT INTO users
-            (username, email, password_hash, role, full_name, phone, poli_id)
-            VALUES ($1, $2, $3, 'dokter', $4, $5, $6)
-            RETURNING id, username, email, full_name, role, poli_id`,
+                (username, email, password_hash, role, full_name, phone, poli_id)
+             VALUES ($1, $2, $3, 'dokter', $4, $5, $6)`,
             [
-                usernameBersih,
-                emailBersih,
-                passwordHash,
-                namaBersih,
-                teleponBersih || null,
+                username,
+                email,
+                password_hash,
+                full_name,
+                phone || null,
                 poli_id
             ]
         );
 
-        return NextResponse.json({
-            success: true,
-            message: "Dokter berhasil ditambahkan.",
-            data: result.rows[0]
-        }, { status: 201 });
+        return NextResponse.json(
+            {
+                success: true,
+                message: "Dokter berhasil ditambahkan."
+            },
+            { status: 201 }
+        );
 
     } catch (error) {
+        if (error.code === "23505") {
+            return NextResponse.json(
+                {
+                    success: false,
+                    message: "Username atau email sudah digunakan."
+                },
+                { status: 409 }
+            );
+        }
+
         console.error("Gagal menambahkan dokter:", error);
 
-        return NextResponse.json({
-            message: error.code === "23505"
-                ? "Username atau email sudah digunakan."
-                : "Dokter gagal ditambahkan."
-        }, {
-            status: error.code === "23505" ? 409 : 500
-        });
+        return NextResponse.json(
+            {
+                success: false,
+                message: "Dokter gagal ditambahkan."
+            },
+            { status: 500 }
+        );
     }
 }
