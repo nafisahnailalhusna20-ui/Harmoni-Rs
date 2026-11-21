@@ -11,7 +11,9 @@ async function cekDokter() {
 
     const user = await verifyToken(token);
 
-    if (user?.role !== "dokter") return null;
+    if (user?.role !== "dokter") {
+        return null;
+    }
 
     return user;
 }
@@ -40,12 +42,18 @@ export async function GET() {
                 s.jam_mulai,
                 p.nama AS nama_poli
             FROM appointments a
-            JOIN users pasien ON a.pasien_id = pasien.id
-            JOIN users dokter ON a.dokter_id = dokter.id
-            JOIN schedules s ON a.schedule_id = s.id
-            LEFT JOIN poli p ON dokter.poli_id = p.id
+            JOIN users pasien
+                ON a.pasien_id = pasien.id
+            JOIN users dokter
+                ON a.dokter_id = dokter.id
+            JOIN schedules s
+                ON a.schedule_id = s.id
+            LEFT JOIN poli p
+                ON dokter.poli_id = p.id
             WHERE a.dokter_id = $1
-            ORDER BY a.tanggal_booking DESC, a.id DESC`,
+            ORDER BY
+                a.tanggal_booking DESC,
+                a.id DESC`,
             [dokter.id]
         );
 
@@ -63,6 +71,7 @@ export async function GET() {
         );
     }
 }
+
 export async function PUT(request) {
     try {
         const dokter = await cekDokter();
@@ -80,7 +89,13 @@ export async function PUT(request) {
             alasan_penolakan
         } = await request.json();
 
-        if (!id || !["Approved", "Rejected"].includes(status)) {
+        const idJanji = Number(id);
+
+        if (
+            !Number.isInteger(idJanji) ||
+            idJanji <= 0 ||
+            !["Approved", "Rejected"].includes(status)
+        ) {
             return NextResponse.json(
                 { message: "Data perubahan tidak valid." },
                 { status: 400 }
@@ -105,15 +120,15 @@ export async function PUT(request) {
              SET status = $1,
                  alasan_penolakan = $2
              WHERE id = $3
-             AND dokter_id = $4
-             AND status = 'Pending'
+               AND dokter_id = $4
+               AND status = 'Pending'
              RETURNING *`,
             [
                 status,
                 status === "Rejected"
                     ? alasan_penolakan.trim()
                     : null,
-                id,
+                idJanji,
                 dokter.id
             ]
         );
