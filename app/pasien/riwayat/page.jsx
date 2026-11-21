@@ -65,7 +65,7 @@ export default function RiwayatJanjiTemuPage() {
 
             setRiwayat((dataLama) =>
                 dataLama.map((item) =>
-                    item.id === id
+                    String(item.id) === String(id)
                         ? { ...item, status: "Dibatalkan" }
                         : item
                 )
@@ -226,7 +226,7 @@ export default function RiwayatJanjiTemuPage() {
                                     </div>
                                 </div>
 
-                                {["Pending", "Approved"].includes(item.status) && (
+                                {item.status === "Pending" && (
                                     <button
                                         type="button"
                                         onClick={() => batalkanJanjiTemu(item.id)}
