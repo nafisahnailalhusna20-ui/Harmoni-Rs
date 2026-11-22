@@ -262,7 +262,7 @@ export default function DokterPage() {
                     <div className="flex flex-col items-start gap-5 lg:items-end">
                         <div className="relative text-right">
                             <span className="absolute -right-2 -top-16 select-none text-[150px] font-light leading-none text-[#6c9bc7]/10">
-                                01
+                                02
                             </span>
 
                             <p className="relative text-[10px] tracking-[0.18em] text-[#7d9fbe]">
