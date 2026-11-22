@@ -216,427 +216,435 @@ export default function DokterPage() {
                             </div>
                         </div>
 
-                        {/* Foto dokter */}
-                        <div className="relative mx-auto flex h-64 w-full max-w-[300px] items-center justify-center">
-                            {/* Lingkaran glass di belakang foto */}
-                            <div className="absolute h-64 w-64 rounded-full border border-white/70 bg-white/20 shadow-[0_10px_35px_rgba(85,140,185,0.10)] backdrop-blur-xl" />
-
-                            {/* Foto profil */}
-                            <div className="relative h-52 w-52 overflow-hidden rounded-full border-[6px] border-white/90 bg-white/50 shadow-[0_15px_35px_rgba(70,120,165,0.20)]">
-                                <img
-                                    src="/uploads/865f6576-d0a7-42c3-a2ca-7e739b1df574.jpg"
-                                    alt="Foto dokter"
-                                    className="h-full w-full object-cover object-top"
-                                />
+                        <div className="relative mx-auto flex h-52 w-full max-w-[300px] items-center justify-center">
+                            <div className="absolute h-48 w-48 rounded-full border border-white/70 bg-white/15 shadow-[0_10px_35px_rgba(85,140,185,0.10)]" />
+                            <div className="absolute h-36 w-36 rounded-full border border-[#8eb9dc]/35 bg-white/20" />
+                            <div className="absolute h-24 w-24 rounded-full border border-white/80 bg-gradient-to-br from-white/80 to-[#c5e1f6]/60 shadow-[0_12px_25px_rgba(80,130,175,0.15)] backdrop-blur-xl" />
+                            <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl border border-white/80 bg-gradient-to-br from-white/90 to-[#c5e1f6]/70 text-[#6b9fc8] shadow-[0_10px_25px_rgba(80,130,175,0.15)]">
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    className="h-8 w-8"
+                                    stroke="currentColor"
+                                    strokeWidth="1.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                >
+                                    <path d="M12 4v16M4 12h16" />
+                                </svg>
                             </div>
 
-                            {/* Aksen dekorasi */}
-                            <span className="absolute right-5 top-8 text-2xl text-[#8ab8dd]">
+                            <span className="absolute right-10 top-7 text-2xl text-[#8ab8dd]">
                                 ✦
                             </span>
 
-                            <span className="absolute bottom-8 left-7 h-2.5 w-2.5 rounded-full bg-[#8ab8dd]/70" />
+                            <span className="absolute bottom-8 left-9 text-lg text-[#8ab8dd]">
+                                +
+                            </span>
+
+                            <span className="absolute right-5 bottom-12 h-2 w-2 rounded-full bg-[#8ab8dd]/70" />
+                        </div>
+                    </div>
+                </section>
+
+                <section className="mt-9">
+                    <div className="mb-5 flex items-end justify-between">
+                        <div>
+                            <p className="text-[10px] font-bold tracking-[0.16em] text-[#7da2c3]">
+                                RINGKASAN AKTIVITAS
+                            </p>
+
+                            <h2 className="mt-2 text-xl font-semibold text-[#234766]">
+                                Aktivitas hari ini
+                            </h2>
                         </div>
 
+                        <span className="hidden text-xs text-[#8aa6c0] sm:block">
+                            Statistik dashboard
+                        </span>
+                    </div>
 
-                        <section className="mt-9">
-                            <div className="mb-5 flex items-end justify-between">
+                    <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                        <article className={`${glass} rounded-[22px] p-6 transition duration-200 hover:-translate-y-1`}>
+                            <div className="flex items-start justify-between">
                                 <div>
-                                    <p className="text-[10px] font-bold tracking-[0.16em] text-[#7da2c3]">
-                                        RINGKASAN AKTIVITAS
+                                    <p className="text-sm font-medium text-[#6487a8]">
+                                        Janji temu menunggu
                                     </p>
 
-                                    <h2 className="mt-2 text-xl font-semibold text-[#234766]">
-                                        Aktivitas hari ini
-                                    </h2>
+                                    <p className="mt-2 text-xs text-[#8aa8c5]">
+                                        Permintaan yang belum divalidasi
+                                    </p>
                                 </div>
 
-                                <span className="hidden text-xs text-[#8aa6c0] sm:block">
-                                    Statistik dashboard
+                                <div className={`${innerGlass} flex h-11 w-11 items-center justify-center rounded-xl text-[#719fc6]`}>
+                                    <svg
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        className="h-5 w-5"
+                                        stroke="currentColor"
+                                        strokeWidth="1.6"
+                                    >
+                                        <circle cx="12" cy="12" r="9" />
+                                        <path d="M12 7v5l3 2" />
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <div className="mt-6 flex items-end justify-between">
+                                <p className="text-5xl font-bold tracking-tight text-[#315f88]">
+                                    {loadingDashboard
+                                        ? "..."
+                                        : dashboard.total_pending}
+                                </p>
+
+                                <div className="h-1.5 w-24 overflow-hidden rounded-full bg-[#c8e0f3]/60">
+                                    <div className="h-full w-1/3 rounded-full bg-[#83b5dc]" />
+                                </div>
+                            </div>
+                        </article>
+
+                        <article className={`${glass} rounded-[22px] p-6 transition duration-200 hover:-translate-y-1`}>
+                            <div className="flex items-start justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-[#6487a8]">
+                                        Janji temu hari ini
+                                    </p>
+
+                                    <p className="mt-2 text-xs text-[#8aa8c5]">
+                                        Janji temu yang sudah disetujui
+                                    </p>
+                                </div>
+
+                                <div className={`${innerGlass} flex h-11 w-11 items-center justify-center rounded-xl text-[#719fc6]`}>
+                                    <svg
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        className="h-5 w-5"
+                                        stroke="currentColor"
+                                        strokeWidth="1.6"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                    >
+                                        <path d="m5 12 4 4L19 6" />
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <div className="mt-6 flex items-end justify-between">
+                                <p className="text-5xl font-bold tracking-tight text-[#315f88]">
+                                    {loadingDashboard
+                                        ? "..."
+                                        : dashboard.approved_hari_ini}
+                                </p>
+
+                                <div className="flex items-center gap-1 rounded-full border border-white/75 bg-white/35 px-3 py-1.5 text-[10px] text-[#7398b8]">
+                                    <span className="text-[#83b5dc]">✓</span>
+                                    Disetujui
+                                </div>
+                            </div>
+                        </article>
+                    </div>
+                </section>
+
+                <section className="mt-9">
+                    <div className="mb-5">
+                        <p className="text-[10px] font-bold tracking-[0.16em] text-[#7da2c3]">
+                            AKSES CEPAT
+                        </p>
+
+                        <h2 className="mt-2 text-xl font-semibold text-[#234766]">
+                            Menu utama
+                        </h2>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                        <article className={`${glass} rounded-[22px] p-6 transition duration-200 hover:-translate-y-1`}>
+                            <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-semibold tracking-[0.12em] text-[#8aa9c7]">
+                                    MENU 01
+                                </span>
+
+                                <span className="text-lg text-[#83acd0]">
+                                    ↗
                                 </span>
                             </div>
 
-                            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                                <article className={`${glass} rounded-[22px] p-6 transition duration-200 hover:-translate-y-1`}>
-                                    <div className="flex items-start justify-between">
-                                        <div>
-                                            <p className="text-sm font-medium text-[#6487a8]">
-                                                Janji temu menunggu
-                                            </p>
-
-                                            <p className="mt-2 text-xs text-[#8aa8c5]">
-                                                Permintaan yang belum divalidasi
-                                            </p>
-                                        </div>
-
-                                        <div className={`${innerGlass} flex h-11 w-11 items-center justify-center rounded-xl text-[#719fc6]`}>
-                                            <svg
-                                                viewBox="0 0 24 24"
-                                                fill="none"
-                                                className="h-5 w-5"
-                                                stroke="currentColor"
-                                                strokeWidth="1.6"
-                                            >
-                                                <circle cx="12" cy="12" r="9" />
-                                                <path d="M12 7v5l3 2" />
-                                            </svg>
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-6 flex items-end justify-between">
-                                        <p className="text-5xl font-bold tracking-tight text-[#315f88]">
-                                            {loadingDashboard
-                                                ? "..."
-                                                : dashboard.total_pending}
-                                        </p>
-
-                                        <div className="h-1.5 w-24 overflow-hidden rounded-full bg-[#c8e0f3]/60">
-                                            <div className="h-full w-1/3 rounded-full bg-[#83b5dc]" />
-                                        </div>
-                                    </div>
-                                </article>
-
-                                <article className={`${glass} rounded-[22px] p-6 transition duration-200 hover:-translate-y-1`}>
-                                    <div className="flex items-start justify-between">
-                                        <div>
-                                            <p className="text-sm font-medium text-[#6487a8]">
-                                                Janji temu hari ini
-                                            </p>
-
-                                            <p className="mt-2 text-xs text-[#8aa8c5]">
-                                                Janji temu yang sudah disetujui
-                                            </p>
-                                        </div>
-
-                                        <div className={`${innerGlass} flex h-11 w-11 items-center justify-center rounded-xl text-[#719fc6]`}>
-                                            <svg
-                                                viewBox="0 0 24 24"
-                                                fill="none"
-                                                className="h-5 w-5"
-                                                stroke="currentColor"
-                                                strokeWidth="1.6"
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                            >
-                                                <path d="m5 12 4 4L19 6" />
-                                            </svg>
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-6 flex items-end justify-between">
-                                        <p className="text-5xl font-bold tracking-tight text-[#315f88]">
-                                            {loadingDashboard
-                                                ? "..."
-                                                : dashboard.approved_hari_ini}
-                                        </p>
-
-                                        <div className="flex items-center gap-1 rounded-full border border-white/75 bg-white/35 px-3 py-1.5 text-[10px] text-[#7398b8]">
-                                            <span className="text-[#83b5dc]">✓</span>
-                                            Disetujui
-                                        </div>
-                                    </div>
-                                </article>
-                            </div>
-                        </section>
-
-                        <section className="mt-9">
-                            <div className="mb-5">
-                                <p className="text-[10px] font-bold tracking-[0.16em] text-[#7da2c3]">
-                                    AKSES CEPAT
-                                </p>
-
-                                <h2 className="mt-2 text-xl font-semibold text-[#234766]">
-                                    Menu utama
-                                </h2>
-                            </div>
-
-                            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                                <article className={`${glass} rounded-[22px] p-6 transition duration-200 hover:-translate-y-1`}>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-[10px] font-semibold tracking-[0.12em] text-[#8aa9c7]">
-                                            MENU 01
-                                        </span>
-
-                                        <span className="text-lg text-[#83acd0]">
-                                            ↗
-                                        </span>
-                                    </div>
-
-                                    <div className="mt-5 flex items-center gap-4">
-                                        <div className={`${innerGlass} flex h-14 w-14 items-center justify-center rounded-2xl text-[#719fc6]`}>
-                                            <svg
-                                                viewBox="0 0 24 24"
-                                                fill="none"
-                                                className="h-6 w-6"
-                                                stroke="currentColor"
-                                                strokeWidth="1.5"
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                            >
-                                                <rect
-                                                    x="3"
-                                                    y="5"
-                                                    width="18"
-                                                    height="16"
-                                                    rx="3"
-                                                />
-                                                <path d="M16 3v4M8 3v4M3 10h18" />
-                                                <path d="m9 15 2 2 4-4" />
-                                            </svg>
-                                        </div>
-
-                                        <div>
-                                            <h3 className="text-lg font-semibold text-[#315574]">
-                                                Janji Temu Pasien
-                                            </h3>
-
-                                            <p className="mt-1 text-xs text-[#819fbb]">
-                                                Kelola konsultasi pasien
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <p className="mt-5 text-xs leading-6 text-[#819fbb]">
-                                        Periksa permintaan konsultasi dan
-                                        validasi janji temu pasien.
-                                    </p>
-
-                                    <button
-                                        onClick={() =>
-                                            router.push("/dokter/janji-temu")
-                                        }
-                                        className="mt-5 flex w-full items-center justify-between rounded-xl border border-white/80 bg-white/45 px-4 py-3 text-xs font-semibold text-[#527da3] shadow-sm transition hover:bg-white/70"
+                            <div className="mt-5 flex items-center gap-4">
+                                <div className={`${innerGlass} flex h-14 w-14 items-center justify-center rounded-2xl text-[#719fc6]`}>
+                                    <svg
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        className="h-6 w-6"
+                                        stroke="currentColor"
+                                        strokeWidth="1.5"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
                                     >
-                                        Lihat Janji Temu
-                                        <span className="text-base text-[#78a4ca]">
-                                            →
-                                        </span>
-                                    </button>
-                                </article>
+                                        <rect
+                                            x="3"
+                                            y="5"
+                                            width="18"
+                                            height="16"
+                                            rx="3"
+                                        />
+                                        <path d="M16 3v4M8 3v4M3 10h18" />
+                                        <path d="m9 15 2 2 4-4" />
+                                    </svg>
+                                </div>
 
-                                <article className={`${glass} rounded-[22px] p-6 transition duration-200 hover:-translate-y-1`}>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-[10px] font-semibold tracking-[0.12em] text-[#8aa9c7]">
-                                            MENU 02
-                                        </span>
+                                <div>
+                                    <h3 className="text-lg font-semibold text-[#315574]">
+                                        Janji Temu Pasien
+                                    </h3>
 
-                                        <span className="text-lg text-[#83acd0]">
-                                            ↗
-                                        </span>
-                                    </div>
-
-                                    <div className="mt-5 flex items-center gap-4">
-                                        <div className={`${innerGlass} flex h-14 w-14 items-center justify-center rounded-2xl text-[#719fc6]`}>
-                                            <svg
-                                                viewBox="0 0 24 24"
-                                                fill="none"
-                                                className="h-6 w-6"
-                                                stroke="currentColor"
-                                                strokeWidth="1.5"
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                            >
-                                                <rect
-                                                    x="4"
-                                                    y="3"
-                                                    width="16"
-                                                    height="18"
-                                                    rx="3"
-                                                />
-                                                <path d="M12 8v8M8 12h8" />
-                                            </svg>
-                                        </div>
-
-                                        <div>
-                                            <h3 className="text-lg font-semibold text-[#315574]">
-                                                Rekam Medis
-                                            </h3>
-
-                                            <p className="mt-1 text-xs text-[#819fbb]">
-                                                Riwayat pemeriksaan pasien
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <p className="mt-5 text-xs leading-6 text-[#819fbb]">
-                                        Catat hasil pemeriksaan, diagnosis,
-                                        tindakan, dan resep obat pasien.
+                                    <p className="mt-1 text-xs text-[#819fbb]">
+                                        Kelola konsultasi pasien
                                     </p>
+                                </div>
+                            </div>
 
-                                    <button
-                                        onClick={() =>
-                                            router.push("/dokter/rekam-medis")
-                                        }
-                                        className="mt-5 flex w-full items-center justify-between rounded-xl border border-white/80 bg-white/45 px-4 py-3 text-xs font-semibold text-[#527da3] shadow-sm transition hover:bg-white/70"
+                            <p className="mt-5 text-xs leading-6 text-[#819fbb]">
+                                Periksa permintaan konsultasi dan
+                                validasi janji temu pasien.
+                            </p>
+
+                            <button
+                                onClick={() =>
+                                    router.push("/dokter/janji-temu")
+                                }
+                                className="mt-5 flex w-full items-center justify-between rounded-xl border border-white/80 bg-white/45 px-4 py-3 text-xs font-semibold text-[#527da3] shadow-sm transition hover:bg-white/70"
+                            >
+                                Lihat Janji Temu
+                                <span className="text-base text-[#78a4ca]">
+                                    →
+                                </span>
+                            </button>
+                        </article>
+
+                        <article className={`${glass} rounded-[22px] p-6 transition duration-200 hover:-translate-y-1`}>
+                            <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-semibold tracking-[0.12em] text-[#8aa9c7]">
+                                    MENU 02
+                                </span>
+
+                                <span className="text-lg text-[#83acd0]">
+                                    ↗
+                                </span>
+                            </div>
+
+                            <div className="mt-5 flex items-center gap-4">
+                                <div className={`${innerGlass} flex h-14 w-14 items-center justify-center rounded-2xl text-[#719fc6]`}>
+                                    <svg
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        className="h-6 w-6"
+                                        stroke="currentColor"
+                                        strokeWidth="1.5"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
                                     >
-                                        Buka Rekam Medis
-                                        <span className="text-base text-[#78a4ca]">
-                                            →
-                                        </span>
-                                    </button>
-                                </article>
+                                        <rect
+                                            x="4"
+                                            y="3"
+                                            width="16"
+                                            height="18"
+                                            rx="3"
+                                        />
+                                        <path d="M12 8v8M8 12h8" />
+                                    </svg>
+                                </div>
+
+                                <div>
+                                    <h3 className="text-lg font-semibold text-[#315574]">
+                                        Rekam Medis
+                                    </h3>
+
+                                    <p className="mt-1 text-xs text-[#819fbb]">
+                                        Riwayat pemeriksaan pasien
+                                    </p>
+                                </div>
                             </div>
-                        </section>
 
-                        <section className="mt-9">
-                            <div className="mb-5">
-                                <p className="text-[10px] font-bold tracking-[0.16em] text-[#7da2c3]">
-                                    INFORMASI DOKTER
-                                </p>
+                            <p className="mt-5 text-xs leading-6 text-[#819fbb]">
+                                Catat hasil pemeriksaan, diagnosis,
+                                tindakan, dan resep obat pasien.
+                            </p>
 
-                                <h2 className="mt-2 text-xl font-semibold text-[#234766]">
-                                    Jadwal Praktik
-                                </h2>
+                            <button
+                                onClick={() =>
+                                    router.push("/dokter/rekam-medis")
+                                }
+                                className="mt-5 flex w-full items-center justify-between rounded-xl border border-white/80 bg-white/45 px-4 py-3 text-xs font-semibold text-[#527da3] shadow-sm transition hover:bg-white/70"
+                            >
+                                Buka Rekam Medis
+                                <span className="text-base text-[#78a4ca]">
+                                    →
+                                </span>
+                            </button>
+                        </article>
+                    </div>
+                </section>
+
+                <section className="mt-9">
+                    <div className="mb-5">
+                        <p className="text-[10px] font-bold tracking-[0.16em] text-[#7da2c3]">
+                            INFORMASI DOKTER
+                        </p>
+
+                        <h2 className="mt-2 text-xl font-semibold text-[#234766]">
+                            Jadwal Praktik
+                        </h2>
+                    </div>
+
+                    <div className={`${glass} rounded-[22px] p-2 sm:px-5`}>
+                        {loadingDashboard ? (
+                            <div className="flex min-h-[130px] items-center justify-center text-xs text-[#819fbb]">
+                                Memuat jadwal praktik...
                             </div>
+                        ) : dashboard.jadwal_praktik.length === 0 ? (
+                            <div className="flex min-h-[130px] items-center justify-center text-xs text-[#819fbb]">
+                                Belum ada jadwal praktik.
+                            </div>
+                        ) : (
+                            <div className="w-full overflow-x-auto">
+                                <table className="w-full whitespace-nowrap text-left">
+                                    <thead>
+                                        <tr className="border-b border-[#8cb3d4]/25">
+                                            <th className="px-4 py-4 text-xs font-semibold text-[#7d9fbe]">
+                                                Hari
+                                            </th>
+                                            <th className="px-4 py-4 text-xs font-semibold text-[#7d9fbe]">
+                                                Jam
+                                            </th>
+                                            <th className="px-4 py-4 text-xs font-semibold text-[#7d9fbe]">
+                                                Durasi
+                                            </th>
+                                            <th className="px-4 py-4 text-xs font-semibold text-[#7d9fbe]">
+                                                Poli
+                                            </th>
+                                        </tr>
+                                    </thead>
 
-                            <div className={`${glass} rounded-[22px] p-2 sm:px-5`}>
-                                {loadingDashboard ? (
-                                    <div className="flex min-h-[130px] items-center justify-center text-xs text-[#819fbb]">
-                                        Memuat jadwal praktik...
-                                    </div>
-                                ) : dashboard.jadwal_praktik.length === 0 ? (
-                                    <div className="flex min-h-[130px] items-center justify-center text-xs text-[#819fbb]">
-                                        Belum ada jadwal praktik.
-                                    </div>
-                                ) : (
-                                    <div className="w-full overflow-x-auto">
-                                        <table className="w-full whitespace-nowrap text-left">
-                                            <thead>
-                                                <tr className="border-b border-[#8cb3d4]/25">
-                                                    <th className="px-4 py-4 text-xs font-semibold text-[#7d9fbe]">
-                                                        Hari
-                                                    </th>
-                                                    <th className="px-4 py-4 text-xs font-semibold text-[#7d9fbe]">
-                                                        Jam
-                                                    </th>
-                                                    <th className="px-4 py-4 text-xs font-semibold text-[#7d9fbe]">
-                                                        Durasi
-                                                    </th>
-                                                    <th className="px-4 py-4 text-xs font-semibold text-[#7d9fbe]">
-                                                        Poli
-                                                    </th>
+                                    <tbody>
+                                        {dashboard.jadwal_praktik.map(
+                                            (jadwal) => (
+                                                <tr
+                                                    key={jadwal.id}
+                                                    className="border-b border-[#8cb3d4]/15 transition hover:bg-white/30 last:border-0"
+                                                >
+                                                    <td className="px-4 py-4 text-xs text-[#6384a3]">
+                                                        {namaHari(jadwal.hari)}
+                                                    </td>
+
+                                                    <td className="px-4 py-4 text-xs text-[#6384a3]">
+                                                        {formatJam(
+                                                            jadwal.jam_mulai
+                                                        )}
+                                                    </td>
+
+                                                    <td className="px-4 py-4 text-xs text-[#6384a3]">
+                                                        {jadwal.durasi} menit
+                                                    </td>
+
+                                                    <td className="px-4 py-4 text-xs text-[#6384a3]">
+                                                        {jadwal.nama_poli || "-"}
+                                                    </td>
                                                 </tr>
-                                            </thead>
-
-                                            <tbody>
-                                                {dashboard.jadwal_praktik.map(
-                                                    (jadwal) => (
-                                                        <tr
-                                                            key={jadwal.id}
-                                                            className="border-b border-[#8cb3d4]/15 transition hover:bg-white/30 last:border-0"
-                                                        >
-                                                            <td className="px-4 py-4 text-xs text-[#6384a3]">
-                                                                {namaHari(jadwal.hari)}
-                                                            </td>
-
-                                                            <td className="px-4 py-4 text-xs text-[#6384a3]">
-                                                                {formatJam(
-                                                                    jadwal.jam_mulai
-                                                                )}
-                                                            </td>
-
-                                                            <td className="px-4 py-4 text-xs text-[#6384a3]">
-                                                                {jadwal.durasi} menit
-                                                            </td>
-
-                                                            <td className="px-4 py-4 text-xs text-[#6384a3]">
-                                                                {jadwal.nama_poli || "-"}
-                                                            </td>
-                                                        </tr>
-                                                    )
-                                                )}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                )}
+                                            )
+                                        )}
+                                    </tbody>
+                                </table>
                             </div>
-                        </section>
+                        )}
+                    </div>
+                </section>
 
-                        <section className="mt-9">
-                            <div className="mb-5">
-                                <p className="text-[10px] font-bold tracking-[0.16em] text-[#7da2c3]">
-                                    RIWAYAT PEMERIKSAAN
-                                </p>
+                <section className="mt-9">
+                    <div className="mb-5">
+                        <p className="text-[10px] font-bold tracking-[0.16em] text-[#7da2c3]">
+                            RIWAYAT PEMERIKSAAN
+                        </p>
 
-                                <h2 className="mt-2 text-xl font-semibold text-[#234766]">
-                                    Pasien terakhir diperiksa
-                                </h2>
+                        <h2 className="mt-2 text-xl font-semibold text-[#234766]">
+                            Pasien terakhir diperiksa
+                        </h2>
+                    </div>
+
+                    <div className={`${glass} rounded-[22px] p-2 sm:px-5`}>
+                        {loadingDashboard ? (
+                            <div className="flex min-h-[130px] items-center justify-center text-xs text-[#819fbb]">
+                                Memuat data pasien...
                             </div>
+                        ) : dashboard.pasien_terbaru.length === 0 ? (
+                            <div className="flex min-h-[130px] items-center justify-center text-xs text-[#819fbb]">
+                                Belum ada pasien yang diperiksa.
+                            </div>
+                        ) : (
+                            <div className="w-full overflow-x-auto">
+                                <table className="w-full whitespace-nowrap text-left">
+                                    <thead>
+                                        <tr className="border-b border-[#8cb3d4]/25">
+                                            <th className="px-4 py-4 text-xs font-semibold text-[#7d9fbe]">
+                                                Nama Pasien
+                                            </th>
+                                            <th className="px-4 py-4 text-xs font-semibold text-[#7d9fbe]">
+                                                Tanggal Pemeriksaan
+                                            </th>
+                                            <th className="px-4 py-4 text-xs font-semibold text-[#7d9fbe]">
+                                                Diagnosis
+                                            </th>
+                                        </tr>
+                                    </thead>
 
-                            <div className={`${glass} rounded-[22px] p-2 sm:px-5`}>
-                                {loadingDashboard ? (
-                                    <div className="flex min-h-[130px] items-center justify-center text-xs text-[#819fbb]">
-                                        Memuat data pasien...
-                                    </div>
-                                ) : dashboard.pasien_terbaru.length === 0 ? (
-                                    <div className="flex min-h-[130px] items-center justify-center text-xs text-[#819fbb]">
-                                        Belum ada pasien yang diperiksa.
-                                    </div>
-                                ) : (
-                                    <div className="w-full overflow-x-auto">
-                                        <table className="w-full whitespace-nowrap text-left">
-                                            <thead>
-                                                <tr className="border-b border-[#8cb3d4]/25">
-                                                    <th className="px-4 py-4 text-xs font-semibold text-[#7d9fbe]">
-                                                        Nama Pasien
-                                                    </th>
-                                                    <th className="px-4 py-4 text-xs font-semibold text-[#7d9fbe]">
-                                                        Tanggal Pemeriksaan
-                                                    </th>
-                                                    <th className="px-4 py-4 text-xs font-semibold text-[#7d9fbe]">
-                                                        Diagnosis
-                                                    </th>
+                                    <tbody>
+                                        {dashboard.pasien_terbaru.map(
+                                            (pasien) => (
+                                                <tr
+                                                    key={
+                                                        pasien.medical_record_id
+                                                    }
+                                                    className="border-b border-[#8cb3d4]/15 transition hover:bg-white/30 last:border-0"
+                                                >
+                                                    <td className="px-4 py-4">
+                                                        <div className="flex items-center gap-3 text-xs font-medium text-[#456b8e]">
+                                                            <span className={`${innerGlass} flex h-9 w-9 items-center justify-center rounded-xl text-xs font-semibold text-[#719fc6]`}>
+                                                                {pasien.nama_pasien
+                                                                    ?.charAt(0)
+                                                                    .toUpperCase()}
+                                                            </span>
+
+                                                            {pasien.nama_pasien}
+                                                        </div>
+                                                    </td>
+
+                                                    <td className="px-4 py-4 text-xs text-[#6384a3]">
+                                                        {formatTanggal(
+                                                            pasien.tanggal_pemeriksaan
+                                                        )}
+                                                    </td>
+
+                                                    <td className="px-4 py-4 text-xs text-[#6384a3]">
+                                                        {pasien.diagnosis}
+                                                    </td>
                                                 </tr>
-                                            </thead>
-
-                                            <tbody>
-                                                {dashboard.pasien_terbaru.map(
-                                                    (pasien) => (
-                                                        <tr
-                                                            key={
-                                                                pasien.medical_record_id
-                                                            }
-                                                            className="border-b border-[#8cb3d4]/15 transition hover:bg-white/30 last:border-0"
-                                                        >
-                                                            <td className="px-4 py-4">
-                                                                <div className="flex items-center gap-3 text-xs font-medium text-[#456b8e]">
-                                                                    <span className={`${innerGlass} flex h-9 w-9 items-center justify-center rounded-xl text-xs font-semibold text-[#719fc6]`}>
-                                                                        {pasien.nama_pasien
-                                                                            ?.charAt(0)
-                                                                            .toUpperCase()}
-                                                                    </span>
-
-                                                                    {pasien.nama_pasien}
-                                                                </div>
-                                                            </td>
-
-                                                            <td className="px-4 py-4 text-xs text-[#6384a3]">
-                                                                {formatTanggal(
-                                                                    pasien.tanggal_pemeriksaan
-                                                                )}
-                                                            </td>
-
-                                                            <td className="px-4 py-4 text-xs text-[#6384a3]">
-                                                                {pasien.diagnosis}
-                                                            </td>
-                                                        </tr>
-                                                    )
-                                                )}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                )}
+                                            )
+                                        )}
+                                    </tbody>
+                                </table>
                             </div>
-                        </section>
+                        )}
+                    </div>
+                </section>
 
-                        <footer className="mt-12 flex flex-wrap items-center justify-between gap-4 border-t border-[#81abcd]/20 pt-5 text-[10px] text-[#8aa6c0]">
-                            <span className="font-semibold tracking-[0.12em]">
-                                HARMONI HEALTHCARE
-                            </span>
+                <footer className="mt-12 flex flex-wrap items-center justify-between gap-4 border-t border-[#81abcd]/20 pt-5 text-[10px] text-[#8aa6c0]">
+                    <span className="font-semibold tracking-[0.12em]">
+                        HARMONI HEALTHCARE
+                    </span>
 
-                            <span>Dashboard Dokter</span>
-                        </footer>
-                    </div >
-                </main >
-                );
+                    <span>Dashboard Dokter</span>
+                </footer>
+            </div>
+        </main>
+    );
 }
