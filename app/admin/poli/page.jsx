@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function PoliPage() {
@@ -12,6 +12,7 @@ export default function PoliPage() {
     const [poliDipilih, setPoliDipilih] = useState(null);
     const [pesan, setPesan] = useState("");
     const [menyimpan, setMenyimpan] = useState(false);
+    const [menghapus, setMenghapus] = useState(null);
 
     const [form, setForm] = useState({
         nama: "",
@@ -19,7 +20,7 @@ export default function PoliPage() {
         ikon: "",
     });
 
-    async function ambilPoli() {
+    const ambilPoli = useCallback(async () => {
         try {
             const response = await fetch("/api/admin/poli");
             const hasil = await response.json();
@@ -29,57 +30,66 @@ export default function PoliPage() {
                 return;
             }
 
-            if (hasil.success) {
-                setDaftarPoli(hasil.data);
+            if (!response.ok || !hasil.success) {
+                throw new Error(hasil.message || "Data poli gagal dimuat.");
             }
+
+            setDaftarPoli(Array.isArray(hasil.data) ? hasil.data : []);
         } catch (error) {
-            setPesan("Data poli gagal dimuat.");
+            console.error("Gagal mengambil data poli:", error);
+            setPesan(error.message || "Data poli gagal dimuat.");
         } finally {
             setLoading(false);
         }
-    }
+    }, [router]);
 
     useEffect(() => {
+        let aktif = true;
+
         async function cekAdmin() {
-            const response = await fetch("/api/me");
-            const hasil = await response.json();
+            try {
+                const response = await fetch("/api/me");
+                const hasil = await response.json();
 
-            if (!response.ok || hasil.user?.role !== "admin") {
-                router.push("/login");
-                return;
+                if (!response.ok || hasil.user?.role !== "admin") {
+                    router.replace("/login");
+                    return;
+                }
+
+                if (aktif) await ambilPoli();
+            } catch (error) {
+                console.error("Gagal memeriksa sesi:", error);
+                router.replace("/login");
             }
-
-            ambilPoli();
         }
 
         cekAdmin();
-    }, [router]);
+
+        return () => {
+            aktif = false;
+        };
+    }, [router, ambilPoli]);
 
     function bukaForm(poli = null) {
         setPoliDipilih(poli);
-
-        if (poli) {
-            setForm({
-                nama: poli.nama,
-                deskripsi: poli.deskripsi,
-                ikon: poli.ikon || "",
-            });
-        } else {
-            setForm({
-                nama: "",
-                deskripsi: "",
-                ikon: "",
-            });
-        }
-
+        setForm({
+            nama: poli?.nama || "",
+            deskripsi: poli?.deskripsi || "",
+            ikon: poli?.ikon || "",
+        });
         setPesan("");
         setTampilForm(true);
     }
 
-    // Menyimpan data poli
+    function tutupForm() {
+        if (menyimpan) return;
+        setTampilForm(false);
+        setPoliDipilih(null);
+        setPesan("");
+    }
+
     async function simpanPoli(e) {
         e.preventDefault();
-
         if (menyimpan) return;
 
         setMenyimpan(true);
@@ -92,10 +102,12 @@ export default function PoliPage() {
 
             const response = await fetch(url, {
                 method: poliDipilih ? "PUT" : "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(form),
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    nama: form.nama.trim(),
+                    deskripsi: form.deskripsi.trim(),
+                    ikon: form.ikon.trim(),
+                }),
             });
 
             const hasil = await response.json();
@@ -107,279 +119,327 @@ export default function PoliPage() {
 
             setTampilForm(false);
             setPoliDipilih(null);
-
-            setForm({
-                nama: "",
-                deskripsi: "",
-                ikon: "",
-            });
-
+            setForm({ nama: "", deskripsi: "", ikon: "" });
             await ambilPoli();
-
         } catch (error) {
+            console.error("Gagal menyimpan poli:", error);
             setPesan("Terjadi kesalahan saat menyimpan data.");
         } finally {
             setMenyimpan(false);
         }
     }
-    async function hapusPoli(id) {
-        const yakin = window.confirm(
-            "Yakin ingin menghapus data poli ini?"
-        );
 
-        if (!yakin) return;
+    async function hapusPoli(id) {
+        if (!window.confirm("Yakin ingin menghapus data poli ini?")) return;
+
+        setMenghapus(id);
 
         try {
             const response = await fetch(`/api/admin/poli/${id}`, {
                 method: "DELETE",
             });
-
             const hasil = await response.json();
 
             if (!response.ok) {
-                alert(hasil.message || "Data gagal dihapus.");
+                window.alert(hasil.message || "Data gagal dihapus.");
                 return;
             }
 
-            ambilPoli();
+            await ambilPoli();
         } catch (error) {
-            alert("Data poli gagal dihapus.");
+            console.error("Gagal menghapus poli:", error);
+            window.alert("Data poli gagal dihapus.");
+        } finally {
+            setMenghapus(null);
         }
     }
 
+    const inputClass =
+        "w-full rounded-2xl border border-white/80 bg-white/65 px-4 py-3.5 text-sm text-[#29496f] shadow-[inset_0_1px_3px_rgba(255,255,255,.9),0_8px_24px_rgba(83,125,170,.06)] outline-none transition placeholder:text-[#8da8c9] focus:border-[#8bb9e8] focus:bg-white/90 focus:ring-4 focus:ring-[#b8d9f5]/35";
+
     return (
-        <main className="min-h-screen bg-[#f4f8f6]">
+        <main className="relative min-h-screen overflow-hidden bg-[#eaf3fc] text-[#29496f]">
 
-            <header className="bg-white border-b px-6 md:px-8 py-5 flex justify-between items-center">
-                <div>
-                    <h1 className="text-2xl font-bold text-[#28765d]">
-                        HARMONI
-                    </h1>
-                    <p className="text-sm text-gray-500">
-                        Hospital Information System
-                    </p>
-                </div>
+            <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                <div className="absolute -left-36 -top-40 h-[480px] w-[480px] rounded-full bg-white/75 blur-[90px]" />
+                <div className="absolute -right-32 top-20 h-[520px] w-[520px] rounded-full bg-[#a9cfee]/45 blur-[100px]" />
+                <div className="absolute bottom-[-230px] left-[28%] h-[520px] w-[680px] rounded-full bg-[#d4e7f8]/80 blur-[100px]" />
+                <div className="absolute inset-0 bg-gradient-to-br from-white/35 via-transparent to-[#9fc4e8]/20" />
+            </div>
 
-                <button
-                    onClick={() => router.push("/admin")}
-                    className="text-sm text-[#28765d] hover:underline"
-                >
-                    Kembali ke Dashboard
-                </button>
-            </header>
-
-            <section className="p-6 md:p-8">
-
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div>
-                        <p className="text-sm text-[#28765d] font-medium">
-                            Pengelolaan Data
-                        </p>
-
-                        <h2 className="text-2xl font-semibold text-gray-800 mt-1">
-                            Data Poli
-                        </h2>
-
-                        <p className="text-sm text-gray-500 mt-1">
-                            Daftar poli yang tersedia di rumah sakit.
-                        </p>
-                    </div>
+            <header className="relative z-10 border-b border-white/70 bg-white/45 backdrop-blur-2xl">
+                <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-4 px-5 py-5 sm:px-8 lg:px-12">
+                    <button
+                        type="button"
+                        onClick={() => router.push("/admin")}
+                        className="group text-left"
+                    >
+                        <span className="block text-[25px] font-semibold tracking-[0.19em] text-[#345b86] transition group-hover:text-[#5b8fc1]">
+                            HARMONI
+                        </span>
+                        <span className="mt-1 block text-[10px] tracking-[0.22em] text-[#7898bd] sm:text-xs">
+                            HOSPITAL INFORMATION SYSTEM
+                        </span>
+                    </button>
 
                     <button
-                        onClick={() => bukaForm()}
-                        className="bg-[#28765d] text-white px-5 py-3 rounded-lg hover:bg-[#21634e] transition"
+                        type="button"
+                        onClick={() => router.push("/admin")}
+                        className="rounded-full border border-white/80 bg-white/45 px-4 py-2.5 text-xs font-medium text-[#52769e] shadow-sm backdrop-blur-xl transition hover:-translate-y-0.5 hover:bg-white/80 sm:px-5 sm:text-sm"
                     >
-                        + Tambah Poli
+                        <span className="mr-2">←</span>
+                        Kembali ke dashboard
                     </button>
                 </div>
+            </header>
 
-                <div className="bg-white rounded-xl border border-gray-100 mt-7 overflow-hidden">
+            <div className="relative z-10 mx-auto max-w-[1500px] px-5 pb-10 pt-8 sm:px-8 sm:pt-12 lg:px-12">
+                <section className="mb-9 flex flex-col justify-between gap-7 md:flex-row md:items-end">
+                    <div className="max-w-3xl">
+                        <p className="mb-4 flex items-center gap-3 text-[10px] font-semibold tracking-[0.24em] text-[#7a9fc7] sm:text-xs">
+                            <span className="h-px w-8 bg-[#91b7df]" />
+                            ADMINISTRATION <span className="text-[#b0c6dc]">/</span> MASTER DATA
+                        </p>
 
-                    <div className="p-5 border-b">
-                        <h3 className="font-semibold text-gray-800">
-                            Daftar Poli
-                        </h3>
+                        <h1 className="text-4xl font-light leading-[1.12] tracking-[-0.04em] text-[#31577f] sm:text-5xl lg:text-6xl">
+                            Ruang pelayanan,
+                            <br />
+                            <span className="font-medium text-[#7099c3]">dimulai dari sini.</span>
+                        </h1>
 
-                        <p className="text-sm text-gray-500 mt-1">
-                            Total {daftarPoli.length} poli terdaftar
+                        <p className="mt-5 max-w-xl text-sm leading-7 text-[#7794b6] sm:text-base">
+                            Kelola informasi poli sebagai bagian dari pelayanan
+                            rumah sakit yang terintegrasi.
                         </p>
                     </div>
 
-                    {loading ? (
-                        <p className="p-8 text-center text-gray-500">
-                            Memuat data poli...
-                        </p>
-                    ) : daftarPoli.length === 0 ? (
-                        <p className="p-8 text-center text-gray-500">
-                            Belum ada data poli.
-                        </p>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left">
-                                <thead className="bg-[#f8faf9] text-gray-600">
-                                    <tr>
-                                        <th className="px-5 py-4">No.</th>
-                                        <th className="px-5 py-4">Nama Poli</th>
-                                        <th className="px-5 py-4">Deskripsi</th>
-                                        <th className="px-5 py-4 text-center">
-                                            Aksi
-                                        </th>
-                                    </tr>
-                                </thead>
-
-                                <tbody>
-                                    {daftarPoli.map((poli, index) => (
-                                        <tr
-                                            key={poli.id}
-                                            className="border-t hover:bg-gray-50"
-                                        >
-                                            <td className="px-5 py-4 text-gray-500">
-                                                {index + 1}
-                                            </td>
-
-                                            <td className="px-5 py-4 font-medium text-gray-800">
-                                                {poli.nama}
-                                            </td>
-
-                                            <td className="px-5 py-4 text-gray-600 min-w-[250px]">
-                                                {poli.deskripsi}
-                                            </td>
-
-                                            <td className="px-5 py-4">
-                                                <div className="flex justify-center gap-2">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => bukaForm(poli)}
-                                                        className="px-3 py-2 rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100"
-                                                    >
-                                                        Edit
-                                                    </button>
-
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => hapusPoli(poli.id)}
-                                                        className="px-3 py-2 rounded-md bg-red-50 text-red-600 hover:bg-red-100"
-                                                    >
-                                                        Hapus
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                    <div className="flex items-center gap-4 self-start rounded-[24px] border border-white/75 bg-white/35 px-5 py-4 shadow-[0_14px_40px_rgba(76,118,163,.08)] backdrop-blur-xl md:self-auto">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-white/90 to-[#d4e6f7] text-xl text-[#6c98c5] shadow-[inset_0_1px_3px_white,0_5px_15px_rgba(84,125,169,.12)]">
+                            +
                         </div>
-                    )}
-                </div>
+                        <div>
+                            <p className="text-[10px] tracking-[0.18em] text-[#89a6c7]">POLI DIRECTORY</p>
+                            <p className="mt-1 text-sm font-medium text-[#496f99]">Data unit pelayanan</p>
+                        </div>
+                    </div>
+                </section>
 
-            </section>
+                <section className="rounded-[30px] border border-white/75 bg-white/45 p-4 shadow-[0_25px_80px_rgba(76,117,161,.12)] backdrop-blur-2xl sm:rounded-[36px] sm:p-7 lg:p-9">
+                    <div className="flex flex-col justify-between gap-5 border-b border-[#c9dced]/70 pb-6 sm:flex-row sm:items-center">
+                        <div>
+                            <p className="text-[10px] font-semibold tracking-[0.2em] text-[#8aa8c9]">DIRECTORY</p>
+                            <h2 className="mt-2 text-2xl font-medium tracking-tight text-[#345b84] sm:text-3xl">
+                                Daftar poli
+                            </h2>
+                            <p className="mt-2 text-sm text-[#829fbe]">
+                                Unit pelayanan yang tersedia di HARMONI.
+                            </p>
+                        </div>
 
-            {/* Form tambah dan edit poli */}
-            {tampilForm && (
-                <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-xl w-full max-w-lg p-6">
-
-                        <h3 className="text-xl font-semibold text-gray-800">
-                            {poliDipilih ? "Edit Poli" : "Tambah Poli"}
-                        </h3>
-
-                        <p className="text-sm text-gray-500 mt-1">
-                            Isi informasi poli di bawah ini.
-                        </p>
-
-                        <form
-                            onSubmit={simpanPoli}
-                            className="mt-6 space-y-4"
+                        <button
+                            type="button"
+                            onClick={() => bukaForm()}
+                            className="inline-flex items-center justify-center gap-2 self-start rounded-2xl bg-gradient-to-r from-[#315981] via-[#4779a8] to-[#6598c4] px-5 py-3.5 text-sm font-medium text-white shadow-[0_12px_28px_rgba(61,105,151,.25)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_34px_rgba(61,105,151,.32)] active:translate-y-0 sm:self-auto"
                         >
-                            <div>
-                                <label className="block text-sm text-gray-700 mb-2">
-                                    Nama Poli
-                                </label>
+                            <span className="text-lg leading-none">+</span>
+                            Tambah poli
+                        </button>
+                    </div>
 
+                    <div className="my-5 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/80 bg-[#edf5fc]/70 px-5 py-4">
+                        <div className="flex items-center gap-4">
+                            <span className="text-3xl font-light tracking-tight text-[#527da8]">
+                                {String(daftarPoli.length).padStart(2, "0")}
+                            </span>
+                            <div>
+                                <p className="text-[10px] font-semibold tracking-[0.17em] text-[#7798bc]">POLI TERDAFTAR</p>
+                                <p className="mt-1 text-xs text-[#91a9c5]">Data master pelayanan rumah sakit</p>
+                            </div>
+                        </div>
+                        <span className="rounded-full border border-[#d5e5f4] bg-white/55 px-3 py-1.5 text-xs text-[#86a3c2]">
+                            HARMONI · 2026
+                        </span>
+                    </div>
+
+                    <div className="overflow-hidden rounded-[22px] border border-white/80 bg-white/55 shadow-[0_10px_35px_rgba(83,122,164,.07)]">
+                        {loading ? (
+                            <div className="flex min-h-52 flex-col items-center justify-center gap-3 text-sm text-[#829fbe]">
+                                <span className="h-7 w-7 animate-spin rounded-full border-2 border-[#c8dced] border-t-[#5d8fbe]" />
+                                Memuat data poli...
+                            </div>
+                        ) : pesan && daftarPoli.length === 0 ? (
+                            <div className="p-10 text-center">
+                                <p className="text-sm text-[#7897b8]">{pesan}</p>
+                                <button onClick={ambilPoli} className="mt-4 text-sm font-medium text-[#4778a5] underline underline-offset-4">
+                                    Coba muat ulang
+                                </button>
+                            </div>
+                        ) : daftarPoli.length === 0 ? (
+                            <div className="flex min-h-52 flex-col items-center justify-center px-6 text-center">
+                                <p className="text-lg font-medium text-[#456b94]">Belum ada data poli</p>
+                                <p className="mt-2 max-w-sm text-sm leading-6 text-[#8aa5c2]">
+                                    Tambahkan poli pertama untuk mulai mengelola data pelayanan.
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="w-full min-w-[680px] border-collapse text-left">
+                                    <thead>
+                                        <tr className="bg-[#eaf3fb]/75 text-[10px] font-semibold tracking-[0.16em] text-[#7898bb]">
+                                            <th className="w-20 px-5 py-5">NO.</th>
+                                            <th className="min-w-48 px-5 py-5">UNIT PELAYANAN</th>
+                                            <th className="px-5 py-5">DESKRIPSI</th>
+                                            <th className="w-44 px-5 py-5 text-right">AKSI</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {daftarPoli.map((poli, index) => (
+                                            <tr key={poli.id} className="border-t border-[#dce8f4]/80 transition hover:bg-white/65">
+                                                <td className="px-5 py-5 text-xs tabular-nums text-[#a0b5cc]">
+                                                    {String(index + 1).padStart(2, "0")}
+                                                </td>
+                                                <td className="px-5 py-5">
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#80a9d2] shadow-[0_0_0_4px_rgba(128,169,210,.13)]" />
+                                                        <span className="text-sm font-medium text-[#45698f]">{poli.nama}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="max-w-[520px] px-5 py-5 text-sm leading-6 text-[#819bb8]">
+                                                    {poli.deskripsi || "—"}
+                                                </td>
+                                                <td className="px-5 py-5">
+                                                    <div className="flex justify-end gap-2">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => bukaForm(poli)}
+                                                            className="rounded-xl border border-[#d5e6f5] bg-[#edf5fc] px-3.5 py-2 text-xs font-medium text-[#5d86b1] transition hover:border-[#a9cce9] hover:bg-white"
+                                                        >
+                                                            Edit
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => hapusPoli(poli.id)}
+                                                            disabled={menghapus === poli.id}
+                                                            className="rounded-xl border border-[#f0dce1] bg-[#fff5f6]/80 px-3.5 py-2 text-xs font-medium text-[#b77d8b] transition hover:bg-[#ffeaee] disabled:opacity-50"
+                                                        >
+                                                            {menghapus === poli.id ? "..." : "Hapus"}
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+                </section>
+
+                <footer className="flex flex-col justify-between gap-2 px-2 pt-7 text-[10px] tracking-[0.12em] text-[#91abc7] sm:flex-row">
+                    <span>HARMONI · 2026</span>
+                    <span>CARE THROUGH CONNECTION</span>
+                </footer>
+            </div>
+
+            {tampilForm && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[#28496c]/25 px-4 py-8 backdrop-blur-md"
+                    onClick={tutupForm}
+                >
+                    <div
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="form-poli-title"
+                        className="my-auto w-full max-w-xl rounded-[30px] border border-white/80 bg-[#f5f9fe]/90 p-6 shadow-[0_30px_100px_rgba(39,75,116,.25)] backdrop-blur-2xl sm:p-8"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-start justify-between gap-4">
+                            <div>
+                                <p className="text-[10px] font-semibold tracking-[0.2em] text-[#8aa8c9]">MASTER DATA / POLI</p>
+                                <h3 id="form-poli-title" className="mt-2 text-2xl font-medium text-[#365d85]">
+                                    {poliDipilih ? "Perbarui poli" : "Poli baru"}
+                                </h3>
+                                <p className="mt-2 text-sm text-[#8aa3bf]">Lengkapi informasi unit pelayanan.</p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={tutupForm}
+                                disabled={menyimpan}
+                                aria-label="Tutup form"
+                                className="flex h-9 w-9 items-center justify-center rounded-full border border-white bg-white/70 text-xl text-[#7798ba] transition hover:bg-white disabled:opacity-50"
+                            >
+                                ×
+                            </button>
+                        </div>
+
+                        <form onSubmit={simpanPoli} className="mt-7 space-y-5">
+                            <div>
+                                <label htmlFor="nama-poli" className="mb-2 block text-xs font-medium text-[#55789e]">Nama poli</label>
                                 <input
+                                    id="nama-poli"
                                     type="text"
                                     value={form.nama}
-                                    onChange={(e) =>
-                                        setForm({
-                                            ...form,
-                                            nama: e.target.value,
-                                        })
-                                    }
+                                    onChange={(e) => setForm({ ...form, nama: e.target.value })}
                                     placeholder="Contoh: Poli THT"
-                                    className="w-full border rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-[#28765d]"
+                                    className={inputClass}
                                     required
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-sm text-gray-700 mb-2">
-                                    Deskripsi
-                                </label>
-
+                                <label htmlFor="deskripsi-poli" className="mb-2 block text-xs font-medium text-[#55789e]">Deskripsi</label>
                                 <textarea
+                                    id="deskripsi-poli"
                                     value={form.deskripsi}
-                                    onChange={(e) =>
-                                        setForm({
-                                            ...form,
-                                            deskripsi: e.target.value,
-                                        })
-                                    }
-                                    placeholder="Masukkan deskripsi poli"
-                                    rows="4"
-                                    className="w-full border rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-[#28765d]"
+                                    onChange={(e) => setForm({ ...form, deskripsi: e.target.value })}
+                                    placeholder="Jelaskan layanan yang tersedia di poli ini"
+                                    rows={4}
+                                    className={`${inputClass} resize-y`}
                                     required
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-sm text-gray-700 mb-2">
-                                    Ikon (opsional)
+                                <label htmlFor="ikon-poli" className="mb-2 block text-xs font-medium text-[#55789e]">
+                                    Ikon <span className="font-normal text-[#9bb0c8]">(opsional)</span>
                                 </label>
-
                                 <input
+                                    id="ikon-poli"
                                     type="text"
                                     value={form.ikon}
-                                    onChange={(e) =>
-                                        setForm({
-                                            ...form,
-                                            ikon: e.target.value,
-                                        })
-                                    }
+                                    onChange={(e) => setForm({ ...form, ikon: e.target.value })}
                                     placeholder="Nama ikon atau URL gambar"
-                                    className="w-full border rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-[#28765d]"
+                                    className={inputClass}
                                 />
                             </div>
 
                             {pesan && (
-                                <p className="text-sm text-red-600">
+                                <p role="alert" className="rounded-xl border border-[#f0d9df] bg-[#fff3f5] px-4 py-3 text-sm text-[#b36f7e]">
                                     {pesan}
                                 </p>
                             )}
 
-                            <div className="flex justify-end gap-3 pt-2">
+                            <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
                                 <button
                                     type="button"
-                                    onClick={() => setTampilForm(false)}
+                                    onClick={tutupForm}
                                     disabled={menyimpan}
-                                    className="px-4 py-2 rounded-lg border text-gray-600 hover:bg-gray-50"
+                                    className="rounded-2xl border border-[#d7e5f2] bg-white/60 px-5 py-3 text-sm text-[#7793b1] transition hover:bg-white disabled:opacity-50"
                                 >
                                     Batal
                                 </button>
-
                                 <button
                                     type="submit"
                                     disabled={menyimpan}
-                                    className="px-5 py-2 rounded-lg bg-[#28765d] text-white hover:bg-[#21634e] disabled:opacity-50"
+                                    className="rounded-2xl bg-gradient-to-r from-[#315981] to-[#6598c4] px-6 py-3 text-sm font-medium text-white shadow-[0_10px_25px_rgba(61,105,151,.2)] transition hover:-translate-y-0.5 disabled:opacity-50"
                                 >
-                                    {menyimpan ? "Menyimpan..." : "Simpan"}
+                                    {menyimpan ? "Menyimpan..." : poliDipilih ? "Simpan perubahan" : "Tambah poli"}
                                 </button>
                             </div>
                         </form>
-
                     </div>
                 </div>
             )}
-
         </main>
     );
 }

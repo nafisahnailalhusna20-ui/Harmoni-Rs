@@ -58,168 +58,264 @@ export default function AdminPage() {
     const menuAdmin = [
         {
             nama: "Manajemen Poli",
-            deskripsi: "Kelola data poli rumah sakit.",
+            deskripsi: "Kelola unit pelayanan dan informasi poli rumah sakit.",
             href: "/admin/poli",
+            kategori: "MASTER DATA",
         },
         {
             nama: "Manajemen Dokter",
-            deskripsi: "Kelola data dokter dan poli.",
+            deskripsi: "Atur data dokter serta penempatan poli.",
             href: "/admin/dokter",
+            kategori: "MASTER DATA",
         },
         {
             nama: "Manajemen Obat",
-            deskripsi: "Kelola data dan stok obat.",
+            deskripsi: "Pantau data obat dan ketersediaan stok.",
             href: "/admin/obat",
+            kategori: "FARMASI",
         },
         {
             nama: "Manajemen Jadwal",
-            deskripsi: "Atur jadwal praktik dokter.",
+            deskripsi: "Kelola jadwal praktik dokter rumah sakit.",
             href: "/admin/jadwal",
+            kategori: "OPERASIONAL",
         },
         {
             nama: "Manajemen Pasien",
-            deskripsi: "Kelola data pasien rumah sakit.",
+            deskripsi: "Lihat dan kelola data pasien terdaftar.",
             href: "/admin/pasien",
+            kategori: "DATA PASIEN",
         },
         {
             nama: "Manajemen Janji Temu",
-            deskripsi: "Kelola dan verifikasi janji temu.",
+            deskripsi: "Periksa dan verifikasi pengajuan konsultasi.",
             href: "/admin/janji-temu",
+            kategori: "PELAYANAN",
+        },
+    ];
+
+    const statistikItems = [
+        {
+            label: "Total pasien",
+            angka: statistik.pasien,
+            catatan: "Terdaftar di sistem",
+        },
+        {
+            label: "Dokter aktif",
+            angka: statistik.dokter,
+            catatan: "Tenaga medis",
+        },
+        {
+            label: "Janji temu",
+            angka: statistik.janjiTemu,
+            catatan: "Seluruh data booking",
+        },
+        {
+            label: "Obat menipis",
+            angka: statistik.obat,
+            catatan: "Perlu pemeriksaan stok",
         },
     ];
 
     if (!admin) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#f4f8f6] text-gray-500">
-                Memuat dashboard...
-            </div>
+            <main className="min-h-screen flex items-center justify-center bg-[#eaf2fb]">
+                <p className="text-sm tracking-wide text-[#6484a8]">
+                    Menyiapkan HARMONI...
+                </p>
+            </main>
         );
     }
 
     return (
-        <main className="min-h-screen bg-[#f4f8f6]">
-            <header className="bg-white border-b px-6 md:px-8 py-5 flex justify-between items-center">
-                <div>
-                    <h1 className="text-2xl font-bold text-[#28765d]">
-                        HARMONI
-                    </h1>
+        <main className="harmoni-admin relative min-h-screen overflow-hidden text-[#29476b]">
+            {/* Ambient background */}
+            <div className="admin-light admin-light-one" />
+            <div className="admin-light admin-light-two" />
 
-                    <p className="text-sm text-gray-500">
-                        Hospital Information System
-                    </p>
-                </div>
+            {/* Header */}
+            <header className="admin-header sticky top-0 z-30">
+                <div className="mx-auto flex max-w-[1500px] items-center justify-between px-6 py-5 md:px-12">
+                    <Link href="/admin" className="group">
+                        <h1 className="text-[22px] font-bold tracking-[0.14em] text-[#315b88]">
+                            HARMONI
+                        </h1>
 
-                <div className="flex items-center gap-4">
-                    <span className="text-sm text-gray-600">
-                        {admin.username}
-                    </span>
+                        <p className="mt-1 text-[10px] tracking-[0.16em] text-[#829bb8]">
+                            HOSPITAL INFORMATION SYSTEM
+                        </p>
+                    </Link>
 
-                    <button
-                        onClick={handleLogout}
-                        className="text-sm bg-red-50 text-red-600 px-4 py-2 rounded-lg hover:bg-red-100 transition"
-                    >
-                        Keluar
-                    </button>
+                    <div className="flex items-center gap-5">
+                        <div className="hidden text-right sm:block">
+                            <p className="text-sm font-medium text-[#315b88]">
+                                {admin.username}
+                            </p>
+
+                            <p className="mt-1 text-[9px] uppercase tracking-[0.2em] text-[#91a9c5]">
+                                Administrator
+                            </p>
+                        </div>
+
+                        <button
+                            onClick={handleLogout}
+                            className="admin-logout"
+                        >
+                            Keluar
+                            <span>↗</span>
+                        </button>
+                    </div>
                 </div>
             </header>
 
-            <section className="p-6 md:p-8">
-                <h2 className="text-2xl font-semibold text-gray-800">
-                    Dashboard Admin
-                </h2>
-
-                <p className="text-gray-500 mt-1">
-                    Selamat datang di halaman pengelolaan rumah sakit.
-                </p>
-
-                {/* Statistik */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-8">
-                    <div className="bg-white p-6 rounded-xl border border-gray-100">
-                        <p className="text-sm text-gray-500">
-                            Total Pasien
+            <div className="relative z-10 mx-auto max-w-[1500px] px-6 pb-12 pt-10 md:px-12 md:pt-14">
+                {/* Hero */}
+                <section className="admin-hero">
+                    <div className="admin-hero-copy">
+                        <p className="admin-eyebrow">
+                            ADMINISTRATION / OVERVIEW
                         </p>
 
-                        <h3 className="text-3xl font-bold text-[#28765d] mt-3">
-                            {statistik.pasien}
-                        </h3>
+                        <h2>
+                            Rumah sakit,
+                            <br />
+                            <span>dalam satu kendali.</span>
+                        </h2>
+
+                        <p className="admin-hero-description">
+                            Selamat datang kembali, {admin.username}.
+                            Berikut ringkasan aktivitas dan pengelolaan
+                            rumah sakit hari ini.
+                        </p>
                     </div>
 
-                    <div className="bg-white p-6 rounded-xl border border-gray-100">
-                        <p className="text-sm text-gray-500">
-                            Dokter Aktif
+                    <div className="admin-hero-note">
+                        <span className="admin-note-line" />
+
+                        <p>
+                            CARE THROUGH
+                            <br />
+                            CONNECTION
                         </p>
 
-                        <h3 className="text-3xl font-bold text-[#28765d] mt-3">
-                            {statistik.dokter}
-                        </h3>
+                        <span className="admin-note-year">
+                            HARMONI · 2026
+                        </span>
                     </div>
+                </section>
 
-                    <div className="bg-white p-6 rounded-xl border border-gray-100">
-                        <p className="text-sm text-gray-500">
-                            Janji Temu
+                {/* Statistics */}
+                <section className="admin-stat-section">
+                    <div className="admin-section-heading">
+                        <div>
+                            <p className="admin-eyebrow">
+                                SYSTEM OVERVIEW
+                            </p>
+
+                            <h3>Ringkasan data</h3>
+                        </div>
+
+                        <p className="admin-section-caption">
+                            Data yang tercatat dalam sistem
                         </p>
-
-                        <h3 className="text-3xl font-bold text-[#28765d] mt-3">
-                            {statistik.janjiTemu}
-                        </h3>
                     </div>
 
-                    <div className="bg-white p-6 rounded-xl border border-gray-100">
-                        <p className="text-sm text-gray-500">
-                            Obat Menipis
+                    <div className="admin-stat-panel">
+                        {statistikItems.map((item, index) => (
+                            <div
+                                key={item.label}
+                                className={`admin-stat-item ${index === 0 ? "admin-stat-featured" : ""
+                                    }`}
+                            >
+                                <p className="admin-stat-label">
+                                    {item.label}
+                                </p>
+
+                                <h4>{item.angka}</h4>
+
+                                <p className="admin-stat-note">
+                                    {item.catatan}
+                                </p>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+
+                {/* Management */}
+                <section className="admin-management-section">
+                    <div className="admin-section-heading">
+                        <div>
+                            <p className="admin-eyebrow">
+                                WORKSPACE
+                            </p>
+
+                            <h3>Pengelolaan rumah sakit</h3>
+                        </div>
+
+                        <p className="admin-section-caption">
+                            Pilih area pengelolaan
                         </p>
-
-                        <h3 className="text-3xl font-bold text-[#28765d] mt-3">
-                            {statistik.obat}
-                        </h3>
                     </div>
-                </div>
 
-                {/* Menu Pengelolaan */}
-                <div className="mt-10">
-                    <h3 className="text-xl font-semibold text-gray-800">
-                        Menu Pengelolaan
-                    </h3>
-
-                    <p className="text-sm text-gray-500 mt-1">
-                        Pilih menu untuk mengelola data rumah sakit.
-                    </p>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mt-5">
-                        {menuAdmin.map((menu) => (
+                    <div className="admin-menu-list">
+                        {menuAdmin.map((menu, index) => (
                             <Link
                                 key={menu.href}
                                 href={menu.href}
-                                className="bg-white p-6 rounded-xl border border-gray-100 hover:border-[#28765d] hover:shadow-md transition group"
+                                className="admin-menu-item"
                             >
-                                <h4 className="text-lg font-semibold text-gray-800 group-hover:text-[#28765d]">
-                                    {menu.nama}
-                                </h4>
+                                <div className="admin-menu-index">
+                                    {String(index + 1).padStart(2, "0")}
+                                </div>
 
-                                <p className="text-sm text-gray-500 mt-2">
-                                    {menu.deskripsi}
-                                </p>
+                                <div className="admin-menu-content">
+                                    <p className="admin-menu-category">
+                                        {menu.kategori}
+                                    </p>
 
-                                <p className="text-sm font-medium text-[#28765d] mt-5">
-                                    Buka menu →
-                                </p>
+                                    <h4>{menu.nama}</h4>
+
+                                    <p className="admin-menu-description">
+                                        {menu.deskripsi}
+                                    </p>
+                                </div>
+
+                                <div className="admin-menu-action">
+                                    <span>Buka</span>
+                                    <span className="admin-menu-arrow">↗</span>
+                                </div>
                             </Link>
                         ))}
                     </div>
-                </div>
+                </section>
 
-                {/* Informasi Sistem */}
-                <div className="bg-white rounded-xl border border-gray-100 p-6 mt-8">
-                    <h3 className="text-lg font-semibold text-gray-800">
-                        Informasi Sistem
-                    </h3>
+                {/* Footer information */}
+                <section className="admin-bottom-note">
+                    <div>
+                        <p className="admin-eyebrow">
+                            ABOUT THE SYSTEM
+                        </p>
 
-                    <p className="text-sm text-gray-500 mt-2">
-                        Dashboard HARMONI digunakan untuk mengelola data
-                        dan aktivitas rumah sakit melalui satu sistem.
+                        <h3>HARMONI</h3>
+                    </div>
+
+                    <p>
+                        Sistem informasi rumah sakit untuk mendukung
+                        pengelolaan data, pelayanan, dan aktivitas
+                        operasional secara terintegrasi.
                     </p>
-                </div>
-            </section>
+
+                    <span className="admin-bottom-tag">
+                        BUILT WITH CARE.
+                    </span>
+                </section>
+
+                <footer className="admin-footer">
+                    <span>© HARMONI 2026</span>
+
+                    <span>Hospital Information System</span>
+                </footer>
+            </div>
         </main>
     );
 }
