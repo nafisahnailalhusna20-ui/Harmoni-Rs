@@ -149,14 +149,11 @@ export default function ProfilPasienPage() {
     return (
         <main className="relative min-h-screen overflow-hidden bg-[#EDF6FD] px-4 py-7 sm:px-8 sm:py-10">
 
-            {/* Soft blue background */}
             <div className="pointer-events-none absolute -left-40 -top-32 h-[450px] w-[450px] rounded-full bg-[#D5EAF9]/80 blur-[110px]" />
 
             <div className="pointer-events-none absolute -right-40 top-[450px] h-[500px] w-[500px] rounded-full bg-[#C7E2F5]/60 blur-[120px]" />
 
             <div className="relative mx-auto max-w-6xl">
-
-                {/* Navigation */}
                 <header className="mb-8 flex items-center justify-between gap-4">
                     <div>
                         <p className="text-[10px] font-extrabold tracking-[0.25em] text-[#79A6CC]">
@@ -179,11 +176,8 @@ export default function ProfilPasienPage() {
                         Dashboard
                     </button>
                 </header>
-
-                {/* Hero profile */}
                 <section className="relative mb-8 overflow-hidden rounded-[32px] border border-white/90 bg-gradient-to-br from-[#DCEFFA] via-[#F5FBFF] to-[#D5E8F8] p-6 shadow-[0_22px_60px_rgba(89,145,190,0.12)] sm:p-10">
 
-                    {/* Decorative shapes */}
                     <div className="pointer-events-none absolute -right-12 -top-20 h-72 w-72 rounded-full border-[38px] border-white/35" />
 
                     <div className="pointer-events-none absolute right-24 top-24 h-32 w-32 rounded-full bg-white/40 blur-3xl" />
@@ -219,7 +213,6 @@ export default function ProfilPasienPage() {
                             </div>
                         </div>
 
-                        {/* Avatar */}
                         <div className="relative mx-auto sm:mx-0">
                             <div className="absolute -inset-5 rounded-full border border-white/70" />
 
@@ -238,18 +231,16 @@ export default function ProfilPasienPage() {
                             </div>
 
                             <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-white/90 bg-white/85 px-4 py-2 text-[10px] font-bold tracking-wide text-[#6F9FC4] shadow-sm backdrop-blur-md">
-                                ✦ Patient account
+                                𑣲⋆ Patient account
                             </div>
                         </div>
                     </div>
                 </section>
-
-                {/* Notification */}
                 {pesan && (
                     <div
                         className={`mb-6 rounded-2xl border px-5 py-4 text-sm ${error
-                                ? "border-rose-100 bg-rose-50 text-rose-600"
-                                : "border-emerald-100 bg-emerald-50 text-emerald-700"
+                            ? "border-rose-100 bg-rose-50 text-rose-600"
+                            : "border-emerald-100 bg-emerald-50 text-emerald-700"
                             }`}
                     >
                         {error ? "!" : "✓"} &nbsp; {pesan}
@@ -257,8 +248,6 @@ export default function ProfilPasienPage() {
                 )}
 
                 <form onSubmit={simpanProfil} className="space-y-6">
-
-                    {/* Personal details */}
                     <section className="rounded-[30px] border border-white/90 bg-white/75 p-6 shadow-[0_16px_50px_rgba(89,145,190,0.08)] backdrop-blur-xl sm:p-9">
 
                         <div className="mb-8 flex items-start justify-between gap-4">
@@ -376,8 +365,6 @@ export default function ProfilPasienPage() {
                             </div>
                         </div>
                     </section>
-
-                    {/* Account information */}
                     <section className="overflow-hidden rounded-[30px] border border-white/90 bg-white/75 shadow-[0_16px_50px_rgba(89,145,190,0.08)] backdrop-blur-xl">
 
                         <div className="flex flex-col gap-5 p-6 sm:flex-row sm:items-center sm:p-8">
@@ -415,8 +402,6 @@ export default function ProfilPasienPage() {
                             </p>
                         </div>
                     </section>
-
-                    {/* Save changes */}
                     <div className="flex flex-col justify-between gap-4 rounded-[26px] border border-white/90 bg-white/75 p-5 shadow-[0_16px_45px_rgba(89,145,190,0.09)] backdrop-blur-xl sm:flex-row sm:items-center sm:px-7">
 
                         <div>
