@@ -18,6 +18,29 @@ async function cekDokter() {
     return user;
 }
 
+function tanggalMakassar() {
+    const bagianTanggal = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Makassar",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+    }).formatToParts(new Date());
+
+    const tahun = bagianTanggal.find(
+        (item) => item.type === "year"
+    ).value;
+
+    const bulan = bagianTanggal.find(
+        (item) => item.type === "month"
+    ).value;
+
+    const hari = bagianTanggal.find(
+        (item) => item.type === "day"
+    ).value;
+
+    return `${tahun}-${bulan}-${hari}`;
+}
+
 export async function GET() {
     try {
         const dokter = await cekDokter();
@@ -29,7 +52,9 @@ export async function GET() {
             );
         }
 
-        // Menghitung jumlah janji temu Pending
+        const hariIni = tanggalMakassar();
+
+        // 1. Jumlah janji temu Pending milik dokter
         const hasilPending = await pool.query(
             `SELECT COUNT(*) AS total
              FROM appointments
@@ -38,25 +63,59 @@ export async function GET() {
             [dokter.id]
         );
 
-        // Menghitung janji temu Approved hari ini
-        const hasilApprovedHariIni = await pool.query(
-            `SELECT COUNT(*) AS total
-             FROM appointments
-             WHERE dokter_id = $1
-             AND status = 'Approved'
-             AND tanggal_booking = CURRENT_DATE`,
+        // 2. Daftar janji temu Approved untuk hari ini
+        const hasilJanjiHariIni = await pool.query(
+            `SELECT
+                a.id,
+                a.tanggal_booking,
+                a.keluhan,
+                a.status,
+                pasien.full_name AS nama_pasien,
+                s.jam_mulai,
+                s.durasi,
+                p.nama AS nama_poli
+             FROM appointments a
+             JOIN users pasien
+                ON a.pasien_id = pasien.id
+             JOIN schedules s
+                ON a.schedule_id = s.id
+             LEFT JOIN poli p
+                ON p.id = (
+                    SELECT dokter.poli_id
+                    FROM users dokter
+                    WHERE dokter.id = a.dokter_id
+                )
+             WHERE a.dokter_id = $1
+             AND a.status = 'Approved'
+             AND a.tanggal_booking = $2
+             ORDER BY s.jam_mulai ASC`,
+            [dokter.id, hariIni]
+        );
+
+        // 3. Jadwal praktik dokter
+        const hasilJadwal = await pool.query(
+            `SELECT
+                s.id,
+                s.hari,
+                s.jam_mulai,
+                s.durasi,
+                p.nama AS nama_poli
+             FROM schedules s
+             JOIN users u
+                ON s.dokter_id = u.id
+             LEFT JOIN poli p
+                ON u.poli_id = p.id
+             WHERE s.dokter_id = $1
+             ORDER BY s.hari, s.jam_mulai`,
             [dokter.id]
         );
 
-        // Mengambil 5 pasien terakhir yang sudah diperiksa
         const hasilPasienTerbaru = await pool.query(
             `SELECT
                 mr.id AS medical_record_id,
-                mr.created_at AS tanggal_pemeriksaan,
-                a.id AS appointment_id,
                 pasien.full_name AS nama_pasien,
-                a.tanggal_booking,
-                mr.diagnosis
+                mr.diagnosis,
+                mr.created_at AS tanggal_pemeriksaan
              FROM medical_records mr
              JOIN appointments a
                 ON mr.appointment_id = a.id
@@ -68,36 +127,22 @@ export async function GET() {
             [dokter.id]
         );
 
-        // Mengambil jadwal praktik dokter
-        const hasilJadwal = await pool.query(
-            `SELECT
-                s.id,
-                s.hari,
-                s.jam_mulai,
-                s.durasi,
-                p.nama AS nama_poli
-             FROM schedules s
-             JOIN users dokter
-                ON s.dokter_id = dokter.id
-             LEFT JOIN poli p
-                ON dokter.poli_id = p.id
-             WHERE s.dokter_id = $1
-             ORDER BY s.hari, s.jam_mulai`,
-            [dokter.id]
-        );
-
         return NextResponse.json({
             success: true,
             data: {
                 total_pending: Number(
                     hasilPending.rows[0].total
                 ),
-                approved_hari_ini: Number(
-                    hasilApprovedHariIni.rows[0].total
-                ),
-                pasien_terbaru: hasilPasienTerbaru.rows,
-                jadwal_praktik: hasilJadwal.rows
-            }
+
+                janji_temu_hari_ini:
+                    hasilJanjiHariIni.rows,
+
+                jadwal_praktik:
+                    hasilJadwal.rows,
+
+                pasien_terbaru:
+                    hasilPasienTerbaru.rows,
+            },
         });
 
     } catch (error) {
@@ -108,7 +153,8 @@ export async function GET() {
 
         return NextResponse.json(
             {
-                message: "Data dashboard dokter gagal dimuat."
+                success: false,
+                message: "Data dashboard dokter gagal dimuat.",
             },
             { status: 500 }
         );
