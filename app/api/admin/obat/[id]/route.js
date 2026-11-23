@@ -36,7 +36,7 @@ function validasiTanggalKadaluarsa(tanggal) {
         .split("-")
         .map(Number);
 
-    // Validasi tanggal kalender tanpa konversi timezone
+    // Validasi tanggal kalender
     if (bulan < 1 || bulan > 12 || hari < 1) {
         return false;
     }
@@ -72,6 +72,7 @@ function validasiTanggalKadaluarsa(tanggal) {
 
 export async function PUT(request, { params }) {
     try {
+        // Cek hak akses admin
         if (!(await cekAdmin())) {
             return NextResponse.json(
                 { message: "Akses ditolak." },
@@ -79,6 +80,7 @@ export async function PUT(request, { params }) {
             );
         }
 
+        // Validasi ID obat
         const { id } = await params;
         const obatId = Number(id);
 
@@ -92,15 +94,16 @@ export async function PUT(request, { params }) {
             );
         }
 
+        // Mengambil data dari form
         const {
             nama,
             deskripsi,
             tipe,
             stok,
-            gambar,
             tanggal_kadaluarsa,
         } = await request.json();
 
+        // Validasi data wajib
         if (
             !nama?.trim() ||
             !deskripsi?.trim() ||
@@ -114,6 +117,7 @@ export async function PUT(request, { params }) {
             );
         }
 
+        // Validasi jenis obat
         if (!["keras", "biasa"].includes(tipe)) {
             return NextResponse.json(
                 { message: "Jenis obat tidak valid." },
@@ -121,6 +125,7 @@ export async function PUT(request, { params }) {
             );
         }
 
+        // Validasi stok
         const jumlahStok = Number(stok);
 
         if (
@@ -137,7 +142,11 @@ export async function PUT(request, { params }) {
         }
 
         // Validasi tanggal kedaluwarsa
-        if (!validasiTanggalKadaluarsa(tanggal_kadaluarsa)) {
+        if (
+            !validasiTanggalKadaluarsa(
+                tanggal_kadaluarsa
+            )
+        ) {
             return NextResponse.json(
                 {
                     message:
@@ -147,27 +156,27 @@ export async function PUT(request, { params }) {
             );
         }
 
+        // Memperbarui data obat
         const result = await pool.query(
             `UPDATE medicines
              SET nama = $1,
                  deskripsi = $2,
                  tipe = $3,
                  stok = $4,
-                 gambar = $5,
-                 tanggal_kadaluarsa = $6
-             WHERE id = $7
+                 tanggal_kadaluarsa = $5
+             WHERE id = $6
              RETURNING *`,
             [
                 nama.trim(),
                 deskripsi.trim(),
                 tipe,
                 jumlahStok,
-                gambar?.trim() || null,
-                tanggal_kadalu || null,
+                tanggal_kadaluarsa || null,
                 obatId,
             ]
         );
 
+        // Cek apakah obat ditemukan
         if (result.rowCount === 0) {
             return NextResponse.json(
                 { message: "Obat tidak ditemukan." },
@@ -192,6 +201,7 @@ export async function PUT(request, { params }) {
 
 export async function DELETE(request, { params }) {
     try {
+        // Cek hak akses admin
         if (!(await cekAdmin())) {
             return NextResponse.json(
                 { message: "Akses ditolak." },
@@ -199,6 +209,7 @@ export async function DELETE(request, { params }) {
             );
         }
 
+        // Validasi ID obat
         const { id } = await params;
         const obatId = Number(id);
 
@@ -212,6 +223,7 @@ export async function DELETE(request, { params }) {
             );
         }
 
+        // Menghapus data obat
         const result = await pool.query(
             "DELETE FROM medicines WHERE id = $1 RETURNING id",
             [obatId]

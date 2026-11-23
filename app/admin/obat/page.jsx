@@ -28,7 +28,6 @@ export default function ObatPage() {
         deskripsi: "",
         tipe: "",
         stok: "",
-        gambar: "",
         tanggal_kadaluarsa: "",
     };
 
@@ -92,7 +91,6 @@ export default function ObatPage() {
             deskripsi: item.deskripsi,
             tipe: item.tipe,
             stok: String(item.stok),
-            gambar: item.gambar || "",
             tanggal_kadaluarsa: item.tanggal_kadaluarsa
                 ? String(item.tanggal_kadaluarsa).slice(0, 10)
                 : "",
@@ -487,21 +485,6 @@ export default function ObatPage() {
                                     <p className="mt-2 text-xs leading-5 text-[#8AA5C0]">
                                         Maksimal 10 tahun dari hari ini.
                                     </p>
-                                </div>
-
-                                <div className="md:col-span-2">
-                                    <label className={labelStyle}>
-                                        Link gambar
-                                    </label>
-
-                                    <input
-                                        type="text"
-                                        name="gambar"
-                                        placeholder="Link gambar obat (opsional)"
-                                        value={form.gambar}
-                                        onChange={handleChange}
-                                        className={inputStyle}
-                                    />
                                 </div>
                             </div>
 
