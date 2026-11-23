@@ -5,37 +5,69 @@ import { verifyToken } from "@/lib/auth";
 
 export async function GET() {
     try {
+        // ========================================
+        // 1. CEK LOGIN PASIEN
+        // ========================================
+
         const cookieStore = await cookies();
         const token = cookieStore.get("token")?.value;
 
         if (!token) {
             return NextResponse.json(
-                { message: "Silakan login terlebih dahulu." },
+                {
+                    success: false,
+                    message: "Silakan login terlebih dahulu.",
+                },
                 { status: 401 }
             );
         }
+
+        // ========================================
+        // 2. VALIDASI TOKEN DAN ROLE
+        // ========================================
 
         const user = await verifyToken(token);
 
-        if (user?.role !== "pasien") {
+        if (!user || user.role !== "pasien") {
             return NextResponse.json(
-                { message: "Akses ditolak." },
+                {
+                    success: false,
+                    message: "Akses ditolak.",
+                },
                 { status: 401 }
             );
         }
 
+        // ========================================
+        // 3. AMBIL DATA REKAM MEDIS
+        // ========================================
+
         const result = await pool.query(
-            `SELECT
+            `
+            SELECT
                 mr.id,
                 mr.diagnosis,
                 mr.tindakan,
                 mr.catatan,
                 mr.created_at,
+
+                -- Data janji temu
+                a.id AS appointment_id,
                 a.tanggal_booking,
+
+                -- Data dokter
+                dokter.id AS dokter_id,
                 dokter.full_name AS nama_dokter,
+                dokter.photo AS foto_dokter,
+
+                -- Data poli
                 p.nama AS nama_poli,
+
+                -- Data resep
+                pr.id AS prescription_id,
                 pr.status AS status_resep,
 
+                -- Daftar obat dalam resep
                 COALESCE(
                     (
                         SELECT json_agg(
@@ -46,8 +78,10 @@ export async function GET() {
                             ORDER BY m.nama
                         )
                         FROM prescription_items pi
+
                         JOIN medicines m
                             ON pi.medicine_id = m.id
+
                         WHERE pi.prescription_id = pr.id
                     ),
                     '[]'::json
@@ -65,24 +99,35 @@ export async function GET() {
                 ON dokter.poli_id = p.id
 
             LEFT JOIN prescriptions pr
-                ON mr.id = pr.medical_record_id
+                ON pr.medical_record_id = mr.id
 
             WHERE a.pasien_id = $1
 
-            ORDER BY mr.created_at DESC`,
+            ORDER BY mr.created_at DESC
+            `,
             [user.id]
         );
 
+        // ========================================
+        // 4. KIRIM DATA KE HALAMAN REKAM MEDIS
+        // ========================================
+
         return NextResponse.json({
             success: true,
-            data: result.rows
+            data: result.rows,
         });
 
     } catch (error) {
-        console.error("Gagal mengambil rekam medis:", error);
+        console.error(
+            "Gagal mengambil rekam medis pasien:",
+            error
+        );
 
         return NextResponse.json(
-            { message: "Rekam medis gagal dimuat." },
+            {
+                success: false,
+                message: "Rekam medis gagal dimuat.",
+            },
             { status: 500 }
         );
     }
