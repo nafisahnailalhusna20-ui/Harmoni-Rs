@@ -637,8 +637,7 @@ export default function DokterPage() {
                                                         onClick={() =>
                                                             bukaEdit(item)
                                                         }
-                                                        className="rounded-xl border border-[#b8d6f2]/70 bg-white/45 px-4 py-2 text-xs text-[#527fa8] transition hover:bg-white/90"
-                                                    >
+                                                        className="rounded-xl border border-[#C6E0F9] bg-[#ECF5FD] px-4 py-2 text-xs text-[#5484B1] transition hover:bg-[#E0EFFC]">
                                                         Edit
                                                     </button>
 
@@ -648,8 +647,7 @@ export default function DokterPage() {
                                                                 item.id
                                                             )
                                                         }
-                                                        className="rounded-xl border border-rose-200/70 bg-rose-50/40 px-4 py-2 text-xs text-rose-500 transition hover:bg-rose-100/80"
-                                                    >
+                                                        className="rounded-xl border border-[#F0D5D8] bg-[#FCF2F5] px-4 py-2 text-xs text-[#CE7B84] transition hover:bg-[#F9E8EC]">
                                                         Hapus
                                                     </button>
                                                 </div>
