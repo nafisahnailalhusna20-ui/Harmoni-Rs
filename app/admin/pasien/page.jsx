@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 export default function PasienPage() {
     const [pasien, setPasien] = useState([]);
@@ -16,9 +17,7 @@ export default function PasienPage() {
         telepon: "",
     });
 
-    // =========================
-    // AMBIL DATA PASIEN
-    // =========================
+
     async function ambilPasien() {
         try {
             setLoading(true);
@@ -34,7 +33,6 @@ export default function PasienPage() {
                 return;
             }
 
-            // API HARMONI mengembalikan data dalam result.data
             const dataPasien = Array.isArray(result)
                 ? result
                 : Array.isArray(result.data)
@@ -43,7 +41,6 @@ export default function PasienPage() {
                         ? result.pasien
                         : [];
 
-            // Samakan field database dengan field yang dipakai desain
             const dataNormal = dataPasien.map((item) => ({
                 ...item,
                 nama: item.full_name ?? item.nama ?? "",
@@ -62,9 +59,6 @@ export default function PasienPage() {
         ambilPasien();
     }, []);
 
-    // =========================
-    // PENCARIAN PASIEN
-    // =========================
     const pasienFiltered = pasien.filter((item) => {
         const keyword = search.toLowerCase();
 
@@ -80,10 +74,6 @@ export default function PasienPage() {
             telepon.includes(keyword)
         );
     });
-
-    // =========================
-    // TAMBAH PASIEN
-    // =========================
     function bukaTambah() {
         setEditId(null);
 
@@ -97,9 +87,7 @@ export default function PasienPage() {
         setModalOpen(true);
     }
 
-    // =========================
-    // EDIT PASIEN
-    // =========================
+
     function bukaEdit(item) {
         setEditId(item.id);
 
@@ -112,10 +100,6 @@ export default function PasienPage() {
 
         setModalOpen(true);
     }
-
-    // =========================
-    // SIMPAN PASIEN
-    // =========================
     async function simpanPasien(e) {
         e.preventDefault();
 
@@ -125,7 +109,6 @@ export default function PasienPage() {
 
         const method = editId ? "PUT" : "POST";
 
-        // Field disesuaikan dengan nama kolom API/database
         const payload = {
             full_name: form.nama,
             username: form.username,
@@ -150,7 +133,6 @@ export default function PasienPage() {
             }
 
             setModalOpen(false);
-
             await ambilPasien();
         } catch (error) {
             console.error("Gagal menyimpan pasien:", error);
@@ -158,9 +140,6 @@ export default function PasienPage() {
         }
     }
 
-    // =========================
-    // HAPUS PASIEN
-    // =========================
     async function hapusPasien(id) {
         const yakin = confirm("Yakin ingin menghapus pasien ini?");
 
@@ -185,683 +164,379 @@ export default function PasienPage() {
     }
 
     return (
-        <main className="pasien-page">
-            <style jsx>{`
-        .pasien-page {
-          min-height: 100vh;
-          padding: 34px 5%;
-          color: #315a82;
-          background:
-            radial-gradient(
-              circle at 85% 15%,
-              rgba(150, 198, 238, 0.38),
-              transparent 35%
-            ),
-            radial-gradient(
-              circle at 10% 80%,
-              rgba(220, 237, 251, 0.8),
-              transparent 40%
-            ),
-            linear-gradient(135deg, #f8fbff 0%, #e8f2fc 55%, #d8eafb 100%);
-        }
+        <main className="min-h-screen w-full overflow-x-hidden bg-[radial-gradient(circle_at_85%_15%,rgba(150,198,238,0.38),transparent_35%),radial-gradient(circle_at_10%_80%,rgba(220,237,251,0.8),transparent_40%),linear-gradient(135deg,#f8fbff_0%,#e8f2fc_55%,#d8eafb_100%)] px-[5%] py-[34px] text-[#315A82]">
 
-        .pasien-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 24px;
-          margin-bottom: 56px;
-        }
+            <div className="mx-auto w-full max-w-[1500px]">
 
-        .brand {
-          font-size: 30px;
-          font-weight: 600;
-          letter-spacing: 9px;
-          color: #315a82;
-        }
+                <header className="mb-10 flex flex-col items-start justify-between gap-5 sm:mb-14 sm:flex-row sm:items-center">
 
-        .brand-subtitle {
-          margin-top: 8px;
-          font-size: 13px;
-          letter-spacing: 4px;
-          color: #7c9fc7;
-        }
-
-        .back-button {
-          padding: 13px 24px;
-          border: 1px solid rgba(255, 255, 255, 0.85);
-          border-radius: 40px;
-          background: rgba(255, 255, 255, 0.48);
-          color: #547da8;
-          text-decoration: none;
-          font-size: 15px;
-          box-shadow: 0 4px 12px rgba(65, 100, 135, 0.08);
-          transition: 0.2s;
-        }
-
-        .back-button:hover {
-          background: rgba(255, 255, 255, 0.8);
-          transform: translateY(-2px);
-        }
-
-        .hero {
-          display: grid;
-          grid-template-columns: 1fr 300px;
-          align-items: center;
-          gap: 50px;
-          margin-bottom: 58px;
-        }
-
-        .eyebrow {
-          display: flex;
-          align-items: center;
-          gap: 14px;
-          margin-bottom: 24px;
-          font-size: 12px;
-          font-weight: 600;
-          letter-spacing: 3px;
-          color: #7a9fc8;
-        }
-
-        .eyebrow::before {
-          content: "";
-          width: 42px;
-          height: 1px;
-          background: #8db5df;
-        }
-
-        .hero-title {
-          margin: 0;
-          font-size: clamp(42px, 5.5vw, 76px);
-          line-height: 1.08;
-          font-weight: 400;
-          letter-spacing: -3px;
-          color: #315a82;
-        }
-
-        .hero-title span {
-          color: #76a2d0;
-        }
-
-        .hero-description {
-          max-width: 680px;
-          margin-top: 22px;
-          font-size: 17px;
-          line-height: 1.8;
-          color: #789bc2;
-        }
-
-        .hero-side {
-          position: relative;
-          padding: 24px 0;
-          text-align: right;
-        }
-
-        .page-number {
-          position: absolute;
-          top: -35px;
-          right: 0;
-          z-index: 0;
-          font-size: 150px;
-          line-height: 1;
-          font-weight: 300;
-          color: rgba(113, 163, 211, 0.16);
-          pointer-events: none;
-        }
-
-        .hero-side-content {
-          position: relative;
-          z-index: 1;
-        }
-
-        .side-label {
-          font-size: 12px;
-          letter-spacing: 3px;
-          color: #7b9fc6;
-        }
-
-        .side-description {
-          margin: 16px 0 24px;
-          font-size: 15px;
-          line-height: 1.7;
-          color: #547da8;
-        }
-
-        .add-button {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 14px;
-          padding: 15px 23px;
-          border: none;
-          border-radius: 18px;
-          background: linear-gradient(110deg, #315b83, #679bc8);
-          color: white;
-          font-size: 15px;
-          font-weight: 500;
-          cursor: pointer;
-          box-shadow: 0 12px 28px rgba(55, 100, 145, 0.18);
-          transition: 0.2s;
-        }
-
-        .add-button:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 15px 30px rgba(55, 100, 145, 0.25);
-        }
-
-        .glass-card {
-          border: 1px solid rgba(255, 255, 255, 0.8);
-          border-radius: 34px;
-          background: rgba(255, 255, 255, 0.34);
-          backdrop-filter: blur(22px);
-          -webkit-backdrop-filter: blur(22px);
-          box-shadow: 0 20px 55px rgba(74, 115, 153, 0.06);
-          overflow: hidden;
-        }
-
-        .card-heading {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-end;
-          gap: 24px;
-          padding: 36px 38px 28px;
-        }
-
-        .section-label {
-          margin-bottom: 12px;
-          font-size: 11px;
-          letter-spacing: 2.5px;
-          color: #7d9fc5;
-        }
-
-        .card-title {
-          margin: 0;
-          font-size: 30px;
-          font-weight: 400;
-          letter-spacing: -0.8px;
-          color: #315a82;
-        }
-
-        .card-description {
-          margin-top: 10px;
-          font-size: 15px;
-          color: #7b9fc6;
-        }
-
-        .search-input {
-          width: 330px;
-          max-width: 100%;
-          padding: 15px 20px;
-          border: 1px solid rgba(255, 255, 255, 0.9);
-          border-radius: 17px;
-          outline: none;
-          background: rgba(255, 255, 255, 0.55);
-          color: #315a82;
-          font-size: 14px;
-          transition: 0.2s;
-        }
-
-        .search-input:focus {
-          border-color: #9dc3e8;
-          background: rgba(255, 255, 255, 0.8);
-          box-shadow: 0 0 0 3px rgba(132, 179, 222, 0.12);
-        }
-
-        .table-wrap {
-          padding: 0 38px 32px;
-          overflow-x: auto;
-        }
-
-        .pasien-table {
-          width: 100%;
-          border-collapse: collapse;
-          min-width: 750px;
-        }
-
-        .pasien-table th {
-          padding: 20px 14px;
-          text-align: left;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.8);
-          font-size: 11px;
-          font-weight: 600;
-          letter-spacing: 1.5px;
-          color: #789bc2;
-        }
-
-        .pasien-table td {
-          padding: 22px 14px;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.65);
-          font-size: 14px;
-          color: #426b95;
-        }
-
-        .pasien-table tbody tr {
-          transition: background 0.2s;
-        }
-
-        .pasien-table tbody tr:hover {
-          background: rgba(255, 255, 255, 0.25);
-        }
-
-        .patient-name {
-          color: #315a82;
-          font-weight: 500;
-        }
-
-        .patient-subtitle {
-          margin-top: 5px;
-          font-size: 12px;
-          color: #8aa9cb;
-        }
-
-        .initial {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          width: 38px;
-          height: 38px;
-          margin-right: 12px;
-          border: 1px solid rgba(255, 255, 255, 0.8);
-          border-radius: 13px;
-          background: rgba(255, 255, 255, 0.35);
-          color: #5e8ab6;
-          vertical-align: middle;
-        }
-
-        .action-button {
-          padding: 9px 15px;
-          margin-right: 7px;
-          border: 1px solid rgba(255, 255, 255, 0.8);
-          border-radius: 30px;
-          background: rgba(255, 255, 255, 0.38);
-          color: #416b96;
-          font-size: 13px;
-          cursor: pointer;
-          transition: 0.2s;
-        }
-
-        .action-button:hover {
-          background: rgba(255, 255, 255, 0.8);
-        }
-
-        .delete-button {
-          color: #bd718a;
-          border-color: rgba(231, 168, 188, 0.45);
-        }
-
-        .empty-state {
-          padding: 45px 20px;
-          text-align: center;
-          color: #86a6c9;
-          font-size: 14px;
-        }
-
-        .modal-overlay {
-          position: fixed;
-          inset: 0;
-          z-index: 50;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 20px;
-          background: rgba(42, 70, 101, 0.35);
-          backdrop-filter: blur(12px);
-        }
-
-        .modal {
-          width: 100%;
-          max-width: 620px;
-          padding: 36px;
-          border: 1px solid rgba(255, 255, 255, 0.9);
-          border-radius: 30px;
-          background: rgba(239, 246, 253, 0.94);
-          box-shadow: 0 25px 70px rgba(39, 76, 113, 0.2);
-        }
-
-        .modal-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          margin-bottom: 28px;
-        }
-
-        .modal-title {
-          margin: 0;
-          font-size: 29px;
-          font-weight: 400;
-          color: #315a82;
-        }
-
-        .close-button {
-          width: 40px;
-          height: 40px;
-          border: none;
-          border-radius: 50%;
-          background: rgba(255, 255, 255, 0.75);
-          color: #7196bd;
-          font-size: 20px;
-          cursor: pointer;
-        }
-
-        .form-group {
-          margin-bottom: 20px;
-        }
-
-        .form-group label {
-          display: block;
-          margin-bottom: 9px;
-          font-size: 14px;
-          color: #547da8;
-        }
-
-        .form-control {
-          width: 100%;
-          padding: 15px 17px;
-          border: 1px solid rgba(255, 255, 255, 0.9);
-          border-radius: 16px;
-          outline: none;
-          background: rgba(255, 255, 255, 0.65);
-          color: #315a82;
-          font-size: 14px;
-          box-sizing: border-box;
-        }
-
-        .form-control:focus {
-          border-color: #9dc3e8;
-        }
-
-        .modal-actions {
-          display: flex;
-          justify-content: flex-end;
-          gap: 12px;
-          margin-top: 28px;
-        }
-
-        .cancel-button {
-          padding: 13px 20px;
-          border: 1px solid #d3e3f3;
-          border-radius: 15px;
-          background: rgba(255, 255, 255, 0.55);
-          color: #6e91b8;
-          cursor: pointer;
-        }
-
-        @media (max-width: 850px) {
-          .hero {
-            grid-template-columns: 1fr;
-            gap: 20px;
-          }
-
-          .hero-side {
-            text-align: left;
-          }
-
-          .page-number {
-            right: auto;
-            left: 0;
-          }
-
-          .card-heading {
-            align-items: flex-start;
-            flex-direction: column;
-          }
-
-          .search-input {
-            width: 100%;
-          }
-
-          .table-wrap {
-            padding: 0 20px 25px;
-          }
-
-          .card-heading {
-            padding: 28px 24px;
-          }
-
-          .pasien-header {
-            margin-bottom: 38px;
-          }
-        }
-      `}</style>
-
-            {/* Header */}
-            <header className="pasien-header">
-                <div>
-                    <div className="brand">HARMONI</div>
-                    <div className="brand-subtitle">HOSPITAL INFORMATION SYSTEM</div>
-                </div>
-
-                <a href="/admin" className="back-button">
-                    ← Kembali ke dashboard
-                </a>
-            </header>
-
-            {/* Hero */}
-            <section className="hero">
-                <div>
-                    <div className="eyebrow">ADMINISTRATION / MASTER DATA</div>
-
-                    <h1 className="hero-title">
-                        Data pasien,
-                        <br />
-                        <span>lebih terorganisir.</span>
-                    </h1>
-
-                    <p className="hero-description">
-                        Kelola informasi akun dan kontak pasien dalam satu ruang kerja
-                        yang terintegrasi.
-                    </p>
-                </div>
-
-                <div className="hero-side">
-                    <div className="page-number">05</div>
-
-                    <div className="hero-side-content">
-                        <div className="side-label">PATIENT DIRECTORY</div>
-
-                        <p className="side-description">
-                            Informasi pasien tersusun
-                            <br />
-                            dengan lebih rapi.
-                        </p>
-
-                        <button className="add-button" onClick={bukaTambah}>
-                            <span>＋</span>
-                            Tambah pasien
-                            <span>↗</span>
-                        </button>
-                    </div>
-                </div>
-            </section>
-
-            {/* Data pasien */}
-            <section className="glass-card">
-                <div className="card-heading">
                     <div>
-                        <div className="section-label">05 — DIRECTORY</div>
-                        <h2 className="card-title">Daftar pasien</h2>
-                        <p className="card-description">
-                            Informasi akun dan kontak pasien HARMONI.
-                        </p>
+                        <div className="text-2xl font-semibold tracking-[9px] text-[#315A82] sm:text-[30px]">
+                            HARMONI
+                        </div>
+
+                        <div className="mt-2 text-xs tracking-[4px] text-[#7C9FC7]">
+                            HOSPITAL INFORMATION SYSTEM
+                        </div>
                     </div>
 
-                    <input
-                        type="text"
-                        className="search-input"
-                        placeholder="Cari nama, username, email..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                    />
-                </div>
+                    <Link
+                        href="/admin"
+                        className="rounded-full border border-white/85 bg-white/50 px-6 py-3 text-sm text-[#547DA8] shadow-[0_4px_12px_rgba(65,100,135,0.08)] transition duration-200 hover:-translate-y-0.5 hover:bg-white/80"
+                    >
+                        ← Kembali ke dashboard
+                    </Link>
 
-                <div className="table-wrap">
-                    <table className="pasien-table">
-                        <thead>
-                            <tr>
-                                <th>NO.</th>
-                                <th>PASIEN</th>
-                                <th>USERNAME</th>
-                                <th>EMAIL</th>
-                                <th>TELEPON</th>
-                                <th>AKSI</th>
-                            </tr>
-                        </thead>
+                </header>
 
-                        <tbody>
-                            {loading ? (
-                                <tr>
-                                    <td colSpan="6" className="empty-state">
-                                        Memuat data pasien...
-                                    </td>
+                <section className="mb-12 grid grid-cols-1 items-center gap-8 md:mb-14 md:grid-cols-[minmax(0,1fr)_300px] md:gap-12">
+
+                    <div className="min-w-0">
+
+                        <div className="mb-6 flex items-center gap-3.5 text-xs font-semibold tracking-[3px] text-[#7A9FC8]">
+                            <span className="h-px w-[42px] bg-[#8DB5DF]" />
+                            ADMINISTRATION / MASTER DATA
+                        </div>
+
+                        <h1 className="text-[clamp(42px,5.5vw,76px)] font-normal leading-[1.08] tracking-[-3px] text-[#315A82]">
+                            Data pasien,
+                            <br />
+                            <span className="text-[#76A2D0]">
+                                lebih terorganisir.
+                            </span>
+                        </h1>
+
+                        <p className="mt-5 max-w-[680px] text-base leading-[1.8] text-[#789BC2] sm:text-[17px]">
+                            Kelola informasi akun dan kontak pasien dalam satu
+                            ruang kerja yang terintegrasi.
+                        </p>
+
+                    </div>
+
+                    <div className="relative min-w-0 py-6 text-left md:text-right">
+
+                        <span className="pointer-events-none absolute -top-9 left-0 -z-0 text-[130px] font-light leading-none text-[#71A3D3]/[0.16] sm:text-[150px] md:left-auto md:right-0">
+                            05
+                        </span>
+
+                        <div className="relative z-10">
+
+                            <p className="text-xs tracking-[3px] text-[#7B9FC6]">
+                                PATIENT DIRECTORY
+                            </p>
+
+                            <p className="my-4 text-[15px] leading-[1.7] text-[#547DA8]">
+                                Informasi pasien tersusun
+                                <br />
+                                dengan lebih rapi.
+                            </p>
+
+                            <button
+                                onClick={bukaTambah}
+                                className="inline-flex items-center justify-center gap-3.5 rounded-[18px] bg-gradient-to-r from-[#315B83] to-[#679BC8] px-6 py-4 text-sm font-medium text-white shadow-[0_12px_28px_rgba(55,100,145,0.18)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_15px_30px_rgba(55,100,145,0.25)]"
+                            >
+                                <span>＋</span>
+                                Tambah pasien
+                                <span>↗</span>
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+                <section className="overflow-hidden rounded-[28px] border border-white/80 bg-white/[0.34] shadow-[0_20px_55px_rgba(74,115,153,0.06)] backdrop-blur-[22px] sm:rounded-[34px]">
+
+                    <div className="flex flex-col items-start justify-between gap-6 px-6 py-7 sm:px-9 sm:py-9 md:flex-row md:items-end">
+
+                        <div>
+                            <p className="mb-3 text-[11px] tracking-[2.5px] text-[#7D9FC5]">
+                                05 — DIRECTORY
+                            </p>
+
+                            <h2 className="text-2xl font-normal tracking-[-0.8px] text-[#315A82] sm:text-[30px]">
+                                Daftar pasien
+                            </h2>
+
+                            <p className="mt-2.5 text-sm text-[#7B9FC6]">
+                                Informasi akun dan kontak pasien HARMONI.
+                            </p>
+                        </div>
+
+                        <input
+                            type="text"
+                            placeholder="Cari nama, username, email..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="w-full rounded-[17px] border border-white/90 bg-white/[0.55] px-5 py-4 text-sm text-[#315A82] outline-none transition duration-200 placeholder:text-[#8AA9CB] focus:border-[#9DC3E8] focus:bg-white/80 focus:ring-4 focus:ring-[#84B3DE]/[0.12] md:w-[330px]"
+                        />
+
+                    </div>
+
+                    <div className="overflow-x-auto px-5 pb-7 sm:px-9 sm:pb-8">
+
+                        <table className="w-full min-w-[750px] border-collapse text-left">
+
+                            <thead>
+                                <tr className="border-b border-white/80">
+
+                                    <th className="px-3.5 py-5 text-[11px] font-semibold tracking-[1.5px] text-[#789BC2]">
+                                        NO.
+                                    </th>
+
+                                    <th className="px-3.5 py-5 text-[11px] font-semibold tracking-[1.5px] text-[#789BC2]">
+                                        PASIEN
+                                    </th>
+
+                                    <th className="px-3.5 py-5 text-[11px] font-semibold tracking-[1.5px] text-[#789BC2]">
+                                        USERNAME
+                                    </th>
+
+                                    <th className="px-3.5 py-5 text-[11px] font-semibold tracking-[1.5px] text-[#789BC2]">
+                                        EMAIL
+                                    </th>
+
+                                    <th className="px-3.5 py-5 text-[11px] font-semibold tracking-[1.5px] text-[#789BC2]">
+                                        TELEPON
+                                    </th>
+
+                                    <th className="px-3.5 py-5 text-[11px] font-semibold tracking-[1.5px] text-[#789BC2]">
+                                        AKSI
+                                    </th>
+
                                 </tr>
-                            ) : pasienFiltered.length === 0 ? (
-                                <tr>
-                                    <td colSpan="6" className="empty-state">
-                                        Belum ada data pasien yang ditemukan.
-                                    </td>
-                                </tr>
-                            ) : (
-                                pasienFiltered.map((item, index) => (
-                                    <tr key={item.id}>
-                                        <td>{String(index + 1).padStart(2, "0")}</td>
+                            </thead>
 
-                                        <td>
-                                            <span className="initial">
-                                                {item.nama?.charAt(0)?.toUpperCase() || "P"}
-                                            </span>
+                            <tbody>
 
-                                            <span className="patient-name">{item.nama}</span>
-
-                                            <div className="patient-subtitle">
-                                                Pasien HARMONI
-                                            </div>
-                                        </td>
-
-                                        <td>{item.username || "-"}</td>
-                                        <td>{item.email || "-"}</td>
-                                        <td>{item.telepon || "-"}</td>
-
-                                        <td>
-                                            <button
-                                                className="action-button"
-                                                onClick={() => bukaEdit(item)}
-                                            >
-                                                Edit
-                                            </button>
-
-                                            <button
-                                                className="action-button delete-button"
-                                                onClick={() => hapusPasien(item.id)}
-                                            >
-                                                Hapus
-                                            </button>
+                                {loading ? (
+                                    <tr>
+                                        <td
+                                            colSpan="6"
+                                            className="px-5 py-12 text-center text-sm text-[#86A6C9]"
+                                        >
+                                            Memuat data pasien...
                                         </td>
                                     </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </section>
+                                ) : pasienFiltered.length === 0 ? (
+                                    <tr>
+                                        <td
+                                            colSpan="6"
+                                            className="px-5 py-12 text-center text-sm text-[#86A6C9]"
+                                        >
+                                            Belum ada data pasien yang ditemukan.
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    pasienFiltered.map((item, index) => (
+                                        <tr
+                                            key={item.id}
+                                            className="transition duration-200 hover:bg-white/25"
+                                        >
 
-            {/* Modal tambah / edit */}
+                                            <td className="border-b border-white/65 px-3.5 py-5 text-sm text-[#426B95]">
+                                                {String(index + 1).padStart(2, "0")}
+                                            </td>
+
+                                            <td className="border-b border-white/65 px-3.5 py-5">
+
+                                                <div className="flex items-center gap-3">
+
+                                                    <span className="inline-flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[13px] border border-white/80 bg-white/35 text-[#5E8AB6]">
+                                                        {item.nama?.charAt(0)?.toUpperCase() || "P"}
+                                                    </span>
+
+                                                    <div>
+                                                        <p className="text-sm font-medium text-[#315A82]">
+                                                            {item.nama || "-"}
+                                                        </p>
+
+                                                        <p className="mt-1 text-xs text-[#8AA9CB]">
+                                                            Pasien HARMONI
+                                                        </p>
+                                                    </div>
+
+                                                </div>
+
+                                            </td>
+
+                                            <td className="border-b border-white/65 px-3.5 py-5 text-sm text-[#426B95]">
+                                                {item.username || "-"}
+                                            </td>
+
+                                            <td className="border-b border-white/65 px-3.5 py-5 text-sm text-[#426B95]">
+                                                {item.email || "-"}
+                                            </td>
+
+                                            <td className="border-b border-white/65 px-3.5 py-5 text-sm text-[#426B95]">
+                                                {item.telepon || "-"}
+                                            </td>
+
+                                            <td className="border-b border-white/65 px-3.5 py-5">
+
+                                                <div className="flex flex-wrap gap-2">
+
+                                                    <button
+                                                        onClick={() => bukaEdit(item)}
+                                                        className="rounded-full border border-white/80 bg-white/40 px-4 py-2 text-xs text-[#416B96] transition duration-200 hover:bg-white/80"
+                                                    >
+                                                        Edit
+                                                    </button>
+
+                                                    <button
+                                                        onClick={() => hapusPasien(item.id)}
+                                                        className="rounded-full border border-[#E7A8BC]/45 bg-white/40 px-4 py-2 text-xs text-[#BD718A] transition duration-200 hover:bg-rose-50"
+                                                    >
+                                                        Hapus
+                                                    </button>
+
+                                                </div>
+
+                                            </td>
+
+                                        </tr>
+                                    ))
+                                )}
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                </section>
+
+            </div>
+
             {modalOpen && (
                 <div
-                    className="modal-overlay"
                     onClick={() => setModalOpen(false)}
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-[#2A4665]/35 p-5 backdrop-blur-xl"
                 >
-                    <div className="modal" onClick={(e) => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <div>
-                                <div className="section-label">MASTER DATA / PASIEN</div>
 
-                                <h2 className="modal-title">
+                    <div
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-full max-w-[620px] rounded-[30px] border border-white/90 bg-[#EFF6FD]/95 p-6 shadow-[0_25px_70px_rgba(39,76,113,0.2)] sm:p-9"
+                    >
+
+                        <div className="mb-7 flex items-start justify-between gap-4">
+
+                            <div>
+                                <p className="mb-3 text-[11px] tracking-[2.5px] text-[#7D9FC5]">
+                                    MASTER DATA / PASIEN
+                                </p>
+
+                                <h2 className="text-2xl font-normal text-[#315A82] sm:text-[29px]">
                                     {editId ? "Edit pasien" : "Pasien baru"}
                                 </h2>
 
-                                <p className="card-description">
+                                <p className="mt-2.5 text-sm text-[#7B9FC6]">
                                     Lengkapi informasi akun pasien.
                                 </p>
                             </div>
 
                             <button
-                                className="close-button"
                                 onClick={() => setModalOpen(false)}
+                                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/75 text-xl text-[#7196BD] transition hover:bg-white"
                             >
                                 ×
                             </button>
+
                         </div>
 
                         <form onSubmit={simpanPasien}>
-                            <div className="form-group">
-                                <label>Nama pasien</label>
+
+                            <div className="mb-5">
+                                <label className="mb-2 block text-sm text-[#547DA8]">
+                                    Nama pasien
+                                </label>
+
                                 <input
-                                    className="form-control"
                                     value={form.nama}
                                     onChange={(e) =>
                                         setForm({ ...form, nama: e.target.value })
                                     }
                                     placeholder="Masukkan nama lengkap"
                                     required
+                                    className="w-full rounded-2xl border border-white/90 bg-white/65 px-4 py-4 text-sm text-[#315A82] outline-none transition focus:border-[#9DC3E8]"
                                 />
                             </div>
 
-                            <div className="form-group">
-                                <label>Username</label>
+                            <div className="mb-5">
+                                <label className="mb-2 block text-sm text-[#547DA8]">
+                                    Username
+                                </label>
+
                                 <input
-                                    className="form-control"
                                     value={form.username}
                                     onChange={(e) =>
                                         setForm({ ...form, username: e.target.value })
                                     }
                                     placeholder="Masukkan username"
                                     required
+                                    className="w-full rounded-2xl border border-white/90 bg-white/65 px-4 py-4 text-sm text-[#315A82] outline-none transition focus:border-[#9DC3E8]"
                                 />
                             </div>
 
-                            <div className="form-group">
-                                <label>Email</label>
+                            <div className="mb-5">
+                                <label className="mb-2 block text-sm text-[#547DA8]">
+                                    Email
+                                </label>
+
                                 <input
                                     type="email"
-                                    className="form-control"
                                     value={form.email}
                                     onChange={(e) =>
                                         setForm({ ...form, email: e.target.value })
                                     }
                                     placeholder="nama@email.com"
                                     required
+                                    className="w-full rounded-2xl border border-white/90 bg-white/65 px-4 py-4 text-sm text-[#315A82] outline-none transition focus:border-[#9DC3E8]"
                                 />
                             </div>
 
-                            <div className="form-group">
-                                <label>Nomor telepon</label>
+                            <div className="mb-5">
+                                <label className="mb-2 block text-sm text-[#547DA8]">
+                                    Nomor telepon
+                                </label>
+
                                 <input
-                                    className="form-control"
                                     value={form.telepon}
                                     onChange={(e) =>
                                         setForm({ ...form, telepon: e.target.value })
                                     }
                                     placeholder="Masukkan nomor telepon"
+                                    className="w-full rounded-2xl border border-white/90 bg-white/65 px-4 py-4 text-sm text-[#315A82] outline-none transition focus:border-[#9DC3E8]"
                                 />
                             </div>
 
-                            <div className="modal-actions">
+                            <div className="mt-7 flex flex-col-reverse justify-end gap-3 sm:flex-row">
+
                                 <button
                                     type="button"
-                                    className="cancel-button"
                                     onClick={() => setModalOpen(false)}
+                                    className="rounded-2xl border border-[#D3E3F3] bg-white/55 px-5 py-3 text-sm text-[#6E91B8] transition hover:bg-white/80"
                                 >
                                     Batal
                                 </button>
 
-                                <button type="submit" className="add-button">
+                                <button
+                                    type="submit"
+                                    className="rounded-2xl bg-gradient-to-r from-[#315B83] to-[#679BC8] px-6 py-3 text-sm font-medium text-white shadow-[0_10px_25px_rgba(55,100,145,0.16)] transition hover:-translate-y-0.5"
+                                >
                                     {editId ? "Simpan perubahan" : "Tambah pasien"}
                                 </button>
+
                             </div>
+
                         </form>
+
                     </div>
+
                 </div>
             )}
+
         </main>
     );
 }

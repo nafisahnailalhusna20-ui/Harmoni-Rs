@@ -175,7 +175,6 @@ export default function JanjiTemuPage() {
 
             <div className="mx-auto w-full max-w-[1500px]">
 
-                {/* HEADER HARMONI */}
                 <header className="flex w-full flex-col justify-between gap-5 border-b border-white/80 pb-6 sm:flex-row sm:items-center">
 
                     <div className="flex flex-wrap items-center gap-4">
@@ -203,16 +202,12 @@ export default function JanjiTemuPage() {
 
                 </header>
 
-                {/* HERO APPOINTMENT */}
                 <section className="mt-12 mb-12 grid w-full grid-cols-1 items-center gap-10 md:grid-cols-[1.5fr_0.7fr] lg:mt-16 lg:mb-16">
 
-                    {/* BAGIAN KIRI */}
                     <div className="min-w-0">
-
                         <p className="mb-8 text-xs font-semibold tracking-[3px] text-[#7298C0] sm:text-sm">
                             ───　ADMINISTRATION / APPOINTMENT
                         </p>
-
                         <h1 className="max-w-3xl text-4xl font-semibold leading-tight tracking-tight text-[#294D73] sm:text-5xl lg:text-6xl">
                             Jadwal kunjungan,
                             <br />
@@ -228,7 +223,6 @@ export default function JanjiTemuPage() {
 
                     </div>
 
-                    {/* BAGIAN KANAN: NOMOR DAN DESKRIPSI */}
                     <div className="relative flex min-w-0 flex-col items-start text-left md:items-end md:text-right">
 
                         <span className="absolute -top-16 right-0 -z-0 select-none text-[130px] font-bold leading-none text-[#B8D5F2]/45 sm:text-[160px] lg:text-[180px]">
@@ -253,7 +247,6 @@ export default function JanjiTemuPage() {
 
                 </section>
 
-                {/* STATISTIK */}
                 <section className="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-3">
 
                     <div className="rounded-3xl border border-white/85 bg-white/45 p-6 shadow-sm backdrop-blur-xl">
@@ -288,10 +281,8 @@ export default function JanjiTemuPage() {
 
                 </section>
 
-                {/* DAFTAR JANJI TEMU */}
                 <section className="w-full overflow-hidden rounded-[30px] border border-white/85 bg-white/45 shadow-[0_15px_50px_rgba(99,145,190,0.08)] backdrop-blur-2xl sm:rounded-[36px]">
 
-                    {/* JUDUL */}
                     <div className="flex flex-col justify-between gap-5 border-b border-white/75 px-6 py-7 sm:flex-row sm:items-center sm:px-8">
 
                         <div>
@@ -314,7 +305,6 @@ export default function JanjiTemuPage() {
 
                     </div>
 
-                    {/* SEARCH & FILTER */}
                     <div className="flex flex-col gap-3 px-6 py-6 sm:flex-row sm:px-8">
 
                         <div className="flex flex-1 items-center gap-3 rounded-2xl border border-white/90 bg-white/50 px-5 py-3.5">
@@ -365,14 +355,11 @@ export default function JanjiTemuPage() {
 
                     </div>
 
-                    {/* PESAN */}
                     {pesan && (
                         <div className="mx-6 mb-5 rounded-2xl border border-blue-200/50 bg-blue-100/40 px-5 py-4 text-sm text-[#477AA9] sm:mx-8">
                             {pesan}
                         </div>
                     )}
-
-                    {/* ISI TABEL */}
                     {loading ? (
                         <div className="flex flex-col items-center py-20 text-[#789DC5]">
                             <div className="mb-4 h-8 w-8 animate-spin rounded-full border-4 border-[#D5E6F7] border-t-[#5B91C2]" />
@@ -546,7 +533,6 @@ export default function JanjiTemuPage() {
                         </div>
                     )}
 
-                    {/* FOOTER TABEL */}
                     {!loading && dataTersaring.length > 0 && (
                         <div className="border-t border-[#8CB1D5]/20 px-6 py-5 text-xs text-[#89A5C0] sm:px-8">
                             Menampilkan {dataTersaring.length} dari{" "}
@@ -556,7 +542,6 @@ export default function JanjiTemuPage() {
 
                 </section>
 
-                {/* FOOTER */}
                 <footer className="mt-8 text-center text-xs tracking-[2px] text-[#91ABC7]">
                     HARMONI · HOSPITAL INFORMATION SYSTEM
                 </footer>
