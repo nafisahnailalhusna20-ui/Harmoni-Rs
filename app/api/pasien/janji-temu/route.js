@@ -47,6 +47,24 @@ function tanggalMakassar(offsetHari = 0) {
     return `${yyyy}-${mm}-${dd}`;
 }
 
+function tanggalValid(tanggal) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(tanggal)) {
+        return false;
+    }
+
+    const [tahun, bulan, hari] = tanggal.split("-").map(Number);
+
+    const date = new Date(
+        Date.UTC(tahun, bulan - 1, hari)
+    );
+
+    return (
+        date.getUTCFullYear() === tahun &&
+        date.getUTCMonth() === bulan - 1 &&
+        date.getUTCDate() === hari
+    );
+}
+
 export async function GET(request) {
     try {
         const user = await cekPasien();
@@ -72,6 +90,8 @@ export async function GET(request) {
                     a.alasan_penolakan,
 
                     dokter.full_name AS nama_dokter,
+                    dokter.photo AS foto_dokter,
+
                     p.nama AS nama_poli,
 
                     s.jam_mulai,
@@ -189,6 +209,7 @@ export async function GET(request) {
     }
 }
 
+// POST: Mendaftarkan janji temu pasien
 export async function POST(request) {
     try {
         const user = await cekPasien();
@@ -206,10 +227,14 @@ export async function POST(request) {
             keluhan,
         } = await request.json();
 
+        // ==========================================
+        // VALIDASI INPUT
+        // ==========================================
         if (
             !schedule_id ||
             !tanggal_booking ||
-            !keluhan?.trim()
+            typeof keluhan !== "string" ||
+            !keluhan.trim()
         ) {
             return NextResponse.json(
                 { message: "Semua data wajib diisi." },
@@ -217,13 +242,28 @@ export async function POST(request) {
             );
         }
 
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(tanggal_booking)) {
+        const scheduleId = Number(schedule_id);
+
+        if (
+            !Number.isInteger(scheduleId) ||
+            scheduleId <= 0
+        ) {
             return NextResponse.json(
-                { message: "Format tanggal tidak valid." },
+                { message: "Jadwal dokter tidak valid." },
                 { status: 400 }
             );
         }
 
+        if (!tanggalValid(tanggal_booking)) {
+            return NextResponse.json(
+                { message: "Format atau tanggal tidak valid." },
+                { status: 400 }
+            );
+        }
+
+        // ==========================================
+        // VALIDASI RENTANG TANGGAL
+        // ==========================================
         const hariIni = tanggalMakassar();
         const batasTanggal = tanggalMakassar(90);
 
@@ -239,24 +279,30 @@ export async function POST(request) {
                 { status: 400 }
             );
         }
+
+        // ==========================================
+        // VALIDASI JADWAL DOKTER
+        // ==========================================
         const jadwal = await pool.query(
             `
             SELECT
                 id,
-                dokter_id
+                dokter_id,
+                hari,
+                jam_mulai
             FROM schedules
             WHERE id = $1
             AND hari = EXTRACT(ISODOW FROM $2::date)
             AND COALESCE(is_active, TRUE) = TRUE
             `,
-            [schedule_id, tanggal_booking]
+            [scheduleId, tanggal_booking]
         );
 
         if (jadwal.rowCount === 0) {
             return NextResponse.json(
                 {
                     message:
-                        "Jadwal tidak aktif atau tanggal tidak sesuai hari praktik dokter.",
+                        "Tanggal tidak sesuai dengan hari praktik dokter atau jadwal sudah tidak aktif.",
                 },
                 { status: 400 }
             );
@@ -264,6 +310,9 @@ export async function POST(request) {
 
         const dokterId = jadwal.rows[0].dokter_id;
 
+        // ==========================================
+        // CEK JADWAL SUDAH DIPESAN
+        // ==========================================
         const sudahDipesan = await pool.query(
             `
             SELECT id
@@ -275,19 +324,22 @@ export async function POST(request) {
                 'Dibatalkan'
             )
             `,
-            [schedule_id, tanggal_booking]
+            [scheduleId, tanggal_booking]
         );
 
         if (sudahDipesan.rowCount > 0) {
             return NextResponse.json(
                 {
                     message:
-                        "Jadwal pada tanggal tersebut sudah dipesan.",
+                        "Jadwal pada tanggal tersebut sudah dipesan. Silakan pilih tanggal lain.",
                 },
                 { status: 409 }
             );
         }
 
+        // ==========================================
+        // SIMPAN JANJI TEMU
+        // ==========================================
         const result = await pool.query(
             `
             INSERT INTO appointments (
@@ -303,7 +355,7 @@ export async function POST(request) {
             [
                 user.id,
                 dokterId,
-                schedule_id,
+                scheduleId,
                 tanggal_booking,
                 keluhan.trim(),
             ]

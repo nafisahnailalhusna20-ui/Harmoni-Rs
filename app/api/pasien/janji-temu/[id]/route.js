@@ -1,64 +1,75 @@
+import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { verifyToken } from "@/lib/auth";
 import pool from "@/lib/db";
+import { verifyToken } from "@/lib/auth";
+
+async function cekPasien() {
+    const cookieStore = await cookies();
+    const token = cookieStore.get("token")?.value;
+
+    if (!token) return null;
+
+    const user = await verifyToken(token);
+
+    if (user?.role !== "pasien") {
+        return null;
+    }
+
+    return user;
+}
 
 export async function PATCH(request, { params }) {
     try {
-        // Ambil token login pasien
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
+        const user = await cekPasien();
 
-        if (!token) {
-            return Response.json(
-                { message: "Silakan login terlebih dahulu." },
+        if (!user) {
+            return NextResponse.json(
+                { message: "Akses ditolak." },
                 { status: 401 }
             );
         }
 
-        // Verifikasi token
-        const user = await verifyToken(token);
+        const { id } = await params;
 
-        if (!user || user.role !== "pasien") {
-            return Response.json(
-                { message: "Akses ditolak." },
-                { status: 403 }
+        if (!id || !Number.isInteger(Number(id))) {
+            return NextResponse.json(
+                { message: "ID janji temu tidak valid." },
+                { status: 400 }
             );
         }
 
-        // Ambil ID janji temu dari URL
-        const { id } = await params;
-
-        // Batalkan janji temu milik pasien yang masih Pending
         const result = await pool.query(
-            `UPDATE appointments
-       SET status = 'Dibatalkan'
-       WHERE id = $1
-         AND pasien_id = $2
-         AND status = 'Pending'
-       RETURNING id, status`,
+            `
+            UPDATE appointments
+            SET status = 'Dibatalkan'
+            WHERE id = $1
+              AND pasien_id = $2
+              AND status = 'Pending'
+            RETURNING id, status
+            `,
             [id, user.id]
         );
 
-        // Jika janji temu tidak ditemukan atau tidak memenuhi syarat
-        if (result.rows.length === 0) {
-            return Response.json(
+        if (result.rowCount === 0) {
+            return NextResponse.json(
                 {
                     message:
-                        "Janji temu tidak ditemukan atau tidak dapat dibatalkan."
+                        "Janji temu tidak dapat dibatalkan. Pembatalan hanya berlaku untuk janji temu yang masih menunggu konfirmasi.",
                 },
-                { status: 404 }
+                { status: 400 }
             );
         }
 
-        return Response.json({
+        return NextResponse.json({
+            success: true,
             message: "Janji temu berhasil dibatalkan.",
-            data: result.rows[0]
+            data: result.rows[0],
         });
     } catch (error) {
         console.error("Gagal membatalkan janji temu:", error);
 
-        return Response.json(
-            { message: "Terjadi kesalahan pada server." },
+        return NextResponse.json(
+            { message: "Pembatalan janji temu gagal." },
             { status: 500 }
         );
     }
