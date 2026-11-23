@@ -1,27 +1,25 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
-export default function ManajemenPasienPage() {
+export default function PasienPage() {
     const [pasien, setPasien] = useState([]);
-    const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
+    const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
-    const [editing, setEditing] = useState(null);
-    const [saving, setSaving] = useState(false);
+    const [editId, setEditId] = useState(null);
 
     const [form, setForm] = useState({
+        nama: "",
         username: "",
         email: "",
-        full_name: "",
-        phone: "",
-        password: "",
+        telepon: "",
     });
 
-    const [message, setMessage] = useState("");
-
-    // Ambil data pasien
-    async function loadPasien() {
+    // =========================
+    // AMBIL DATA PASIEN
+    // =========================
+    async function ambilPasien() {
         try {
             setLoading(true);
 
@@ -32,248 +30,409 @@ export default function ManajemenPasienPage() {
             const result = await response.json();
 
             if (!response.ok) {
-                throw new Error(result.message || "Gagal mengambil data pasien.");
+                console.error("Gagal mengambil data pasien:", result);
+                return;
             }
 
-            const data =
-                result.pasien ||
-                result.dataPasien ||
-                result.data ||
-                result;
+            // API HARMONI mengembalikan data dalam result.data
+            const dataPasien = Array.isArray(result)
+                ? result
+                : Array.isArray(result.data)
+                    ? result.data
+                    : Array.isArray(result.pasien)
+                        ? result.pasien
+                        : [];
 
-            setPasien(Array.isArray(data) ? data : []);
+            // Samakan field database dengan field yang dipakai desain
+            const dataNormal = dataPasien.map((item) => ({
+                ...item,
+                nama: item.full_name ?? item.nama ?? "",
+                telepon: item.phone ?? item.telepon ?? "",
+            }));
+
+            setPasien(dataNormal);
         } catch (error) {
-            console.error("Gagal mengambil pasien:", error);
-            setMessage(error.message || "Gagal memuat data pasien.");
+            console.error("Gagal mengambil data pasien:", error);
         } finally {
             setLoading(false);
         }
     }
 
     useEffect(() => {
-        loadPasien();
+        ambilPasien();
     }, []);
 
-    // Pencarian pasien
-    const filteredPasien = useMemo(() => {
-        const keyword = search.toLowerCase().trim();
+    // =========================
+    // PENCARIAN PASIEN
+    // =========================
+    const pasienFiltered = pasien.filter((item) => {
+        const keyword = search.toLowerCase();
 
-        if (!keyword) return pasien;
+        const nama = String(item.nama || "").toLowerCase();
+        const username = String(item.username || "").toLowerCase();
+        const email = String(item.email || "").toLowerCase();
+        const telepon = String(item.telepon || "").toLowerCase();
 
-        return pasien.filter((item) => {
-            const nama = item.full_name || item.nama || "";
-            const username = item.username || "";
-            const email = item.email || "";
-            const telepon = item.phone || item.telepon || "";
+        return (
+            nama.includes(keyword) ||
+            username.includes(keyword) ||
+            email.includes(keyword) ||
+            telepon.includes(keyword)
+        );
+    });
 
-            return (
-                nama.toLowerCase().includes(keyword) ||
-                username.toLowerCase().includes(keyword) ||
-                email.toLowerCase().includes(keyword) ||
-                String(telepon).includes(keyword)
-            );
-        });
-    }, [pasien, search]);
-
-    // Buka form tambah
-    function openAddModal() {
-        setEditing(null);
+    // =========================
+    // TAMBAH PASIEN
+    // =========================
+    function bukaTambah() {
+        setEditId(null);
 
         setForm({
+            nama: "",
             username: "",
             email: "",
-            full_name: "",
-            phone: "",
-            password: "",
+            telepon: "",
         });
 
         setModalOpen(true);
     }
 
-    // Buka form edit
-    function openEditModal(item) {
-        setEditing(item);
+    // =========================
+    // EDIT PASIEN
+    // =========================
+    function bukaEdit(item) {
+        setEditId(item.id);
 
         setForm({
+            nama: item.full_name ?? item.nama ?? "",
             username: item.username || "",
             email: item.email || "",
-            full_name: item.full_name || item.nama || "",
-            phone: item.phone || item.telepon || "",
-            password: "",
+            telepon: item.phone ?? item.telepon ?? "",
         });
 
         setModalOpen(true);
     }
 
-    // Simpan pasien
-    async function handleSubmit(event) {
-        event.preventDefault();
+    // =========================
+    // SIMPAN PASIEN
+    // =========================
+    async function simpanPasien(e) {
+        e.preventDefault();
+
+        const url = editId
+            ? `/api/admin/pasien/${editId}`
+            : "/api/admin/pasien";
+
+        const method = editId ? "PUT" : "POST";
+
+        // Field disesuaikan dengan nama kolom API/database
+        const payload = {
+            full_name: form.nama,
+            username: form.username,
+            email: form.email,
+            phone: form.telepon,
+        };
 
         try {
-            setSaving(true);
-            setMessage("");
-
-            const id = editing?.id || editing?.user_id;
-
-            const url = editing
-                ? `/api/admin/pasien/${id}`
-                : "/api/admin/pasien";
-
             const response = await fetch(url, {
-                method: editing ? "PUT" : "POST",
+                method,
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify(form),
+                body: JSON.stringify(payload),
             });
 
             const result = await response.json();
 
             if (!response.ok) {
-                throw new Error(
-                    result.message ||
-                    result.error ||
-                    "Gagal menyimpan data pasien."
-                );
+                alert(result.message || "Gagal menyimpan data pasien.");
+                return;
             }
 
             setModalOpen(false);
-            await loadPasien();
 
-            setMessage(
-                editing
-                    ? "Data pasien berhasil diperbarui."
-                    : "Pasien berhasil ditambahkan."
-            );
+            await ambilPasien();
         } catch (error) {
-            setMessage(error.message || "Terjadi kesalahan.");
-        } finally {
-            setSaving(false);
+            console.error("Gagal menyimpan pasien:", error);
+            alert("Terjadi kesalahan saat menyimpan data.");
         }
     }
 
-    // Hapus pasien
-    async function handleDelete(item) {
-        const nama = item.full_name || item.nama || "pasien";
+    // =========================
+    // HAPUS PASIEN
+    // =========================
+    async function hapusPasien(id) {
+        const yakin = confirm("Yakin ingin menghapus pasien ini?");
 
-        const confirmed = window.confirm(
-            `Yakin ingin menghapus data ${nama}?`
-        );
-
-        if (!confirmed) return;
+        if (!yakin) return;
 
         try {
-            const id = item.id || item.user_id;
-
-            const response = await fetch(
-                `/api/admin/pasien/${id}`,
-                {
-                    method: "DELETE",
-                }
-            );
+            const response = await fetch(`/api/admin/pasien/${id}`, {
+                method: "DELETE",
+            });
 
             const result = await response.json();
 
-            if (!response.ok) {
-                throw new Error(
-                    result.message ||
-                    result.error ||
-                    "Gagal menghapus pasien."
-                );
+            if (response.ok) {
+                await ambilPasien();
+            } else {
+                alert(result.message || "Gagal menghapus pasien.");
             }
-
-            await loadPasien();
-            setMessage("Data pasien berhasil dihapus.");
         } catch (error) {
-            setMessage(error.message || "Gagal menghapus pasien.");
+            console.error("Gagal menghapus pasien:", error);
+            alert("Terjadi kesalahan saat menghapus data.");
         }
     }
 
     return (
         <main className="pasien-page">
-            <style jsx global>{`
-        * {
-          box-sizing: border-box;
-        }
-
-        body {
-          background: #eaf2fb !important;
-        }
-
+            <style jsx>{`
         .pasien-page {
           min-height: 100vh;
-          padding: 42px clamp(18px, 4vw, 64px);
-          color: #193653;
+          padding: 34px 5%;
+          color: #315a82;
           background:
             radial-gradient(
-              circle at 12% 8%,
-              rgba(180, 211, 245, 0.38),
-              transparent 32%
-            ),
-            radial-gradient(
-              circle at 88% 75%,
-              rgba(196, 220, 247, 0.3),
+              circle at 85% 15%,
+              rgba(150, 198, 238, 0.38),
               transparent 35%
             ),
-            #eaf2fb;
+            radial-gradient(
+              circle at 10% 80%,
+              rgba(220, 237, 251, 0.8),
+              transparent 40%
+            ),
+            linear-gradient(135deg, #f8fbff 0%, #e8f2fc 55%, #d8eafb 100%);
         }
 
-        .glass-panel {
-          background: rgba(255, 255, 255, 0.28);
-          border: 1px solid rgba(255, 255, 255, 0.78);
-          backdrop-filter: blur(24px) saturate(145%);
-          -webkit-backdrop-filter: blur(24px) saturate(145%);
-          border-radius: 28px;
+        .pasien-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 24px;
+          margin-bottom: 56px;
         }
 
-        .glass-soft {
-          background: rgba(255, 255, 255, 0.2);
-          border: 1px solid rgba(255, 255, 255, 0.68);
-          backdrop-filter: blur(18px) saturate(140%);
-          -webkit-backdrop-filter: blur(18px) saturate(140%);
+        .brand {
+          font-size: 30px;
+          font-weight: 600;
+          letter-spacing: 9px;
+          color: #315a82;
         }
 
-        .pasien-input {
-          width: 100%;
+        .brand-subtitle {
+          margin-top: 8px;
+          font-size: 13px;
+          letter-spacing: 4px;
+          color: #7c9fc7;
+        }
+
+        .back-button {
+          padding: 13px 24px;
+          border: 1px solid rgba(255, 255, 255, 0.85);
+          border-radius: 40px;
+          background: rgba(255, 255, 255, 0.48);
+          color: #547da8;
+          text-decoration: none;
+          font-size: 15px;
+          box-shadow: 0 4px 12px rgba(65, 100, 135, 0.08);
+          transition: 0.2s;
+        }
+
+        .back-button:hover {
+          background: rgba(255, 255, 255, 0.8);
+          transform: translateY(-2px);
+        }
+
+        .hero {
+          display: grid;
+          grid-template-columns: 1fr 300px;
+          align-items: center;
+          gap: 50px;
+          margin-bottom: 58px;
+        }
+
+        .eyebrow {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          margin-bottom: 24px;
+          font-size: 12px;
+          font-weight: 600;
+          letter-spacing: 3px;
+          color: #7a9fc8;
+        }
+
+        .eyebrow::before {
+          content: "";
+          width: 42px;
+          height: 1px;
+          background: #8db5df;
+        }
+
+        .hero-title {
+          margin: 0;
+          font-size: clamp(42px, 5.5vw, 76px);
+          line-height: 1.08;
+          font-weight: 400;
+          letter-spacing: -3px;
+          color: #315a82;
+        }
+
+        .hero-title span {
+          color: #76a2d0;
+        }
+
+        .hero-description {
+          max-width: 680px;
+          margin-top: 22px;
+          font-size: 17px;
+          line-height: 1.8;
+          color: #789bc2;
+        }
+
+        .hero-side {
+          position: relative;
+          padding: 24px 0;
+          text-align: right;
+        }
+
+        .page-number {
+          position: absolute;
+          top: -35px;
+          right: 0;
+          z-index: 0;
+          font-size: 150px;
+          line-height: 1;
+          font-weight: 300;
+          color: rgba(113, 163, 211, 0.16);
+          pointer-events: none;
+        }
+
+        .hero-side-content {
+          position: relative;
+          z-index: 1;
+        }
+
+        .side-label {
+          font-size: 12px;
+          letter-spacing: 3px;
+          color: #7b9fc6;
+        }
+
+        .side-description {
+          margin: 16px 0 24px;
+          font-size: 15px;
+          line-height: 1.7;
+          color: #547da8;
+        }
+
+        .add-button {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 14px;
+          padding: 15px 23px;
+          border: none;
+          border-radius: 18px;
+          background: linear-gradient(110deg, #315b83, #679bc8);
+          color: white;
+          font-size: 15px;
+          font-weight: 500;
+          cursor: pointer;
+          box-shadow: 0 12px 28px rgba(55, 100, 145, 0.18);
+          transition: 0.2s;
+        }
+
+        .add-button:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 15px 30px rgba(55, 100, 145, 0.25);
+        }
+
+        .glass-card {
+          border: 1px solid rgba(255, 255, 255, 0.8);
+          border-radius: 34px;
+          background: rgba(255, 255, 255, 0.34);
+          backdrop-filter: blur(22px);
+          -webkit-backdrop-filter: blur(22px);
+          box-shadow: 0 20px 55px rgba(74, 115, 153, 0.06);
+          overflow: hidden;
+        }
+
+        .card-heading {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-end;
+          gap: 24px;
+          padding: 36px 38px 28px;
+        }
+
+        .section-label {
+          margin-bottom: 12px;
+          font-size: 11px;
+          letter-spacing: 2.5px;
+          color: #7d9fc5;
+        }
+
+        .card-title {
+          margin: 0;
+          font-size: 30px;
+          font-weight: 400;
+          letter-spacing: -0.8px;
+          color: #315a82;
+        }
+
+        .card-description {
+          margin-top: 10px;
+          font-size: 15px;
+          color: #7b9fc6;
+        }
+
+        .search-input {
+          width: 330px;
+          max-width: 100%;
+          padding: 15px 20px;
           border: 1px solid rgba(255, 255, 255, 0.9);
-          background: rgba(255, 255, 255, 0.42);
-          border-radius: 16px;
-          padding: 13px 16px;
-          color: #193653;
+          border-radius: 17px;
           outline: none;
-          transition: border 0.2s, background 0.2s;
+          background: rgba(255, 255, 255, 0.55);
+          color: #315a82;
+          font-size: 14px;
+          transition: 0.2s;
         }
 
-        .pasien-input:focus {
-          border-color: #8eb5df;
-          background: rgba(255, 255, 255, 0.68);
+        .search-input:focus {
+          border-color: #9dc3e8;
+          background: rgba(255, 255, 255, 0.8);
+          box-shadow: 0 0 0 3px rgba(132, 179, 222, 0.12);
         }
 
-        .pasien-input::placeholder {
-          color: #829bb8;
+        .table-wrap {
+          padding: 0 38px 32px;
+          overflow-x: auto;
         }
 
         .pasien-table {
           width: 100%;
           border-collapse: collapse;
+          min-width: 750px;
         }
 
         .pasien-table th {
+          padding: 20px 14px;
           text-align: left;
-          padding: 17px 24px;
-          color: #7895b6;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.8);
           font-size: 11px;
-          font-weight: 700;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.7);
+          font-weight: 600;
+          letter-spacing: 1.5px;
+          color: #789bc2;
         }
 
         .pasien-table td {
-          padding: 20px 24px;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.52);
-          color: #527395;
+          padding: 22px 14px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.65);
           font-size: 14px;
+          color: #426b95;
         }
 
         .pasien-table tbody tr {
@@ -281,490 +440,422 @@ export default function ManajemenPasienPage() {
         }
 
         .pasien-table tbody tr:hover {
-          background: rgba(255, 255, 255, 0.22);
+          background: rgba(255, 255, 255, 0.25);
         }
 
-        .pasien-table tbody tr:last-child td {
-          border-bottom: none;
+        .patient-name {
+          color: #315a82;
+          font-weight: 500;
         }
 
-        .btn-glass {
-          border: 1px solid rgba(255, 255, 255, 0.8);
-          background: rgba(255, 255, 255, 0.34);
-          color: #315d88;
-          border-radius: 999px;
-          padding: 10px 17px;
-          font-size: 13px;
-          font-weight: 600;
-          transition: background 0.2s;
-        }
-
-        .btn-glass:hover {
-          background: rgba(255, 255, 255, 0.72);
-        }
-
-        .btn-primary {
-          border: 1px solid rgba(255, 255, 255, 0.22);
-          background: #244f7b;
-          color: white;
-          border-radius: 999px;
-          padding: 14px 23px;
-          font-size: 14px;
-          font-weight: 600;
-          transition: background 0.2s;
-        }
-
-        .btn-primary:hover {
-          background: #193e66;
-        }
-
-        .btn-delete {
-          border: 1px solid rgba(225, 157, 176, 0.5);
-          background: rgba(255, 238, 243, 0.45);
-          color: #b75e7b;
-          border-radius: 999px;
-          padding: 9px 15px;
+        .patient-subtitle {
+          margin-top: 5px;
           font-size: 12px;
-          font-weight: 600;
+          color: #8aa9cb;
         }
 
-        .btn-delete:hover {
-          background: rgba(255, 238, 243, 0.85);
+        .initial {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 38px;
+          height: 38px;
+          margin-right: 12px;
+          border: 1px solid rgba(255, 255, 255, 0.8);
+          border-radius: 13px;
+          background: rgba(255, 255, 255, 0.35);
+          color: #5e8ab6;
+          vertical-align: middle;
         }
 
-        .modal-backdrop {
+        .action-button {
+          padding: 9px 15px;
+          margin-right: 7px;
+          border: 1px solid rgba(255, 255, 255, 0.8);
+          border-radius: 30px;
+          background: rgba(255, 255, 255, 0.38);
+          color: #416b96;
+          font-size: 13px;
+          cursor: pointer;
+          transition: 0.2s;
+        }
+
+        .action-button:hover {
+          background: rgba(255, 255, 255, 0.8);
+        }
+
+        .delete-button {
+          color: #bd718a;
+          border-color: rgba(231, 168, 188, 0.45);
+        }
+
+        .empty-state {
+          padding: 45px 20px;
+          text-align: center;
+          color: #86a6c9;
+          font-size: 14px;
+        }
+
+        .modal-overlay {
           position: fixed;
           inset: 0;
-          z-index: 100;
+          z-index: 50;
           display: flex;
           align-items: center;
           justify-content: center;
           padding: 20px;
-          background: rgba(22, 43, 67, 0.22);
+          background: rgba(42, 70, 101, 0.35);
           backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
         }
 
-        .modal-glass {
+        .modal {
           width: 100%;
-          max-width: 520px;
-          max-height: 90vh;
-          overflow-y: auto;
-          background: rgba(239, 247, 255, 0.78);
+          max-width: 620px;
+          padding: 36px;
           border: 1px solid rgba(255, 255, 255, 0.9);
-          backdrop-filter: blur(32px) saturate(150%);
-          -webkit-backdrop-filter: blur(32px) saturate(150%);
-          border-radius: 28px;
+          border-radius: 30px;
+          background: rgba(239, 246, 253, 0.94);
+          box-shadow: 0 25px 70px rgba(39, 76, 113, 0.2);
         }
 
-        @media (max-width: 760px) {
-          .pasien-page {
-            padding: 26px 16px;
+        .modal-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 28px;
+        }
+
+        .modal-title {
+          margin: 0;
+          font-size: 29px;
+          font-weight: 400;
+          color: #315a82;
+        }
+
+        .close-button {
+          width: 40px;
+          height: 40px;
+          border: none;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.75);
+          color: #7196bd;
+          font-size: 20px;
+          cursor: pointer;
+        }
+
+        .form-group {
+          margin-bottom: 20px;
+        }
+
+        .form-group label {
+          display: block;
+          margin-bottom: 9px;
+          font-size: 14px;
+          color: #547da8;
+        }
+
+        .form-control {
+          width: 100%;
+          padding: 15px 17px;
+          border: 1px solid rgba(255, 255, 255, 0.9);
+          border-radius: 16px;
+          outline: none;
+          background: rgba(255, 255, 255, 0.65);
+          color: #315a82;
+          font-size: 14px;
+          box-sizing: border-box;
+        }
+
+        .form-control:focus {
+          border-color: #9dc3e8;
+        }
+
+        .modal-actions {
+          display: flex;
+          justify-content: flex-end;
+          gap: 12px;
+          margin-top: 28px;
+        }
+
+        .cancel-button {
+          padding: 13px 20px;
+          border: 1px solid #d3e3f3;
+          border-radius: 15px;
+          background: rgba(255, 255, 255, 0.55);
+          color: #6e91b8;
+          cursor: pointer;
+        }
+
+        @media (max-width: 850px) {
+          .hero {
+            grid-template-columns: 1fr;
+            gap: 20px;
           }
 
-          .pasien-table th,
-          .pasien-table td {
-            padding: 15px 16px;
+          .hero-side {
+            text-align: left;
           }
 
-          .table-wrapper {
-            overflow-x: auto;
+          .page-number {
+            right: auto;
+            left: 0;
+          }
+
+          .card-heading {
+            align-items: flex-start;
+            flex-direction: column;
+          }
+
+          .search-input {
+            width: 100%;
+          }
+
+          .table-wrap {
+            padding: 0 20px 25px;
+          }
+
+          .card-heading {
+            padding: 28px 24px;
+          }
+
+          .pasien-header {
+            margin-bottom: 38px;
           }
         }
       `}</style>
 
             {/* Header */}
-            <header className="flex flex-wrap items-center justify-between gap-6 mb-9">
-                <div className="flex items-center gap-4">
-                    <div
-                        className="glass-panel flex items-center justify-center"
-                        style={{
-                            width: 58,
-                            height: 58,
-                            borderRadius: 19,
-                            color: "#315d88",
-                            fontSize: 24,
-                            fontWeight: 700,
-                        }}
-                    >
-                        H
-                    </div>
-
-                    <div>
-                        <p className="text-xs font-bold tracking-[0.2em] text-[#7195bd]">
-                            HARMONI HEALTHCARE
-                        </p>
-
-                        <h1 className="mt-1 text-3xl font-semibold tracking-tight text-[#193653]">
-                            Manajemen Pasien
-                        </h1>
-
-                        <p className="mt-1 text-sm text-[#7895b6]">
-                            Kelola informasi pasien dengan lebih mudah.
-                        </p>
-                    </div>
+            <header className="pasien-header">
+                <div>
+                    <div className="brand">HARMONI</div>
+                    <div className="brand-subtitle">HOSPITAL INFORMATION SYSTEM</div>
                 </div>
 
-                <button
-                    onClick={openAddModal}
-                    className="btn-primary"
-                >
-                    <span className="mr-2">＋</span>
-                    Tambah Pasien
-                </button>
+                <a href="/admin" className="back-button">
+                    ← Kembali ke dashboard
+                </a>
             </header>
 
-            {/* Statistik ringkas */}
-            <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-7">
-                <div className="glass-panel p-6">
-                    <p className="text-sm text-[#7895b6]">
-                        Total Pasien
+            {/* Hero */}
+            <section className="hero">
+                <div>
+                    <div className="eyebrow">ADMINISTRATION / MASTER DATA</div>
+
+                    <h1 className="hero-title">
+                        Data pasien,
+                        <br />
+                        <span>lebih terorganisir.</span>
+                    </h1>
+
+                    <p className="hero-description">
+                        Kelola informasi akun dan kontak pasien dalam satu ruang kerja
+                        yang terintegrasi.
                     </p>
-
-                    <div className="flex items-end justify-between mt-3">
-                        <span className="text-3xl font-semibold text-[#193653]">
-                            {pasien.length}
-                        </span>
-
-                        <span className="text-xs text-[#6e91b9]">
-                            Terdaftar
-                        </span>
-                    </div>
                 </div>
 
-                <div className="glass-panel p-6">
-                    <p className="text-sm text-[#7895b6]">
-                        Hasil Pencarian
-                    </p>
+                <div className="hero-side">
+                    <div className="page-number">05</div>
 
-                    <div className="flex items-end justify-between mt-3">
-                        <span className="text-3xl font-semibold text-[#193653]">
-                            {filteredPasien.length}
-                        </span>
+                    <div className="hero-side-content">
+                        <div className="side-label">PATIENT DIRECTORY</div>
 
-                        <span className="text-xs text-[#6e91b9]">
-                            Data ditemukan
-                        </span>
-                    </div>
-                </div>
+                        <p className="side-description">
+                            Informasi pasien tersusun
+                            <br />
+                            dengan lebih rapi.
+                        </p>
 
-                <div className="glass-panel p-6">
-                    <p className="text-sm text-[#7895b6]">
-                        Pengelolaan Data
-                    </p>
-
-                    <div className="flex items-end justify-between mt-3">
-                        <span className="text-2xl font-semibold text-[#193653]">
-                            Pasien
-                        </span>
-
-                        <span className="text-xs text-[#6e91b9]">
-                            Admin
-                        </span>
+                        <button className="add-button" onClick={bukaTambah}>
+                            <span>＋</span>
+                            Tambah pasien
+                            <span>↗</span>
+                        </button>
                     </div>
                 </div>
             </section>
 
-            {/* Tabel pasien */}
-            <section className="glass-panel overflow-hidden">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 p-7">
+            {/* Data pasien */}
+            <section className="glass-card">
+                <div className="card-heading">
                     <div>
-                        <p className="text-xs font-bold tracking-[0.18em] text-[#7195bd]">
-                            DATA RUMAH SAKIT
-                        </p>
-
-                        <h2 className="text-2xl font-semibold text-[#193653] mt-2">
-                            Daftar Pasien
-                        </h2>
-
-                        <p className="text-sm text-[#7895b6] mt-2">
-                            Informasi akun dan kontak pasien.
+                        <div className="section-label">05 — DIRECTORY</div>
+                        <h2 className="card-title">Daftar pasien</h2>
+                        <p className="card-description">
+                            Informasi akun dan kontak pasien HARMONI.
                         </p>
                     </div>
 
-                    <div className="w-full md:max-w-sm">
-                        <input
-                            type="text"
-                            value={search}
-                            onChange={(event) => setSearch(event.target.value)}
-                            placeholder="Cari nama, username, email..."
-                            className="pasien-input"
-                        />
-                    </div>
+                    <input
+                        type="text"
+                        className="search-input"
+                        placeholder="Cari nama, username, email..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                    />
                 </div>
 
-                <div className="table-wrapper">
+                <div className="table-wrap">
                     <table className="pasien-table">
                         <thead>
                             <tr>
-                                <th>No.</th>
-                                <th>Pasien</th>
-                                <th>Username</th>
-                                <th>Email</th>
-                                <th>Telepon</th>
-                                <th>Aksi</th>
+                                <th>NO.</th>
+                                <th>PASIEN</th>
+                                <th>USERNAME</th>
+                                <th>EMAIL</th>
+                                <th>TELEPON</th>
+                                <th>AKSI</th>
                             </tr>
                         </thead>
 
                         <tbody>
                             {loading ? (
                                 <tr>
-                                    <td colSpan="6" className="text-center py-12">
+                                    <td colSpan="6" className="empty-state">
                                         Memuat data pasien...
                                     </td>
                                 </tr>
-                            ) : filteredPasien.length === 0 ? (
+                            ) : pasienFiltered.length === 0 ? (
                                 <tr>
-                                    <td colSpan="6" className="text-center py-12">
-                                        Tidak ada data pasien yang ditemukan.
+                                    <td colSpan="6" className="empty-state">
+                                        Belum ada data pasien yang ditemukan.
                                     </td>
                                 </tr>
                             ) : (
-                                filteredPasien.map((item, index) => {
-                                    const nama =
-                                        item.full_name || item.nama || "Pasien";
+                                pasienFiltered.map((item, index) => (
+                                    <tr key={item.id}>
+                                        <td>{String(index + 1).padStart(2, "0")}</td>
 
-                                    return (
-                                        <tr key={item.id || item.user_id || index}>
-                                            <td>
-                                                {String(index + 1).padStart(2, "0")}
-                                            </td>
+                                        <td>
+                                            <span className="initial">
+                                                {item.nama?.charAt(0)?.toUpperCase() || "P"}
+                                            </span>
 
-                                            <td>
-                                                <div className="flex items-center gap-3 min-w-[190px]">
-                                                    <div
-                                                        className="glass-soft flex items-center justify-center shrink-0"
-                                                        style={{
-                                                            width: 42,
-                                                            height: 42,
-                                                            borderRadius: 14,
-                                                            color: "#4777a8",
-                                                            fontWeight: 700,
-                                                        }}
-                                                    >
-                                                        {nama.charAt(0).toUpperCase()}
-                                                    </div>
+                                            <span className="patient-name">{item.nama}</span>
 
-                                                    <div>
-                                                        <p className="font-semibold text-[#244766]">
-                                                            {nama}
-                                                        </p>
+                                            <div className="patient-subtitle">
+                                                Pasien HARMONI
+                                            </div>
+                                        </td>
 
-                                                        <p className="text-xs text-[#8aa3bf] mt-1">
-                                                            Pasien HARMONI
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </td>
+                                        <td>{item.username || "-"}</td>
+                                        <td>{item.email || "-"}</td>
+                                        <td>{item.telepon || "-"}</td>
 
-                                            <td>{item.username || "-"}</td>
-                                            <td>{item.email || "-"}</td>
-                                            <td>{item.phone || item.telepon || "-"}</td>
+                                        <td>
+                                            <button
+                                                className="action-button"
+                                                onClick={() => bukaEdit(item)}
+                                            >
+                                                Edit
+                                            </button>
 
-                                            <td>
-                                                <div className="flex items-center gap-2">
-                                                    <button
-                                                        onClick={() => openEditModal(item)}
-                                                        className="btn-glass"
-                                                    >
-                                                        Edit
-                                                    </button>
-
-                                                    <button
-                                                        onClick={() => handleDelete(item)}
-                                                        className="btn-delete"
-                                                    >
-                                                        Hapus
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })
+                                            <button
+                                                className="action-button delete-button"
+                                                onClick={() => hapusPasien(item.id)}
+                                            >
+                                                Hapus
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))
                             )}
                         </tbody>
                     </table>
                 </div>
-
-                <div className="flex flex-wrap justify-between gap-3 px-7 py-5 border-t border-white/60 text-xs text-[#7895b6]">
-                    <span>
-                        Menampilkan {filteredPasien.length} dari {pasien.length} pasien
-                    </span>
-
-                    <span>HARMONI Healthcare</span>
-                </div>
             </section>
-
-            {/* Pesan */}
-            {message && (
-                <div className="glass-panel mt-5 px-5 py-4 text-sm text-[#315d88]">
-                    {message}
-
-                    <button
-                        onClick={() => setMessage("")}
-                        className="ml-4 font-semibold"
-                    >
-                        ✕
-                    </button>
-                </div>
-            )}
 
             {/* Modal tambah / edit */}
             {modalOpen && (
                 <div
-                    className="modal-backdrop"
+                    className="modal-overlay"
                     onClick={() => setModalOpen(false)}
                 >
-                    <div
-                        className="modal-glass p-7"
-                        onClick={(event) => event.stopPropagation()}
-                    >
-                        <div className="flex items-start justify-between mb-6">
+                    <div className="modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
                             <div>
-                                <p className="text-xs font-bold tracking-[0.18em] text-[#7195bd]">
-                                    HARMONI HEALTHCARE
-                                </p>
+                                <div className="section-label">MASTER DATA / PASIEN</div>
 
-                                <h2 className="text-2xl font-semibold text-[#193653] mt-2">
-                                    {editing ? "Edit Pasien" : "Tambah Pasien"}
+                                <h2 className="modal-title">
+                                    {editId ? "Edit pasien" : "Pasien baru"}
                                 </h2>
 
-                                <p className="text-sm text-[#7895b6] mt-2">
-                                    Lengkapi informasi pasien berikut.
+                                <p className="card-description">
+                                    Lengkapi informasi akun pasien.
                                 </p>
                             </div>
 
                             <button
+                                className="close-button"
                                 onClick={() => setModalOpen(false)}
-                                className="btn-glass"
                             >
-                                ✕
+                                ×
                             </button>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div>
-                                <label className="block text-sm text-[#527395] mb-2">
-                                    Nama Lengkap
-                                </label>
-
+                        <form onSubmit={simpanPasien}>
+                            <div className="form-group">
+                                <label>Nama pasien</label>
                                 <input
-                                    required
-                                    type="text"
-                                    value={form.full_name}
-                                    onChange={(event) =>
-                                        setForm({
-                                            ...form,
-                                            full_name: event.target.value,
-                                        })
+                                    className="form-control"
+                                    value={form.nama}
+                                    onChange={(e) =>
+                                        setForm({ ...form, nama: e.target.value })
                                     }
-                                    className="pasien-input"
-                                    placeholder="Nama lengkap pasien"
+                                    placeholder="Masukkan nama lengkap"
+                                    required
                                 />
                             </div>
 
-                            <div>
-                                <label className="block text-sm text-[#527395] mb-2">
-                                    Username
-                                </label>
-
+                            <div className="form-group">
+                                <label>Username</label>
                                 <input
-                                    required
-                                    type="text"
+                                    className="form-control"
                                     value={form.username}
-                                    onChange={(event) =>
-                                        setForm({
-                                            ...form,
-                                            username: event.target.value,
-                                        })
+                                    onChange={(e) =>
+                                        setForm({ ...form, username: e.target.value })
                                     }
-                                    className="pasien-input"
-                                    placeholder="Username pasien"
+                                    placeholder="Masukkan username"
+                                    required
                                 />
                             </div>
 
-                            <div>
-                                <label className="block text-sm text-[#527395] mb-2">
-                                    Email
-                                </label>
-
+                            <div className="form-group">
+                                <label>Email</label>
                                 <input
-                                    required
                                     type="email"
+                                    className="form-control"
                                     value={form.email}
-                                    onChange={(event) =>
-                                        setForm({
-                                            ...form,
-                                            email: event.target.value,
-                                        })
+                                    onChange={(e) =>
+                                        setForm({ ...form, email: e.target.value })
                                     }
-                                    className="pasien-input"
-                                    placeholder="email@gmail.com"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm text-[#527395] mb-2">
-                                    Nomor Telepon
-                                </label>
-
-                                <input
+                                    placeholder="nama@email.com"
                                     required
-                                    type="tel"
-                                    value={form.phone}
-                                    onChange={(event) =>
-                                        setForm({
-                                            ...form,
-                                            phone: event.target.value,
-                                        })
-                                    }
-                                    className="pasien-input"
-                                    placeholder="Nomor telepon"
                                 />
                             </div>
 
-                            {!editing && (
-                                <div>
-                                    <label className="block text-sm text-[#527395] mb-2">
-                                        Password
-                                    </label>
+                            <div className="form-group">
+                                <label>Nomor telepon</label>
+                                <input
+                                    className="form-control"
+                                    value={form.telepon}
+                                    onChange={(e) =>
+                                        setForm({ ...form, telepon: e.target.value })
+                                    }
+                                    placeholder="Masukkan nomor telepon"
+                                />
+                            </div>
 
-                                    <input
-                                        required
-                                        minLength={6}
-                                        type="password"
-                                        value={form.password}
-                                        onChange={(event) =>
-                                            setForm({
-                                                ...form,
-                                                password: event.target.value,
-                                            })
-                                        }
-                                        className="pasien-input"
-                                        placeholder="Minimal 6 karakter"
-                                    />
-                                </div>
-                            )}
-
-                            <div className="flex justify-end gap-3 pt-4">
+                            <div className="modal-actions">
                                 <button
                                     type="button"
+                                    className="cancel-button"
                                     onClick={() => setModalOpen(false)}
-                                    className="btn-glass"
                                 >
                                     Batal
                                 </button>
 
-                                <button
-                                    type="submit"
-                                    disabled={saving}
-                                    className="btn-primary"
-                                >
-                                    {saving
-                                        ? "Menyimpan..."
-                                        : editing
-                                            ? "Simpan Perubahan"
-                                            : "Tambah Pasien"}
+                                <button type="submit" className="add-button">
+                                    {editId ? "Simpan perubahan" : "Tambah pasien"}
                                 </button>
                             </div>
                         </form>
