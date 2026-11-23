@@ -1,12 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export default function DokterPage() {
-    const router = useRouter();
-
     const [dokter, setDokter] = useState([]);
     const [poli, setPoli] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -45,10 +42,15 @@ export default function DokterPage() {
             }
 
             if (poliData.success) {
-                setPoli(
+                const dataPoli =
                     poliData.data?.poli ??
                     poliData.data ??
-                    []
+                    [];
+
+                setPoli(
+                    Array.isArray(dataPoli)
+                        ? dataPoli
+                        : []
                 );
             }
         } catch (err) {
@@ -81,7 +83,7 @@ export default function DokterPage() {
     function bukaEdit(item) {
         setForm({
             username: item.username ?? "",
-            email: item.email ?? "",
+            email: (item.email ?? "").trim().toLowerCase(),
             password: "",
             full_name: item.full_name ?? item.nama_dokter ?? "",
             phone: item.phone ?? "",
@@ -93,25 +95,64 @@ export default function DokterPage() {
         setError("");
     }
 
+    function handleChange(e) {
+        const { name, value } = e.target;
+
+        setForm((sebelumnya) => ({
+            ...sebelumnya,
+            [name]: value,
+        }));
+
+        if (name === "email") {
+            setError("");
+        }
+    }
+
     async function handleSubmit(e) {
         e.preventDefault();
+
         setError("");
         setSuccess("");
 
-        if (!form.full_name.trim()) {
-            setError("Nama dokter harus diisi.");
-            return;
-        }
+        const emailInput = form.email.trim();
 
-        if (!form.username.trim()) {
-            setError("Username harus diisi.");
-            return;
-        }
-
-        if (!form.email.trim()) {
+        if (!emailInput) {
             setError("Email harus diisi.");
             return;
         }
+
+        if (/\s/.test(emailInput)) {
+            setError("Email tidak boleh mengandung spasi.");
+            return;
+        }
+
+        const bagianEmail = emailInput.split("@");
+
+        if (bagianEmail.length !== 2) {
+            setError("Format email tidak valid.");
+            return;
+        }
+
+        const namaAkun = bagianEmail[0];
+        const domainEmail = bagianEmail[1].toLowerCase();
+
+        if (
+            !namaAkun ||
+            !/^[a-zA-Z0-9._+-]+$/.test(namaAkun) ||
+            namaAkun.startsWith(".") ||
+            namaAkun.endsWith(".") ||
+            namaAkun.includes("..")
+        ) {
+            setError("Nama akun email tidak valid.");
+            return;
+        }
+
+        if (domainEmail !== "gmail.com") {
+            setError("Gunakan format email @gmail.com.");
+            return;
+        }
+
+        const email = `${namaAkun}@gmail.com`;
 
         if (!editId && form.password.length < 6) {
             setError("Password minimal 6 karakter.");
@@ -126,6 +167,10 @@ export default function DokterPage() {
         try {
             const payload = {
                 ...form,
+                username: form.username.trim(),
+                full_name: form.full_name.trim(),
+                phone: form.phone.trim(),
+                email,
                 poli_id: Number(form.poli_id),
             };
 
@@ -262,7 +307,7 @@ export default function DokterPage() {
                     <div className="flex flex-col items-start gap-5 lg:items-end">
                         <div className="relative text-right">
                             <span className="absolute -right-2 -top-16 select-none text-[150px] font-light leading-none text-[#6c9bc7]/10">
-                                02
+                                01
                             </span>
 
                             <p className="relative text-[10px] tracking-[0.18em] text-[#7d9fbe]">
@@ -322,6 +367,7 @@ export default function DokterPage() {
                             </span>
                         </div>
                     </div>
+
                     {success && (
                         <div className="mt-6 rounded-2xl border border-emerald-200/70 bg-emerald-50/60 px-5 py-3 text-sm text-emerald-700">
                             {success}
@@ -362,6 +408,7 @@ export default function DokterPage() {
                             )}
 
                             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+
                                 {[
                                     {
                                         label: "Nama lengkap",
@@ -376,7 +423,7 @@ export default function DokterPage() {
                                     {
                                         label: "Email",
                                         name: "email",
-                                        placeholder: "nama@email.com",
+                                        placeholder: "nama@gmail.com",
                                     },
                                     {
                                         label: "Nomor telepon",
@@ -407,15 +454,34 @@ export default function DokterPage() {
                                                         ? "email"
                                                         : "text"
                                             }
+                                            name={field.name}
                                             value={form[field.name]}
-                                            onChange={(e) =>
-                                                setForm({
-                                                    ...form,
-                                                    [field.name]:
-                                                        e.target.value,
-                                                })
-                                            }
+                                            onChange={handleChange}
                                             placeholder={field.placeholder}
+                                            autoCapitalize={
+                                                field.name === "email"
+                                                    ? "none"
+                                                    : undefined
+                                            }
+                                            autoComplete={
+                                                field.name === "email"
+                                                    ? "email"
+                                                    : field.name === "password"
+                                                        ? editId
+                                                            ? "new-password"
+                                                            : "new-password"
+                                                        : undefined
+                                            }
+                                            spellCheck={
+                                                field.name === "email"
+                                                    ? false
+                                                    : undefined
+                                            }
+                                            maxLength={
+                                                field.name === "email"
+                                                    ? 254
+                                                    : undefined
+                                            }
                                             className="w-full rounded-2xl border border-white/90 bg-white/60 px-4 py-3.5 text-sm text-[#315779] outline-none transition placeholder:text-[#a1b9d2] focus:border-[#8db9e3] focus:bg-white/90 focus:shadow-[0_0_0_4px_rgba(141,185,227,0.12)]"
                                         />
                                     </label>
@@ -427,27 +493,37 @@ export default function DokterPage() {
                                     </span>
 
                                     <select
+                                        name="poli_id"
                                         value={form.poli_id}
-                                        onChange={(e) =>
-                                            setForm({
-                                                ...form,
-                                                poli_id: e.target.value,
-                                            })
-                                        }
+                                        onChange={handleChange}
+                                        required
                                         className="w-full rounded-2xl border border-white/90 bg-white/60 px-4 py-3.5 text-sm text-[#315779] outline-none transition focus:border-[#8db9e3] focus:bg-white/90"
                                     >
-                                        <option value="">
+                                        <option
+                                            value=""
+                                            className="bg-white text-[#315779]"
+                                        >
                                             Pilih poli
                                         </option>
 
-                                        {poli.map((item) => (
-                                            <option
-                                                key={item.id}
-                                                value={item.id}
-                                            >
-                                                {item.nama_poli}
-                                            </option>
-                                        ))}
+                                        {poli.map((item) => {
+                                            const namaPoli =
+                                                item.nama_poli ??
+                                                item.nama ??
+                                                item.name ??
+                                                item.poli_name ??
+                                                "";
+
+                                            return (
+                                                <option
+                                                    key={item.id}
+                                                    value={item.id}
+                                                    className="bg-white text-[#315779]"
+                                                >
+                                                    {namaPoli}
+                                                </option>
+                                            );
+                                        })}
                                     </select>
                                 </label>
                             </div>
@@ -601,4 +677,4 @@ export default function DokterPage() {
             </div>
         </main>
     );
-} 
+}
