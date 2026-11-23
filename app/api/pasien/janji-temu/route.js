@@ -16,30 +16,37 @@ async function cekPasien() {
     return user;
 }
 
-function tanggalMakassar() {
+function tanggalMakassar(offsetHari = 0) {
     const bagianTanggal = new Intl.DateTimeFormat("en-US", {
         timeZone: "Asia/Makassar",
         year: "numeric",
         month: "2-digit",
-        day: "2-digit"
+        day: "2-digit",
     }).formatToParts(new Date());
 
-    const tahun = bagianTanggal.find(
-        item => item.type === "year"
-    ).value;
+    const tahun = Number(
+        bagianTanggal.find((item) => item.type === "year").value
+    );
 
-    const bulan = bagianTanggal.find(
-        item => item.type === "month"
-    ).value;
+    const bulan = Number(
+        bagianTanggal.find((item) => item.type === "month").value
+    );
 
-    const hari = bagianTanggal.find(
-        item => item.type === "day"
-    ).value;
+    const hari = Number(
+        bagianTanggal.find((item) => item.type === "day").value
+    );
 
-    return `${tahun}-${bulan}-${hari}`;
+    const tanggal = new Date(
+        Date.UTC(tahun, bulan - 1, hari + offsetHari)
+    );
+
+    const yyyy = tanggal.getUTCFullYear();
+    const mm = String(tanggal.getUTCMonth() + 1).padStart(2, "0");
+    const dd = String(tanggal.getUTCDate()).padStart(2, "0");
+
+    return `${yyyy}-${mm}-${dd}`;
 }
 
-// Mengambil riwayat dan jadwal booking pasien
 export async function GET(request) {
     try {
         const user = await cekPasien();
@@ -54,9 +61,9 @@ export async function GET(request) {
         const { searchParams } = new URL(request.url);
         const riwayat = searchParams.get("riwayat");
 
-        // Mengambil riwayat janji temu pasien
         if (riwayat === "true") {
-            const result = await pool.query(`
+            const result = await pool.query(
+                `
                 SELECT
                     a.id,
                     a.tanggal_booking,
@@ -86,19 +93,21 @@ export async function GET(request) {
                 ORDER BY
                     a.tanggal_booking DESC,
                     a.id DESC
-            `, [user.id]);
+                `,
+                [user.id]
+            );
 
             return NextResponse.json({
                 success: true,
-                data: result.rows
+                data: result.rows,
             });
         }
 
-        // Mengambil jadwal dokter yang masih aktif
         const hariIni = tanggalMakassar();
-        const batasTanggal = "2026-12-31";
+        const batasTanggal = tanggalMakassar(90);
 
-        const result = await pool.query(`
+        const result = await pool.query(
+            `
             WITH daftar_tanggal AS (
                 SELECT generate_series(
                     $1::date,
@@ -123,7 +132,9 @@ export async function GET(request) {
                     json_agg(
                         TO_CHAR(t.tanggal, 'YYYY-MM-DD')
                         ORDER BY t.tanggal
-                    ) FILTER (WHERE t.tanggal IS NOT NULL),
+                    ) FILTER (
+                        WHERE t.tanggal IS NOT NULL
+                    ),
                     '[]'::json
                 ) AS tanggal_tersedia
 
@@ -143,7 +154,10 @@ export async function GET(request) {
                     FROM appointments a
                     WHERE a.schedule_id = s.id
                     AND a.tanggal_booking = t.tanggal
-                    AND a.status NOT IN ('Rejected', 'Dibatalkan')
+                    AND a.status NOT IN (
+                        'Rejected',
+                        'Dibatalkan'
+                    )
                 )
 
             WHERE COALESCE(s.is_active, TRUE) = TRUE
@@ -156,11 +170,13 @@ export async function GET(request) {
             ORDER BY
                 s.hari,
                 s.jam_mulai
-        `, [hariIni, batasTanggal]);
+            `,
+            [hariIni, batasTanggal]
+        );
 
         return NextResponse.json({
             success: true,
-            data: result.rows
+            data: result.rows,
         });
 
     } catch (error) {
@@ -173,7 +189,6 @@ export async function GET(request) {
     }
 }
 
-// Mendaftarkan janji temu pasien
 export async function POST(request) {
     try {
         const user = await cekPasien();
@@ -188,10 +203,14 @@ export async function POST(request) {
         const {
             schedule_id,
             tanggal_booking,
-            keluhan
+            keluhan,
         } = await request.json();
 
-        if (!schedule_id || !tanggal_booking || !keluhan?.trim()) {
+        if (
+            !schedule_id ||
+            !tanggal_booking ||
+            !keluhan?.trim()
+        ) {
             return NextResponse.json(
                 { message: "Semua data wajib diisi." },
                 { status: 400 }
@@ -206,19 +225,22 @@ export async function POST(request) {
         }
 
         const hariIni = tanggalMakassar();
+        const batasTanggal = tanggalMakassar(90);
 
         if (
             tanggal_booking < hariIni ||
-            tanggal_booking > "2026-12-31"
+            tanggal_booking > batasTanggal
         ) {
             return NextResponse.json(
-                { message: "Tanggal kunjungan tidak valid." },
+                {
+                    message:
+                        "Tanggal kunjungan harus berada dalam rentang 90 hari ke depan.",
+                },
                 { status: 400 }
             );
         }
-
-        // Memastikan jadwal masih aktif dan sesuai hari
-        const jadwal = await pool.query(`
+        const jadwal = await pool.query(
+            `
             SELECT
                 id,
                 dokter_id
@@ -226,12 +248,15 @@ export async function POST(request) {
             WHERE id = $1
             AND hari = EXTRACT(ISODOW FROM $2::date)
             AND COALESCE(is_active, TRUE) = TRUE
-        `, [schedule_id, tanggal_booking]);
+            `,
+            [schedule_id, tanggal_booking]
+        );
 
         if (jadwal.rowCount === 0) {
             return NextResponse.json(
                 {
-                    message: "Jadwal tidak aktif atau tanggal tidak sesuai hari praktik dokter."
+                    message:
+                        "Jadwal tidak aktif atau tanggal tidak sesuai hari praktik dokter.",
                 },
                 { status: 400 }
             );
@@ -239,25 +264,32 @@ export async function POST(request) {
 
         const dokterId = jadwal.rows[0].dokter_id;
 
-        // Memastikan jadwal belum dipesan pasien lain
-        const sudahDipesan = await pool.query(`
+        const sudahDipesan = await pool.query(
+            `
             SELECT id
             FROM appointments
             WHERE schedule_id = $1
             AND tanggal_booking = $2
-            AND status NOT IN ('Rejected', 'Dibatalkan')
-        `, [schedule_id, tanggal_booking]);
+            AND status NOT IN (
+                'Rejected',
+                'Dibatalkan'
+            )
+            `,
+            [schedule_id, tanggal_booking]
+        );
 
         if (sudahDipesan.rowCount > 0) {
             return NextResponse.json(
                 {
-                    message: "Jadwal pada tanggal tersebut sudah dipesan."
+                    message:
+                        "Jadwal pada tanggal tersebut sudah dipesan.",
                 },
                 { status: 409 }
             );
         }
 
-        const result = await pool.query(`
+        const result = await pool.query(
+            `
             INSERT INTO appointments (
                 pasien_id,
                 dokter_id,
@@ -267,19 +299,24 @@ export async function POST(request) {
             )
             VALUES ($1, $2, $3, $4, $5)
             RETURNING *
-        `, [
-            user.id,
-            dokterId,
-            schedule_id,
-            tanggal_booking,
-            keluhan.trim()
-        ]);
+            `,
+            [
+                user.id,
+                dokterId,
+                schedule_id,
+                tanggal_booking,
+                keluhan.trim(),
+            ]
+        );
 
-        return NextResponse.json({
-            success: true,
-            message: "Janji temu berhasil didaftarkan.",
-            data: result.rows[0]
-        }, { status: 201 });
+        return NextResponse.json(
+            {
+                success: true,
+                message: "Janji temu berhasil didaftarkan.",
+                data: result.rows[0],
+            },
+            { status: 201 }
+        );
 
     } catch (error) {
         console.error("Gagal mendaftar janji temu:", error);

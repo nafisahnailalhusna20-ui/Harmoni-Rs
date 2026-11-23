@@ -174,7 +174,6 @@ export default function JanjiTemuPage() {
         <main className="min-h-screen w-full overflow-x-hidden bg-[linear-gradient(120deg,#f9fbff_0%,#edf5ff_55%,#dcecff_100%)] px-6 py-8 text-[#315D87] sm:px-10 lg:px-16">
 
             <div className="mx-auto w-full max-w-[1500px]">
-
                 <header className="flex w-full flex-col justify-between gap-5 border-b border-white/80 pb-6 sm:flex-row sm:items-center">
 
                     <div className="flex flex-wrap items-center gap-4">

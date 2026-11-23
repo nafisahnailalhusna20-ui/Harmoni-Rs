@@ -3,19 +3,42 @@ import { cookies } from "next/headers";
 import pool from "@/lib/db";
 import { verifyToken } from "@/lib/auth";
 
+// ==========================================
+// CEK AUTENTIKASI ADMIN
+// ==========================================
+
 async function cekAdmin() {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
+    try {
+        const cookieStore = await cookies();
+        const token = cookieStore.get("token")?.value;
 
-    if (!token) return false;
+        if (!token) {
+            return false;
+        }
 
-    const user = await verifyToken(token);
-    return user?.role === "admin";
+        const user = await verifyToken(token);
+
+        const role = String(user?.role || "")
+            .trim()
+            .toLowerCase();
+
+        return role === "admin";
+
+    } catch (error) {
+        console.error("Error autentikasi admin:", error);
+        return false;
+    }
 }
+
+// ==========================================
+// GET: AMBIL SEMUA JANJI TEMU
+// ==========================================
 
 export async function GET() {
     try {
-        if (!(await cekAdmin())) {
+        const adminValid = await cekAdmin();
+
+        if (!adminValid) {
             return NextResponse.json(
                 { message: "Akses ditolak." },
                 { status: 401 }
@@ -29,20 +52,29 @@ export async function GET() {
                 a.keluhan,
                 a.status,
                 a.alasan_penolakan,
+
                 pasien.full_name AS nama_pasien,
                 dokter.full_name AS nama_dokter,
+
                 p.nama AS nama_poli,
+
                 s.hari,
                 s.jam_mulai
+
             FROM appointments a
+
             JOIN users pasien
                 ON a.pasien_id = pasien.id
+
             JOIN users dokter
                 ON a.dokter_id = dokter.id
+
             JOIN schedules s
                 ON a.schedule_id = s.id
+
             LEFT JOIN poli p
                 ON dokter.poli_id = p.id
+
             ORDER BY
                 a.tanggal_booking DESC,
                 a.id DESC
@@ -50,45 +82,62 @@ export async function GET() {
 
         return NextResponse.json({
             success: true,
+            total: result.rows.length,
             data: result.rows
         });
 
     } catch (error) {
-        console.error("Gagal mengambil janji temu:", error);
+        console.error("GET JANJI TEMU ERROR:", error);
 
         return NextResponse.json(
-            { message: "Data janji temu gagal dimuat." },
+            {
+                success: false,
+                message: "Gagal mengambil data janji temu.",
+                error: error.message
+            },
             { status: 500 }
         );
     }
 }
 
+// ==========================================
+// PUT: SETUJUI ATAU TOLAK JANJI TEMU
+// ==========================================
+
 export async function PUT(request) {
     try {
-        if (!(await cekAdmin())) {
+        const adminValid = await cekAdmin();
+
+        if (!adminValid) {
             return NextResponse.json(
                 { message: "Akses ditolak." },
                 { status: 401 }
             );
         }
 
-        const {
-            id,
-            status,
-            alasan_penolakan
-        } = await request.json();
+        const body = await request.json();
 
-        if (
-            !Number.isInteger(Number(id)) ||
-            Number(id) <= 0 ||
-            !["Approved", "Rejected"].includes(status)
-        ) {
+        const id = Number(body.id);
+        const status = body.status;
+        const alasan_penolakan = body.alasan_penolakan;
+
+        // Validasi ID
+        if (!Number.isInteger(id) || id <= 0) {
             return NextResponse.json(
-                { message: "Data perubahan tidak valid." },
+                { message: "ID janji temu tidak valid." },
                 { status: 400 }
             );
         }
 
+        // Validasi status
+        if (!["Approved", "Rejected"].includes(status)) {
+            return NextResponse.json(
+                { message: "Status tidak valid." },
+                { status: 400 }
+            );
+        }
+
+        // Validasi alasan penolakan
         if (
             status === "Rejected" &&
             (
@@ -97,31 +146,38 @@ export async function PUT(request) {
             )
         ) {
             return NextResponse.json(
-                { message: "Alasan penolakan wajib diisi." },
+                {
+                    message: "Alasan penolakan wajib diisi."
+                },
                 { status: 400 }
             );
         }
 
         const result = await pool.query(
-            `UPDATE appointments
-             SET status = $1,
-                 alasan_penolakan = $2
-             WHERE id = $3
-               AND status = 'Pending'
-             RETURNING *`,
+            `
+                UPDATE appointments
+                SET
+                    status = $1,
+                    alasan_penolakan = $2
+                WHERE
+                    id = $3
+                    AND status = 'Pending'
+                RETURNING *
+            `,
             [
                 status,
                 status === "Rejected"
                     ? alasan_penolakan.trim()
                     : null,
-                Number(id)
+                id
             ]
         );
 
         if (result.rowCount === 0) {
             return NextResponse.json(
                 {
-                    message: "Janji temu tidak ditemukan atau sudah diproses."
+                    message:
+                        "Janji temu tidak ditemukan atau sudah diproses."
                 },
                 { status: 404 }
             );
@@ -129,17 +185,22 @@ export async function PUT(request) {
 
         return NextResponse.json({
             success: true,
-            message: status === "Approved"
-                ? "Janji temu berhasil disetujui."
-                : "Janji temu berhasil ditolak.",
+            message:
+                status === "Approved"
+                    ? "Janji temu berhasil disetujui."
+                    : "Janji temu berhasil ditolak.",
             data: result.rows[0]
         });
 
     } catch (error) {
-        console.error("Gagal mengubah status janji temu:", error);
+        console.error("PUT JANJI TEMU ERROR:", error);
 
         return NextResponse.json(
-            { message: "Status janji temu gagal diperbarui." },
+            {
+                success: false,
+                message: "Gagal memperbarui status janji temu.",
+                error: error.message
+            },
             { status: 500 }
         );
     }
