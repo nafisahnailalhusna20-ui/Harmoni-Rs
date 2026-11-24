@@ -8,7 +8,6 @@ export default function PasienPage() {
     const [search, setSearch] = useState("");
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
-    const [editId, setEditId] = useState(null);
 
     const [form, setForm] = useState({
         nama: "",
@@ -75,8 +74,6 @@ export default function PasienPage() {
         );
     });
     function bukaTambah() {
-        setEditId(null);
-
         setForm({
             nama: "",
             username: "",
@@ -87,27 +84,8 @@ export default function PasienPage() {
         setModalOpen(true);
     }
 
-
-    function bukaEdit(item) {
-        setEditId(item.id);
-
-        setForm({
-            nama: item.full_name ?? item.nama ?? "",
-            username: item.username || "",
-            email: item.email || "",
-            telepon: item.phone ?? item.telepon ?? "",
-        });
-
-        setModalOpen(true);
-    }
     async function simpanPasien(e) {
         e.preventDefault();
-
-        const url = editId
-            ? `/api/admin/pasien/${editId}`
-            : "/api/admin/pasien";
-
-        const method = editId ? "PUT" : "POST";
 
         const payload = {
             full_name: form.nama,
@@ -117,8 +95,8 @@ export default function PasienPage() {
         };
 
         try {
-            const response = await fetch(url, {
-                method,
+            const response = await fetch("/api/admin/pasien", {
+                method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
@@ -137,6 +115,34 @@ export default function PasienPage() {
         } catch (error) {
             console.error("Gagal menyimpan pasien:", error);
             alert("Terjadi kesalahan saat menyimpan data.");
+        }
+    }
+
+    async function handleToggleStatus(item) {
+        const aksi = item.is_active !== false ? "menonaktifkan" : "mengaktifkan";
+        const yakin = confirm(`Yakin ingin ${aksi} akun pasien ${item.nama || item.username}?`);
+        if (!yakin) return;
+
+        try {
+            const response = await fetch(`/api/admin/pasien/${item.id}`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ is_active: item.is_active === false }),
+            });
+
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+                alert(result.message || `Gagal ${aksi} akun pasien.`);
+                return;
+            }
+
+            await ambilPasien();
+        } catch (error) {
+            console.error("Gagal mengubah status pasien:", error);
+            alert("Terjadi kesalahan saat mengubah status akun.");
         }
     }
 
@@ -302,6 +308,10 @@ export default function PasienPage() {
                                     </th>
 
                                     <th className="px-3.5 py-5 text-[11px] font-semibold tracking-[1.5px] text-[#789BC2]">
+                                        STATUS
+                                    </th>
+
+                                    <th className="px-3.5 py-5 text-[11px] font-semibold tracking-[1.5px] text-[#789BC2]">
                                         AKSI
                                     </th>
 
@@ -313,7 +323,7 @@ export default function PasienPage() {
                                 {loading ? (
                                     <tr>
                                         <td
-                                            colSpan="6"
+                                            colSpan="7"
                                             className="px-5 py-12 text-center text-sm text-[#86A6C9]"
                                         >
                                             Memuat data pasien...
@@ -322,7 +332,7 @@ export default function PasienPage() {
                                 ) : pasienFiltered.length === 0 ? (
                                     <tr>
                                         <td
-                                            colSpan="6"
+                                            colSpan="7"
                                             className="px-5 py-12 text-center text-sm text-[#86A6C9]"
                                         >
                                             Belum ada data pasien yang ditemukan.
@@ -374,14 +384,35 @@ export default function PasienPage() {
                                             </td>
 
                                             <td className="border-b border-white/65 px-3.5 py-5">
+                                                <span
+                                                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${
+                                                        item.is_active !== false
+                                                            ? "border border-emerald-200 bg-emerald-50 text-emerald-700"
+                                                            : "border border-rose-200 bg-rose-50 text-rose-700"
+                                                    }`}
+                                                >
+                                                    <span
+                                                        className={`h-1.5 w-1.5 rounded-full ${
+                                                            item.is_active !== false ? "bg-emerald-500" : "bg-rose-500"
+                                                        }`}
+                                                    />
+                                                    {item.is_active !== false ? "Aktif" : "Nonaktif"}
+                                                </span>
+                                            </td>
+
+                                            <td className="border-b border-white/65 px-3.5 py-5">
 
                                                 <div className="flex flex-wrap gap-2">
 
                                                     <button
-                                                        onClick={() => bukaEdit(item)}
-                                                        className="rounded-full border border-white/80 bg-white/40 px-4 py-2 text-xs text-[#416B96] transition duration-200 hover:bg-white/80"
+                                                        onClick={() => handleToggleStatus(item)}
+                                                        className={`rounded-full border px-4 py-2 text-xs font-medium transition duration-200 ${
+                                                            item.is_active !== false
+                                                                ? "border-amber-200 bg-amber-50/80 text-amber-700 hover:bg-amber-100"
+                                                                : "border-emerald-200 bg-emerald-50/80 text-emerald-700 hover:bg-emerald-100"
+                                                        }`}
                                                     >
-                                                        Edit
+                                                        {item.is_active !== false ? "Nonaktifkan" : "Aktifkan"}
                                                     </button>
 
                                                     <button
@@ -428,7 +459,7 @@ export default function PasienPage() {
                                 </p>
 
                                 <h2 className="text-2xl font-normal text-[#315A82] sm:text-[29px]">
-                                    {editId ? "Edit pasien" : "Pasien baru"}
+                                    Pasien baru
                                 </h2>
 
                                 <p className="mt-2.5 text-sm text-[#7B9FC6]">
@@ -525,7 +556,7 @@ export default function PasienPage() {
                                     type="submit"
                                     className="rounded-2xl bg-gradient-to-r from-[#315B83] to-[#679BC8] px-6 py-3 text-sm font-medium text-white shadow-[0_10px_25px_rgba(55,100,145,0.16)] transition hover:-translate-y-0.5"
                                 >
-                                    {editId ? "Simpan perubahan" : "Tambah pasien"}
+                                    Tambah pasien
                                 </button>
 
                             </div>

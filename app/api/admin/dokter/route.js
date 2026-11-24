@@ -45,6 +45,7 @@ export async function GET(request) {
                 users.full_name,
                 users.phone,
                 users.poli_id,
+                COALESCE(users.is_active, TRUE) AS is_active,
                 poli.nama AS nama_poli
             FROM users
             LEFT JOIN poli ON users.poli_id = poli.id
@@ -143,6 +144,19 @@ export async function POST(request) {
             );
         }
 
+        if (phone) {
+            const phoneCheck = await pool.query(
+                "SELECT id FROM users WHERE phone = $1 AND phone IS NOT NULL AND phone != ''",
+                [phone]
+            );
+            if (phoneCheck.rows.length > 0) {
+                return NextResponse.json(
+                    { success: false, message: "Nomor telepon sudah digunakan oleh dokter lain." },
+                    { status: 409 }
+                );
+            }
+        }
+
         const poli = await pool.query(
             "SELECT id FROM poli WHERE id = $1",
             [poli_id]
@@ -181,11 +195,17 @@ export async function POST(request) {
 
     } catch (error) {
         if (error.code === "23505") {
+            const detail = error.detail || "";
+            let message = "Username atau email sudah digunakan.";
+            if (detail.includes("phone")) {
+                message = "Nomor telepon sudah digunakan oleh dokter lain.";
+            } else if (detail.includes("email")) {
+                message = "Email sudah digunakan.";
+            } else if (detail.includes("username")) {
+                message = "Username sudah digunakan.";
+            }
             return NextResponse.json(
-                {
-                    success: false,
-                    message: "Username atau email sudah digunakan."
-                },
+                { success: false, message },
                 { status: 409 }
             );
         }

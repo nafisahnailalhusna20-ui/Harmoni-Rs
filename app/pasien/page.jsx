@@ -121,6 +121,16 @@ export default function DashboardPasien() {
             simbol: "⌘",
             warna: "from-[#F5EAF2] to-[#FFFAFD]",
         },
+        {
+            nomor: "05",
+            label: "PHARMACY",
+            judul: "Cari Obat",
+            deskripsi:
+                "Cari ketersediaan obat, jenis, dan masa berlaku obat di apotek rumah sakit.",
+            href: "/pasien/obat",
+            simbol: "💊",
+            warna: "from-[#E6F7F2] to-[#F5FCFA]",
+        },
     ];
 
     return (

@@ -144,9 +144,9 @@ export default function DokterPage() {
         .toUpperCase();
 
     const glass =
-        "border border-white/75 " +
-        "bg-white/45 backdrop-blur-2xl " +
-        "shadow-[0_18px_45px_rgba(75,125,165,0.09),inset_0_1px_0_rgba(255,255,255,0.95)]";
+        "border border-white/75 bg-white/42 backdrop-blur-2xl " +
+        "shadow-[0_22px_55px_rgba(75,125,165,0.10),inset_0_1px_0_rgba(255,255,255,0.96)] " +
+        "transition-[background,box-shadow,transform] duration-500";
 
     const glassButton =
         "border border-white/85 " +
@@ -169,13 +169,61 @@ export default function DokterPage() {
     if (!dokter) return null;
 
     return (
-        <main className="relative min-h-screen overflow-hidden bg-[radial-gradient(ellipse_at_top_left,#ffffff_0%,#eaf5ff_35%,#d9ebfa_72%,#edf6fd_100%)] px-4 py-7 text-[#244968] sm:px-7 lg:px-10">
-            <div className="pointer-events-none absolute -left-36 top-36 h-[420px] w-[420px] rounded-full bg-white/70 blur-[120px]" />
+        <main className="harmoni-dashboard relative min-h-screen overflow-hidden bg-[radial-gradient(ellipse_at_top_left,#ffffff_0%,#eaf5ff_35%,#d9ebfa_72%,#edf6fd_100%)] px-4 py-7 text-[#244968] sm:px-7 lg:px-10">
+            <style>{`
+                @keyframes harmoniRise {
+                    from { opacity: 0; transform: translate3d(0, 18px, 0); }
+                    to { opacity: 1; transform: translate3d(0, 0, 0); }
+                }
+                @keyframes harmoniDrift {
+                    0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+                    50% { transform: translate3d(0, -11px, 0) rotate(1.5deg); }
+                }
+                @keyframes harmoniGlow {
+                    0% { opacity: .25; transform: translate3d(-32%,0,0) rotate(-14deg); }
+                    50% { opacity: .8; transform: translate3d(22%,0,0) rotate(-14deg); }
+                    100% { opacity: .25; transform: translate3d(70%,0,0) rotate(-14deg); }
+                }
+                @keyframes harmoniBreath {
+                    0%, 100% { transform: translate3d(0,0,0) scale(1); opacity: .62; }
+                    50% { transform: translate3d(0,-15px,0) scale(1.045); opacity: .95; }
+                }
+                @keyframes harmoniFloatImage {
+                    0%, 100% { transform: translate3d(0,0,0); }
+                    50% { transform: translate3d(0,-9px,0); }
+                }
+                @keyframes harmoniShimmer {
+                    0% { background-position: -180% 0; }
+                    100% { background-position: 180% 0; }
+                }
+                .harmoni-enter { animation: harmoniRise .9s cubic-bezier(.16,.78,.25,1) both; }
+                .harmoni-hero { isolation: isolate; background: linear-gradient(135deg, rgba(255,255,255,.78) 0%, rgba(245,251,255,.57) 34%, rgba(220,239,255,.42) 68%, rgba(255,255,255,.52) 100%); backdrop-filter: blur(34px) saturate(1.55); -webkit-backdrop-filter: blur(34px) saturate(1.55); border: 1px solid rgba(255,255,255,.92); box-shadow: 0 34px 90px rgba(70,123,169,.16), 0 8px 24px rgba(94,143,184,.08), inset 0 2px 0 rgba(255,255,255,1), inset 0 -1px 0 rgba(255,255,255,.7); }
+                .harmoni-hero::before { content: ""; position: absolute; inset: -35% -25%; pointer-events: none; z-index: 1; background: linear-gradient(105deg, transparent 28%, rgba(255,255,255,.72) 44%, rgba(255,255,255,.18) 51%, transparent 65%); background-size: 200% 100%; animation: harmoniGlow 9s cubic-bezier(.45,0,.55,1) infinite; mix-blend-mode: screen; }
+                .harmoni-hero::after { content: ""; position: absolute; inset: 1px; border-radius: inherit; pointer-events: none; background: radial-gradient(ellipse at 78% 12%, rgba(255,255,255,.92), transparent 33%), radial-gradient(ellipse at 15% 100%, rgba(190,222,250,.26), transparent 42%); z-index: 0; }
+                .harmoni-orbit { animation: harmoniBreath 9s ease-in-out infinite; transform-origin: center; box-shadow: inset 0 2px 18px rgba(255,255,255,.6), 0 18px 50px rgba(111,160,201,.09); }
+                .harmoni-orbit:nth-child(2) { animation-delay: -3s; }
+                .harmoni-orbit:nth-child(3) { animation-delay: -5.5s; }
+                .harmoni-hero-photo { animation: harmoniFloatImage 7s ease-in-out infinite; filter: drop-shadow(0 28px 34px rgba(45,83,119,.25)); }
+                .harmoni-glass-chip { background: linear-gradient(145deg, rgba(255,255,255,.88), rgba(229,243,255,.52)); backdrop-filter: blur(24px) saturate(1.45); border: 1px solid rgba(255,255,255,.95); box-shadow: 0 12px 32px rgba(82,133,177,.12), inset 0 1px 0 white, inset 0 -1px 0 rgba(255,255,255,.55); }
+                .harmoni-card { position: relative; overflow: hidden; background: linear-gradient(145deg, rgba(255,255,255,.58), rgba(238,248,255,.34)); backdrop-filter: blur(26px) saturate(1.35); -webkit-backdrop-filter: blur(26px) saturate(1.35); border-color: rgba(255,255,255,.9); transition: transform .45s cubic-bezier(.2,.7,.2,1), background .45s ease, box-shadow .45s ease; }
+                .harmoni-card::before { content: ""; position: absolute; inset: 0 0 auto; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,1), transparent); opacity: .9; }
+                .harmoni-card:hover { transform: translateY(-6px); background: rgba(255,255,255,.72); box-shadow: 0 28px 65px rgba(75,125,165,.17), inset 0 1px 0 rgba(255,255,255,1); }
+                .harmoni-avatar { box-shadow: 0 0 0 5px rgba(255,255,255,.35), 0 14px 36px rgba(67,116,157,.22); }
+                .harmoni-doctor-name { display: block; max-width: 100%; font-size: clamp(2.1rem, 4.2vw, 4rem); line-height: 1.06; letter-spacing: -.045em; font-weight: 750; color: #315f88; text-wrap: balance; }
+                .harmoni-doctor-name span { background: linear-gradient(100deg, #315f88 8%, #6798c5 48%, #3e78a8 88%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+                @media (prefers-reduced-motion: reduce) {
+                    .harmoni-enter, .harmoni-hero::before, .harmoni-orbit, .harmoni-hero-photo { animation: none !important; }
+                    .harmoni-card { transition: none !important; }
+                    .harmoni-card:hover { transform: none !important; }
+                }
+            `}</style>
+            <div className="pointer-events-none absolute -left-36 top-36 h-[520px] w-[520px] rounded-full bg-white/75 blur-[130px]" />
+            <div className="pointer-events-none absolute right-[12%] top-24 h-[340px] w-[340px] rounded-full bg-[#d5eaff]/65 blur-[105px]" />
 
             <div className="pointer-events-none absolute -right-40 top-[650px] h-[450px] w-[450px] rounded-full bg-[#b7d9f3]/50 blur-[130px]" />
 
             <div className="relative mx-auto max-w-7xl">
-                <header className="flex flex-wrap items-center justify-between gap-5 border-b border-[#a9cce8]/35 pb-6">
+                <header className="harmoni-enter flex flex-wrap items-center justify-between gap-5 border-b border-[#a9cce8]/35 pb-6">
 
                     <div>
                         <p className="text-[10px] font-extrabold tracking-[0.24em] text-[#77a1c6]">
@@ -200,7 +248,7 @@ export default function DokterPage() {
                             onClick={() =>
                                 router.push("/dokter/profil")
                             }
-                            className="group flex items-center gap-3 rounded-full border border-white/85 bg-white/45 py-2 pl-2 pr-4 shadow-[0_10px_30px_rgba(75,125,165,0.09),inset_0_1px_0_white] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/75"
+                            className="group flex items-center gap-3 rounded-full border border-white/85 bg-white/42 py-2 pl-2 pr-4 shadow-[0_14px_36px_rgba(75,125,165,0.12),inset_0_1px_0_white] backdrop-blur-2xl transition-all duration-500 hover:-translate-y-1 hover:bg-white/72"
                         >
                             <div className="relative h-12 w-12 shrink-0">
                                 <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white via-[#dceefa] to-[#a9cfea] p-[2px] shadow-[0_5px_16px_rgba(75,125,165,0.15)]">
@@ -246,22 +294,23 @@ export default function DokterPage() {
                     </div>
                 </header>
 
-                <section className={`${glass} relative mt-7 min-h-[300px] overflow-hidden rounded-[30px] p-7 sm:min-h-[340px] sm:p-10`}>
+                <section className={`${glass} harmoni-hero harmoni-enter relative mt-7 min-h-[330px] overflow-hidden rounded-[34px] p-7 sm:min-h-[380px] sm:p-11`} style={{ animationDelay: "100ms" }}>
 
-                    <div className="pointer-events-none absolute -right-12 top-5 h-64 w-64 rounded-full border border-white/70 bg-white/15 shadow-[inset_0_0_45px_rgba(255,255,255,0.45)]" />
+                    <div className="harmoni-orbit pointer-events-none absolute -right-12 top-5 h-64 w-64 rounded-full border border-white/75 bg-white/20 shadow-[inset_0_0_55px_rgba(255,255,255,0.65),0_15px_45px_rgba(106,157,197,0.07)]" />
 
-                    <div className="pointer-events-none absolute right-8 top-12 h-48 w-48 rounded-full border border-white/65 bg-white/10 backdrop-blur-sm" />
+                    <div className="harmoni-orbit pointer-events-none absolute right-8 top-12 h-48 w-48 rounded-full border border-white/75 bg-white/16 backdrop-blur-md" />
 
-                    <div className="pointer-events-none absolute right-20 top-20 h-28 w-28 rounded-full border border-white/60" />
+                    <div className="harmoni-orbit pointer-events-none absolute right-20 top-20 h-28 w-28 rounded-full border border-white/70" />
 
                     <div className="relative z-20 max-w-[65%] sm:max-w-[62%] lg:max-w-[58%]">
 
-                        <span className="inline-flex rounded-full border border-white/90 bg-white/65 px-4 py-2 text-[10px] font-bold tracking-[0.15em] text-[#80a6c7] shadow-sm backdrop-blur-xl">
+                        <span className="harmoni-glass-chip inline-flex rounded-full px-4 py-2.5 text-[10px] font-extrabold tracking-[0.17em] text-[#719bc2]">
                             RUANG KERJA DOKTER
                         </span>
 
-                        <h2 className="mt-6 text-3xl font-bold tracking-tight text-[#244968] sm:text-4xl">
-                            Halo, Dokter!
+                        <h2 className="mt-6 text-[#244968]">
+                            <span className="block text-lg font-medium tracking-tight text-[#7398bb] sm:text-xl">Halo, Dokter</span>
+                            <span className="harmoni-doctor-name mt-1"><span>{namaDokter}.</span></span>
                         </h2>
 
                         <p className="mt-4 max-w-xl text-xs leading-6 text-[#789bbd] sm:text-sm sm:leading-7">
@@ -302,7 +351,7 @@ export default function DokterPage() {
                             <img
                                 src={fotoHero}
                                 alt={`Foto hero dokter ${namaDokter}`}
-                                className="h-[105%] max-w-none object-contain object-bottom drop-shadow-[0_18px_22px_rgba(53,91,125,0.16)]"
+                                className="harmoni-hero-photo h-[105%] max-w-none object-contain object-bottom"
                             />
                         ) : (
                             <div className="mb-8 flex h-32 w-32 items-center justify-center rounded-full border border-white/80 bg-white/45 text-4xl font-bold text-[#7ca9ce] shadow-[0_15px_40px_rgba(75,125,165,0.12)] backdrop-blur-xl sm:h-40 sm:w-40">
@@ -312,7 +361,7 @@ export default function DokterPage() {
                     </div>
                 </section>
 
-                <section className="mt-9">
+                <section className="harmoni-enter mt-9" style={{ animationDelay: "320ms" }}>
 
                     <div className="mb-5">
                         <p className="text-[10px] font-extrabold tracking-[0.19em] text-[#80a7c9]">
@@ -326,7 +375,7 @@ export default function DokterPage() {
 
                     <div className="grid gap-5 md:grid-cols-2">
 
-                        <article className={`${glass} rounded-[26px] p-6`}>
+                        <article className={`${glass} harmoni-card harmoni-enter rounded-[26px] p-6`} style={{ animationDelay: "180ms" }}>
                             <div className="flex items-start justify-between">
                                 <div>
                                     <p className="text-sm font-semibold text-[#6288aa]">
@@ -365,7 +414,7 @@ export default function DokterPage() {
                             </button>
                         </article>
 
-                        <article className={`${glass} rounded-[26px] p-6`}>
+                        <article className={`${glass} harmoni-card harmoni-enter rounded-[26px] p-6`} style={{ animationDelay: "260ms" }}>
                             <div className="flex items-start justify-between">
                                 <div>
                                     <p className="text-sm font-semibold text-[#6288aa]">
@@ -418,9 +467,9 @@ export default function DokterPage() {
                         </h2>
                     </div>
 
-                    <div className="grid gap-5 md:grid-cols-3">
+                    <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
 
-                        <article className={`${glass} rounded-[26px] p-6 transition duration-300 hover:-translate-y-1 hover:bg-white/65`}>
+                        <article className={`${glass} harmoni-card harmoni-enter rounded-[26px] p-6`}>
                             <p className="text-[10px] font-bold tracking-[0.15em] text-[#9ab6cf]">
                                 MENU 01
                             </p>
@@ -469,7 +518,7 @@ export default function DokterPage() {
                             </button>
                         </article>
 
-                        <article className={`${glass} rounded-[26px] p-6 transition duration-300 hover:-translate-y-1 hover:bg-white/65`}>
+                        <article className={`${glass} harmoni-card harmoni-enter rounded-[26px] p-6`}>
                             <p className="text-[10px] font-bold tracking-[0.15em] text-[#9ab6cf]">
                                 MENU 02
                             </p>
@@ -516,7 +565,7 @@ export default function DokterPage() {
                             </button>
                         </article>
 
-                        <article className={`${glass} rounded-[26px] p-6 transition duration-300 hover:-translate-y-1 hover:bg-white/65`}>
+                        <article className={`${glass} harmoni-card harmoni-enter rounded-[26px] p-6`}>
                             <p className="text-[10px] font-bold tracking-[0.15em] text-[#9ab6cf]">
                                 MENU 03
                             </p>
@@ -562,6 +611,43 @@ export default function DokterPage() {
                                 <span>→</span>
                             </button>
                         </article>
+
+                        <article className={`${glass} harmoni-card harmoni-enter rounded-[26px] p-6`}>
+                            <p className="text-[10px] font-bold tracking-[0.15em] text-[#9ab6cf]">
+                                MENU 04
+                            </p>
+
+                            <div className="mt-5 flex items-center gap-4">
+                                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white bg-gradient-to-br from-white to-[#dceefa] text-xl text-[#70a4ce] shadow-sm">
+                                    💊
+                                </div>
+
+                                <div>
+                                    <h3 className="font-bold text-[#315879]">
+                                        Cari Obat
+                                    </h3>
+
+                                    <p className="mt-1 text-xs text-[#88a6c2]">
+                                        Informasi apotek & stok
+                                    </p>
+                                </div>
+                            </div>
+
+                            <p className="mt-5 min-h-[40px] text-xs leading-6 text-[#819fbb]">
+                                Cek ketersediaan obat, tipe keras/biasa,
+                                dan tanggal kedaluwarsa.
+                            </p>
+
+                            <button
+                                onClick={() =>
+                                    router.push("/dokter/obat")
+                                }
+                                className={`${glassButton} mt-5 flex w-full items-center justify-between rounded-xl px-4 py-3 text-xs font-semibold text-[#527da3]`}
+                            >
+                                Buka Cari Obat
+                                <span>→</span>
+                            </button>
+                        </article>
                     </div>
                 </section>
 
@@ -577,7 +663,7 @@ export default function DokterPage() {
                         </h2>
                     </div>
 
-                    <div className={`${glass} overflow-hidden rounded-[26px] p-3 sm:p-5`}>
+                    <div className={`${glass} harmoni-card overflow-hidden rounded-[26px] p-3 sm:p-5`}>
 
                         {loadingDashboard ? (
                             <div className="flex min-h-28 items-center justify-center text-xs text-[#819fbb]">
@@ -654,7 +740,7 @@ export default function DokterPage() {
                         </h2>
                     </div>
 
-                    <div className={`${glass} overflow-hidden rounded-[26px] p-3 sm:p-5`}>
+                    <div className={`${glass} harmoni-card overflow-hidden rounded-[26px] p-3 sm:p-5`}>
 
                         {loadingDashboard ? (
                             <div className="flex min-h-28 items-center justify-center text-xs text-[#819fbb]">
@@ -737,4 +823,4 @@ export default function DokterPage() {
             </div>
         </main>
     );
-}
+}   

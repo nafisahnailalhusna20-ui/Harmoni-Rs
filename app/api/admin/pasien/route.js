@@ -60,7 +60,8 @@ export async function GET() {
 
         const result = await pool.query(`
             SELECT id, username, email, full_name,
-                   phone, address, birth_date
+                   phone, address, birth_date,
+                   COALESCE(is_active, TRUE) AS is_active
             FROM users
             WHERE role = 'pasien'
             ORDER BY id ASC

@@ -271,7 +271,6 @@ export default function JanjiTemuPage() {
     return (
         <main className="min-h-screen overflow-hidden bg-gradient-to-br from-[#F5F9FF] via-[#EAF3FF] to-[#D6E9FF] text-[#315B86]">
 
-            {/* HEADER */}
 
             <header className="mx-auto max-w-[1440px] px-6 pt-8 sm:px-10 lg:px-16">
 
@@ -306,7 +305,6 @@ export default function JanjiTemuPage() {
 
             </header>
 
-            {/* HERO */}
 
             <section className="mx-auto max-w-[1440px] px-6 pb-12 pt-12 sm:px-10 sm:pt-16 lg:px-16">
 
@@ -337,8 +335,6 @@ export default function JanjiTemuPage() {
                         </p>
                     </div>
 
-                    {/* HERO SIDE */}
-
                     <div className="relative hidden min-h-[190px] items-end justify-end lg:flex">
 
                         <div className="absolute right-0 top-0 text-[150px] font-semibold leading-none tracking-[-0.08em] text-[#C6DFF8]/60">
@@ -359,8 +355,6 @@ export default function JanjiTemuPage() {
                     </div>
 
                 </div>
-
-                {/* STATISTICS */}
 
                 <div className="mt-12 grid gap-4 sm:grid-cols-3">
 
@@ -416,13 +410,11 @@ export default function JanjiTemuPage() {
 
             </section>
 
-            {/* DOCTOR DIRECTORY */}
 
             <section className="mx-auto max-w-[1440px] px-6 pb-16 sm:px-10 lg:px-16">
 
                 <div className="overflow-hidden rounded-[30px] border border-white/80 bg-white/40 shadow-[0_25px_80px_rgba(78,127,180,0.12)] backdrop-blur-2xl">
 
-                    {/* DIRECTORY HEADER */}
 
                     <div className="flex flex-col gap-6 border-b border-white/80 p-6 sm:p-8 lg:flex-row lg:items-end lg:justify-between">
 
@@ -448,7 +440,6 @@ export default function JanjiTemuPage() {
 
                     </div>
 
-                    {/* FILTERS */}
 
                     <div className="grid gap-4 border-b border-white/70 p-6 sm:p-8 md:grid-cols-[1fr_240px]">
 
@@ -480,7 +471,6 @@ export default function JanjiTemuPage() {
 
                     </div>
 
-                    {/* DOCTOR CARDS */}
 
                     <div className="px-7 py-8 sm:px-10 sm:py-10">
 
@@ -522,13 +512,10 @@ export default function JanjiTemuPage() {
                                         className="group relative flex flex-col overflow-hidden rounded-[26px] border border-white/90 bg-gradient-to-br from-white/80 via-white/55 to-[#E4F1FF]/65 p-5 shadow-[0_14px_35px_rgba(91,139,190,0.09)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_45px_rgba(91,139,190,0.16)] sm:p-6"
                                     >
 
-                                        {/* CARD NUMBER */}
-
                                         <div className="pointer-events-none absolute right-5 top-4 text-5xl font-semibold tracking-[-0.08em] text-[#D5E7F9]/70">
                                             {String(index + 1).padStart(2, "0")}
                                         </div>
 
-                                        {/* DOCTOR PROFILE */}
 
                                         <div className="relative flex items-center gap-4">
 
@@ -566,12 +553,7 @@ export default function JanjiTemuPage() {
 
                                         </div>
 
-                                        {/* DIVIDER */}
-
                                         <div className="my-6 h-px bg-gradient-to-r from-transparent via-[#C8DDF3] to-transparent" />
-
-                                        {/* SCHEDULE */}
-
                                         <div className="flex-1">
 
                                             <div className="mb-4 flex items-center justify-between">
@@ -618,9 +600,6 @@ export default function JanjiTemuPage() {
                                             </div>
 
                                         </div>
-
-                                        {/* BOOKING BUTTON */}
-
                                         <button
                                             onClick={() => bukaForm(dokter)}
                                             className="mt-6 flex w-full items-center justify-between rounded-2xl bg-gradient-to-r from-[#315B86] to-[#6D9FD2] px-5 py-4 text-sm font-medium text-white shadow-[0_10px_25px_rgba(73,126,181,0.2)] transition hover:from-[#274D75] hover:to-[#5C91C8] focus:outline-none focus:ring-4 focus:ring-[#C7DFF8]"
@@ -642,7 +621,6 @@ export default function JanjiTemuPage() {
 
                 </div>
 
-                {/* FOOTER */}
 
                 <footer className="mt-10 flex flex-col gap-4 border-t border-white/70 py-6 sm:flex-row sm:items-center sm:justify-between">
 
@@ -663,9 +641,6 @@ export default function JanjiTemuPage() {
                 </footer>
 
             </section>
-
-            {/* BOOKING MODAL */}
-
             {dokterDipilih && (
                 <div
                     className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[#1D3D60]/35 p-4 backdrop-blur-md"
@@ -677,8 +652,6 @@ export default function JanjiTemuPage() {
                 >
 
                     <div className="my-6 w-full max-w-2xl overflow-y-auto rounded-[30px] border border-white/90 bg-gradient-to-br from-[#F9FCFF] via-[#F1F7FF] to-[#E0EEFF] shadow-[0_35px_100px_rgba(36,76,119,0.3)] sm:my-8" style={{ maxHeight: "calc(100vh - 3rem)" }}>
-
-                        {/* MODAL HEADER */}
 
                         <div className="relative border-b border-white/80 px-7 py-8 sm:px-10 sm:py-9">
 
@@ -712,8 +685,6 @@ export default function JanjiTemuPage() {
                             </button>
 
                         </div>
-
-                        {/* MODAL BODY */}
 
                         <div className="px-7 py-8 sm:px-10 sm:py-10">
 
@@ -764,8 +735,6 @@ export default function JanjiTemuPage() {
                                     className="space-y-7"
                                 >
 
-                                    {/* SCHEDULE */}
-
                                     <div>
                                         <label className="mb-3 block text-xs font-semibold tracking-[0.12em] text-[#527DA8]">
                                             JADWAL PRAKTIK
@@ -790,7 +759,6 @@ export default function JanjiTemuPage() {
                                         </select>
                                     </div>
 
-                                    {/* DATE */}
 
                                     <div>
                                         <label className="mb-3 block text-xs font-semibold tracking-[0.12em] text-[#527DA8]">
@@ -863,9 +831,6 @@ export default function JanjiTemuPage() {
                                             Tanggal yang tersedia mengikuti hari praktik dokter dan dapat dipilih untuk 90 hari ke depan.
                                         </p>
                                     </div>
-
-                                    {/* COMPLAINT */}
-
                                     <div>
                                         <label className="mb-3 block text-xs font-semibold tracking-[0.12em] text-[#527DA8]">
                                             KELUHAN

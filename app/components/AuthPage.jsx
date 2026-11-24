@@ -298,6 +298,18 @@ export default function AuthPage({ mode = "login" }) {
                                         )}
                                     </span>
                                 </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => router.push("/")}
+                                    className="group mt-3 w-full rounded-[17px] border border-[#8AB8DD]/60 bg-white/30 px-5 py-3.5 text-sm font-semibold text-[#315D8C] backdrop-blur-xl transition duration-300 hover:border-[#5489B8]/80 hover:bg-white/50 hover:text-[#193B65] hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(35,77,122,0.12)]"
+                                >
+                                    <span className="flex items-center justify-center gap-2">
+                                        <span>👤</span>
+                                        <span>Jelajahi sebagai Tamu</span>
+                                        <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
+                                    </span>
+                                </button>
                             </form>
 
                             <div className="mt-8 flex items-center gap-4">
@@ -318,6 +330,17 @@ export default function AuthPage({ mode = "login" }) {
                                     className="font-bold text-[#315D8C] transition hover:text-[#193B65]"
                                 >
                                     Daftar sekarang
+                                </button>
+                            </p>
+
+                            <p className="mt-3 text-center text-xs text-[#7C98B8]">
+                                Anda seorang dokter?{" "}
+                                <button
+                                    type="button"
+                                    onClick={() => router.push("/register-dokter")}
+                                    className="font-bold text-[#315D8C] transition hover:text-[#193B65]"
+                                >
+                                    Daftar akun dokter di sini
                                 </button>
                             </p>
 
@@ -756,6 +779,18 @@ export default function AuthPage({ mode = "login" }) {
                                         ? "Memproses..."
                                         : "Masuk ke HARMONI →"}
                                 </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => router.push("/")}
+                                    className="group mt-3 w-full rounded-[16px] border border-[#8AB8DD]/60 bg-white/30 px-5 py-3.5 text-sm font-semibold text-[#315D8C] backdrop-blur-xl transition duration-300 hover:border-[#5489B8]/80 hover:bg-white/50 hover:text-[#193B65]"
+                                >
+                                    <span className="flex items-center justify-center gap-2">
+                                        <span>👤</span>
+                                        <span>Jelajahi sebagai Tamu</span>
+                                        <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
+                                    </span>
+                                </button>
                             </form>
                         ) : (
                             <form
@@ -887,6 +922,17 @@ export default function AuthPage({ mode = "login" }) {
                                 {isRegister
                                     ? "Masuk di sini"
                                     : "Daftar sekarang"}
+                            </button>
+                        </p>
+
+                        <p className="mt-2 text-center text-xs text-[#7C98B8]">
+                            Anda seorang dokter?{" "}
+                            <button
+                                type="button"
+                                onClick={() => router.push("/register-dokter")}
+                                className="font-bold text-[#315D8C]"
+                            >
+                                Daftar akun dokter di sini
                             </button>
                         </p>
 

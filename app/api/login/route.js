@@ -40,6 +40,13 @@ export async function POST(request) {
             );
         }
 
+        if (user.is_active === false) {
+            return NextResponse.json(
+                { message: "Akun Anda telah dinonaktifkan oleh administrator. Silakan hubungi admin." },
+                { status: 403 }
+            );
+        }
+
         const token = await createToken(user);
 
         const response = NextResponse.json({

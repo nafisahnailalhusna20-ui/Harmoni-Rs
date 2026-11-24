@@ -16,10 +16,21 @@ export default function ProfilPasienPage() {
     });
 
     const [foto, setFoto] = useState("");
+    const [uploadingFoto, setUploadingFoto] = useState(false);
     const [loading, setLoading] = useState(true);
     const [menyimpan, setMenyimpan] = useState(false);
     const [pesan, setPesan] = useState("");
     const [error, setError] = useState(false);
+
+    // State ganti password
+    const [passwordForm, setPasswordForm] = useState({
+        password_lama: "",
+        password_baru: "",
+        konfirmasi_password_baru: "",
+    });
+    const [mengubahPassword, setMengubahPassword] = useState(false);
+    const [pesanPassword, setPesanPassword] = useState("");
+    const [errorPassword, setErrorPassword] = useState(false);
 
     useEffect(() => {
         async function ambilProfil() {
@@ -70,6 +81,100 @@ export default function ProfilPasienPage() {
             ...prev,
             [name]: value,
         }));
+    }
+
+    async function handleUploadFoto(e) {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > 2 * 1024 * 1024) {
+            setPesan("Ukuran foto maksimal 2 MB.");
+            setError(true);
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("photo", file);
+        formData.append("username", form.username);
+        formData.append("email", form.email);
+        formData.append("full_name", form.full_name);
+        formData.append("phone", form.phone);
+        formData.append("address", form.address);
+        formData.append("birth_date", form.birth_date);
+
+        setUploadingFoto(true);
+        setPesan("");
+        setError(false);
+
+        try {
+            const res = await fetch("/api/me", {
+                method: "PUT",
+                body: formData,
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                setFoto(data.user.photo || "");
+                setPesan("Foto profil berhasil diperbarui!");
+                setError(false);
+            } else {
+                setPesan(data.message || "Gagal mengunggah foto.");
+                setError(true);
+            }
+        } catch (err) {
+            console.error("Gagal upload foto:", err);
+            setPesan("Terjadi kesalahan saat mengunggah foto.");
+            setError(true);
+        } finally {
+            setUploadingFoto(false);
+        }
+    }
+
+    async function handleGantiPassword(e) {
+        e.preventDefault();
+        setPesanPassword("");
+        setErrorPassword(false);
+
+        if (passwordForm.password_baru.length < 6) {
+            setPesanPassword("Password baru minimal 6 karakter.");
+            setErrorPassword(true);
+            return;
+        }
+
+        if (passwordForm.password_baru !== passwordForm.konfirmasi_password_baru) {
+            setPesanPassword("Konfirmasi password baru tidak cocok.");
+            setErrorPassword(true);
+            return;
+        }
+
+        setMengubahPassword(true);
+        try {
+            const res = await fetch("/api/me", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    password_lama: passwordForm.password_lama,
+                    password_baru: passwordForm.password_baru,
+                }),
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                setPesanPassword(data.message || "Password berhasil diubah!");
+                setErrorPassword(false);
+                setPasswordForm({
+                    password_lama: "",
+                    password_baru: "",
+                    konfirmasi_password_baru: "",
+                });
+            } else {
+                setPesanPassword(data.message || "Gagal mengganti password.");
+                setErrorPassword(true);
+            }
+        } catch {
+            setPesanPassword("Terjadi kesalahan saat mengganti password.");
+            setErrorPassword(true);
+        } finally {
+            setMengubahPassword(false);
+        }
     }
 
     async function simpanProfil(e) {
@@ -218,7 +323,7 @@ export default function ProfilPasienPage() {
 
                             <div className="absolute -right-1 top-6 h-5 w-5 rounded-full border-4 border-[#E4F1FA] bg-[#A8D8C7]" />
 
-                            <div className="relative flex h-36 w-36 items-center justify-center overflow-hidden rounded-full border-[7px] border-white/90 bg-gradient-to-br from-[#D4E8F7] to-[#EEF8FE] text-3xl font-bold text-[#78A8D0] shadow-[0_18px_45px_rgba(87,145,191,0.2)] sm:h-44 sm:w-44">
+                            <div className="group relative flex h-36 w-36 items-center justify-center overflow-hidden rounded-full border-[7px] border-white/90 bg-gradient-to-br from-[#D4E8F7] to-[#EEF8FE] text-3xl font-bold text-[#78A8D0] shadow-[0_18px_45px_rgba(87,145,191,0.2)] sm:h-44 sm:w-44">
                                 {foto ? (
                                     <img
                                         src={foto}
@@ -228,11 +333,31 @@ export default function ProfilPasienPage() {
                                 ) : (
                                     inisial
                                 )}
+
+                                <label
+                                    htmlFor="foto-input"
+                                    className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center bg-black/40 text-xs font-semibold text-white opacity-0 transition-opacity group-hover:opacity-100"
+                                >
+                                    <span>📷</span>
+                                    <span>{uploadingFoto ? "Mengunggah..." : "Ubah Foto"}</span>
+                                </label>
                             </div>
 
-                            <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-white/90 bg-white/85 px-4 py-2 text-[10px] font-bold tracking-wide text-[#6F9FC4] shadow-sm backdrop-blur-md">
-                                𑣲⋆ Patient account
-                            </div>
+                            <input
+                                id="foto-input"
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp"
+                                onChange={handleUploadFoto}
+                                disabled={uploadingFoto}
+                                className="hidden"
+                            />
+
+                            <label
+                                htmlFor="foto-input"
+                                className="absolute -bottom-3 left-1/2 -translate-x-1/2 cursor-pointer whitespace-nowrap rounded-full border border-white/90 bg-white/90 px-4 py-1.5 text-[10px] font-bold tracking-wide text-[#527FA5] shadow-sm backdrop-blur-md transition hover:bg-white hover:text-[#31577F]"
+                            >
+                                {uploadingFoto ? "Mengunggah..." : "✎ Ganti Foto"}
+                            </label>
                         </div>
                     </div>
                 </section>
@@ -400,6 +525,89 @@ export default function ProfilPasienPage() {
                                 Pastikan email dan nomor telepon yang
                                 terdaftar masih bisa kamu gunakan.
                             </p>
+                        </div>
+                    </section>
+
+                    {/* SECTION 03: GANTI PASSWORD */}
+                    <section className="rounded-[30px] border border-white/90 bg-white/75 p-6 shadow-[0_16px_50px_rgba(89,145,190,0.08)] backdrop-blur-xl sm:p-9">
+                        <div className="mb-6 flex items-start justify-between gap-4">
+                            <div>
+                                <p className="text-[10px] font-extrabold tracking-[0.2em] text-[#8AB2D2]">
+                                    03 / KEAMANAN
+                                </p>
+                                <h2 className="mt-2 text-xl font-bold text-[#31577F]">
+                                    Ganti Password
+                                </h2>
+                                <p className="mt-2 text-sm text-[#91ADC6]">
+                                    Perbarui password akunmu untuk menjaga keamanan data.
+                                </p>
+                            </div>
+                            <div className="hidden h-12 w-12 items-center justify-center rounded-2xl bg-[#EAF5FC] text-xl text-[#78A8D0] sm:flex">
+                                🔒
+                            </div>
+                        </div>
+
+                        {pesanPassword && (
+                            <div
+                                className={`mb-6 rounded-2xl border px-5 py-4 text-sm ${errorPassword
+                                    ? "border-rose-100 bg-rose-50 text-rose-600"
+                                    : "border-emerald-100 bg-emerald-50 text-emerald-700"
+                                }`}
+                            >
+                                {errorPassword ? "!" : "✓"} &nbsp; {pesanPassword}
+                            </div>
+                        )}
+
+                        <div className="grid gap-5 sm:grid-cols-3">
+                            <div>
+                                <label className="mb-2.5 block text-xs font-semibold text-[#5F85A8]">
+                                    Password Saat Ini
+                                </label>
+                                <input
+                                    type="password"
+                                    value={passwordForm.password_lama}
+                                    onChange={(e) => setPasswordForm((p) => ({ ...p, password_lama: e.target.value }))}
+                                    className={inputClass}
+                                    placeholder="Masukkan password lama"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="mb-2.5 block text-xs font-semibold text-[#5F85A8]">
+                                    Password Baru
+                                </label>
+                                <input
+                                    type="password"
+                                    value={passwordForm.password_baru}
+                                    onChange={(e) => setPasswordForm((p) => ({ ...p, password_baru: e.target.value }))}
+                                    className={inputClass}
+                                    placeholder="Minimal 6 karakter"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="mb-2.5 block text-xs font-semibold text-[#5F85A8]">
+                                    Konfirmasi Password Baru
+                                </label>
+                                <input
+                                    type="password"
+                                    value={passwordForm.konfirmasi_password_baru}
+                                    onChange={(e) => setPasswordForm((p) => ({ ...p, konfirmasi_password_baru: e.target.value }))}
+                                    className={inputClass}
+                                    placeholder="Ulangi password baru"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="mt-6 flex justify-end">
+                            <button
+                                type="button"
+                                onClick={handleGantiPassword}
+                                disabled={mengubahPassword || !passwordForm.password_lama || !passwordForm.password_baru}
+                                className="rounded-xl bg-gradient-to-r from-[#75ACD5] to-[#5B96C4] px-6 py-3 text-sm font-bold text-white shadow-[0_8px_22px_rgba(91,150,196,0.25)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                {mengubahPassword ? "Memperbarui..." : "Perbarui Password"}
+                            </button>
                         </div>
                     </section>
                     <div className="flex flex-col justify-between gap-4 rounded-[26px] border border-white/90 bg-white/75 p-5 shadow-[0_16px_45px_rgba(89,145,190,0.09)] backdrop-blur-xl sm:flex-row sm:items-center sm:px-7">

@@ -72,6 +72,13 @@ export default function Home() {
               Dokter Kami
             </Link>
 
+            <Link
+              href="/obat"
+              className="text-sm text-[#7189A5] transition hover:text-[#315F91]"
+            >
+              Informasi Obat
+            </Link>
+
           </div>
 
 

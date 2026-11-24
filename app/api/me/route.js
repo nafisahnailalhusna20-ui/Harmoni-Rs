@@ -5,6 +5,7 @@ import { verifyToken } from "@/lib/auth";
 import { mkdir, writeFile } from "fs/promises";
 import path from "path";
 import { randomUUID } from "crypto";
+import bcrypt from "bcryptjs";
 
 async function ambilUserLogin() {
     const cookieStore = await cookies();
@@ -266,31 +267,35 @@ export async function PUT(request) {
         let fotoPath = null;
         let fotoHeroPath = null;
 
-        // Upload foto hanya untuk dokter
-        if (
-            (foto && foto.size > 0) ||
-            (fotoHero && fotoHero.size > 0)
-        ) {
+        // Pasien hanya bisa upload photo (bukan hero_photo)
+        // Dokter bisa upload keduanya
+        if (foto && foto.size > 0) {
+            if (user.role === "dokter" || user.role === "pasien") {
+                fotoPath = await simpanFoto(foto);
+            } else {
+                return NextResponse.json(
+                    {
+                        success: false,
+                        message:
+                            "Unggah foto hanya tersedia untuk dokter dan pasien."
+                    },
+                    { status: 403 }
+                );
+            }
+        }
+
+        if (fotoHero && fotoHero.size > 0) {
             if (user.role !== "dokter") {
                 return NextResponse.json(
                     {
                         success: false,
                         message:
-                            "Unggah foto hanya tersedia untuk dokter."
+                            "Unggah foto hero hanya tersedia untuk dokter."
                     },
                     { status: 403 }
                 );
             }
-
-            // Simpan foto profil jika diunggah
-            if (foto && foto.size > 0) {
-                fotoPath = await simpanFoto(foto);
-            }
-
-            // Simpan foto hero jika diunggah
-            if (fotoHero && fotoHero.size > 0) {
-                fotoHeroPath = await simpanFoto(fotoHero);
-            }
+            fotoHeroPath = await simpanFoto(fotoHero);
         }
 
         // Update data pengguna dan kedua foto
@@ -385,6 +390,106 @@ export async function PUT(request) {
             {
                 success: false,
                 message: "Profil gagal diperbarui."
+            },
+            { status: 500 }
+        );
+    }
+}
+
+// ================================
+// PATCH GANTI PASSWORD
+// ================================
+export async function PATCH(request) {
+    try {
+        const user = await ambilUserLogin();
+
+        if (!user) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    message: "Silakan login terlebih dahulu."
+                },
+                { status: 401 }
+            );
+        }
+
+        const body = await request.json();
+        const { password_lama, password_baru } = body;
+
+        if (!password_lama || !password_baru) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    message: "Password lama dan password baru wajib diisi."
+                },
+                { status: 400 }
+            );
+        }
+
+        if (password_baru.length < 6) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    message: "Password baru minimal 6 karakter."
+                },
+                { status: 400 }
+            );
+        }
+
+        // Ambil password_hash dari DB
+        const result = await pool.query(
+            `SELECT password_hash FROM users WHERE id = $1`,
+            [user.id]
+        );
+
+        if (result.rowCount === 0) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    message: "Pengguna tidak ditemukan."
+                },
+                { status: 404 }
+            );
+        }
+
+        const passwordHash = result.rows[0].password_hash;
+
+        // Verifikasi password lama
+        const passwordCocok = await bcrypt.compare(
+            password_lama,
+            passwordHash
+        );
+
+        if (!passwordCocok) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    message: "Password lama tidak sesuai."
+                },
+                { status: 400 }
+            );
+        }
+
+        // Hash password baru dan simpan
+        const passwordBaruHash = await bcrypt.hash(password_baru, 10);
+
+        await pool.query(
+            `UPDATE users SET password_hash = $1 WHERE id = $2`,
+            [passwordBaruHash, user.id]
+        );
+
+        return NextResponse.json({
+            success: true,
+            message: "Password berhasil diperbarui."
+        });
+
+    } catch (error) {
+        console.error("Gagal mengganti password:", error);
+
+        return NextResponse.json(
+            {
+                success: false,
+                message: "Gagal mengganti password. Silakan coba lagi."
             },
             { status: 500 }
         );

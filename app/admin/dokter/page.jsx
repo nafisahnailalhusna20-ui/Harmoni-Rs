@@ -8,7 +8,6 @@ export default function DokterPage() {
     const [poli, setPoli] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
-    const [editId, setEditId] = useState(null);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
 
@@ -75,23 +74,7 @@ export default function DokterPage() {
             poli_id: "",
         });
 
-        setEditId(null);
         setShowForm(false);
-        setError("");
-    }
-
-    function bukaEdit(item) {
-        setForm({
-            username: item.username ?? "",
-            email: (item.email ?? "").trim().toLowerCase(),
-            password: "",
-            full_name: item.full_name ?? item.nama_dokter ?? "",
-            phone: item.phone ?? "",
-            poli_id: String(item.poli_id ?? ""),
-        });
-
-        setEditId(item.id);
-        setShowForm(true);
         setError("");
     }
 
@@ -154,7 +137,7 @@ export default function DokterPage() {
 
         const email = `${namaAkun}@gmail.com`;
 
-        if (!editId && form.password.length < 6) {
+        if (form.password.length < 6) {
             setError("Password minimal 6 karakter.");
             return;
         }
@@ -174,22 +157,13 @@ export default function DokterPage() {
                 poli_id: Number(form.poli_id),
             };
 
-            if (editId && !payload.password) {
-                delete payload.password;
-            }
-
-            const response = await fetch(
-                editId
-                    ? `/api/admin/dokter/${editId}`
-                    : "/api/admin/dokter",
-                {
-                    method: editId ? "PUT" : "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify(payload),
-                }
-            );
+            const response = await fetch("/api/admin/dokter", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(payload),
+            });
 
             const result = await response.json();
 
@@ -201,17 +175,42 @@ export default function DokterPage() {
                 return;
             }
 
-            setSuccess(
-                editId
-                    ? "Data dokter berhasil diperbarui."
-                    : "Dokter berhasil ditambahkan."
-            );
+            setSuccess("Dokter berhasil ditambahkan.");
 
             resetForm();
             await ambilData();
         } catch (err) {
             console.error(err);
             setError("Terjadi kesalahan saat menyimpan data.");
+        }
+    }
+
+    async function handleToggleStatus(item) {
+        const aksi = item.is_active ? "menonaktifkan" : "mengaktifkan";
+        const yakin = confirm(`Yakin ingin ${aksi} akun dokter ${item.full_name || item.username}?`);
+        if (!yakin) return;
+
+        try {
+            const response = await fetch(`/api/admin/dokter/${item.id}`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ is_active: !item.is_active }),
+            });
+
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+                alert(result.message || `Gagal ${aksi} akun dokter.`);
+                return;
+            }
+
+            setSuccess(`Akun dokter berhasil ${item.is_active ? "dinonaktifkan" : "diaktifkan"}.`);
+            await ambilData();
+        } catch (err) {
+            console.error(err);
+            alert("Terjadi kesalahan saat mengubah status akun.");
         }
     }
 
@@ -386,9 +385,7 @@ export default function DokterPage() {
                                     </p>
 
                                     <h4 className="mt-2 text-xl font-semibold text-[#315779]">
-                                        {editId
-                                            ? "Perbarui data dokter"
-                                            : "Dokter baru"}
+                                        Dokter baru
                                     </h4>
                                 </div>
 
@@ -433,9 +430,7 @@ export default function DokterPage() {
                                     {
                                         label: "Password",
                                         name: "password",
-                                        placeholder: editId
-                                            ? "Kosongkan jika tidak diubah"
-                                            : "Minimal 6 karakter",
+                                        placeholder: "Minimal 6 karakter",
                                     },
                                 ].map((field) => (
                                     <label
@@ -467,9 +462,7 @@ export default function DokterPage() {
                                                 field.name === "email"
                                                     ? "email"
                                                     : field.name === "password"
-                                                        ? editId
-                                                            ? "new-password"
-                                                            : "new-password"
+                                                        ? "new-password"
                                                         : undefined
                                             }
                                             spellCheck={
@@ -533,9 +526,7 @@ export default function DokterPage() {
                                     type="submit"
                                     className="rounded-full bg-[#426f99] px-7 py-3 text-sm font-medium text-white shadow-lg shadow-[#426f99]/15 transition hover:bg-[#315779]"
                                 >
-                                    {editId
-                                        ? "Simpan perubahan"
-                                        : "Tambah dokter"}
+                                    Tambah dokter
                                 </button>
 
                                 <button
@@ -573,6 +564,10 @@ export default function DokterPage() {
                                         Poli
                                     </th>
 
+                                    <th className="px-6 py-5 font-medium">
+                                        Status
+                                    </th>
+
                                     <th className="px-6 py-5 text-right font-medium">
                                         Aksi
                                     </th>
@@ -583,7 +578,7 @@ export default function DokterPage() {
                                 {loading ? (
                                     <tr>
                                         <td
-                                            colSpan="6"
+                                            colSpan="7"
                                             className="px-6 py-16 text-center text-sm text-[#83a5c7]"
                                         >
                                             Memuat data dokter...
@@ -592,7 +587,7 @@ export default function DokterPage() {
                                 ) : dokter.length === 0 ? (
                                     <tr>
                                         <td
-                                            colSpan="6"
+                                            colSpan="7"
                                             className="px-6 py-16 text-center text-sm text-[#83a5c7]"
                                         >
                                             Belum ada data dokter.
@@ -632,13 +627,39 @@ export default function DokterPage() {
                                             </td>
 
                                             <td className="px-6 py-6">
+                                                <span
+                                                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${
+                                                        item.is_active !== false
+                                                            ? "border border-emerald-200 bg-emerald-50 text-emerald-700"
+                                                            : "border border-rose-200 bg-rose-50 text-rose-700"
+                                                    }`}
+                                                >
+                                                    <span
+                                                        className={`h-1.5 w-1.5 rounded-full ${
+                                                            item.is_active !== false ? "bg-emerald-500" : "bg-rose-500"
+                                                        }`}
+                                                    />
+                                                    {item.is_active !== false ? "Aktif" : "Nonaktif"}
+                                                </span>
+                                            </td>
+
+                                            <td className="px-6 py-6">
                                                 <div className="flex justify-end gap-2">
                                                     <button
                                                         onClick={() =>
-                                                            bukaEdit(item)
+                                                            handleToggleStatus(
+                                                                item
+                                                            )
                                                         }
-                                                        className="rounded-xl border border-[#C6E0F9] bg-[#ECF5FD] px-4 py-2 text-xs text-[#5484B1] transition hover:bg-[#E0EFFC]">
-                                                        Edit
+                                                        className={`rounded-xl border px-3.5 py-1.5 text-xs font-medium transition ${
+                                                            item.is_active !== false
+                                                                ? "border-amber-200 bg-amber-50/80 text-amber-700 hover:bg-amber-100"
+                                                                : "border-emerald-200 bg-emerald-50/80 text-emerald-700 hover:bg-emerald-100"
+                                                        }`}
+                                                    >
+                                                        {item.is_active !== false
+                                                            ? "Nonaktifkan"
+                                                            : "Aktifkan"}
                                                     </button>
 
                                                     <button
@@ -647,7 +668,8 @@ export default function DokterPage() {
                                                                 item.id
                                                             )
                                                         }
-                                                        className="rounded-xl border border-[#F0D5D8] bg-[#FCF2F5] px-4 py-2 text-xs text-[#CE7B84] transition hover:bg-[#F9E8EC]">
+                                                        className="rounded-xl border border-[#F0D5D8] bg-[#FCF2F5] px-3.5 py-1.5 text-xs text-[#CE7B84] transition hover:bg-[#F9E8EC]"
+                                                    >
                                                         Hapus
                                                     </button>
                                                 </div>
