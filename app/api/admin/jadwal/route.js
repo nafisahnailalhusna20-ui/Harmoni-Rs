@@ -64,26 +64,60 @@ export async function POST(request) {
             );
         }
 
-        const { dokter_id, hari, jam_mulai } = await request.json();
+        const body = await request.json();
 
-        if (!dokter_id || !hari || !jam_mulai) {
+        const dokter_id = Number(body.dokter_id);
+        const hari = Number(body.hari);
+        const jam_mulai = body.jam_mulai;
+        const durasi = Number(body.durasi ?? 30);
+
+        // Validasi input
+        if (
+            !dokter_id ||
+            !hari ||
+            !jam_mulai ||
+            !Number.isInteger(durasi)
+        ) {
             return NextResponse.json(
                 { message: "Semua data wajib diisi." },
                 { status: 400 }
             );
         }
 
-        const nomorHari = Number(hari);
+        if (!Number.isInteger(dokter_id) || dokter_id <= 0) {
+            return NextResponse.json(
+                { message: "Dokter tidak valid." },
+                { status: 400 }
+            );
+        }
 
-        if (!Number.isInteger(nomorHari) || nomorHari < 1 || nomorHari > 7) {
+        if (hari < 1 || hari > 7) {
             return NextResponse.json(
                 { message: "Hari tidak valid." },
                 { status: 400 }
             );
         }
 
+        if (!Number.isFinite(durasi) || durasi <= 0) {
+            return NextResponse.json(
+                { message: "Rentang jam praktik tidak valid." },
+                { status: 400 }
+            );
+        }
+
+        if (!/^([01]\d|2[0-3]):([0-5]\d)$/.test(jam_mulai)) {
+            return NextResponse.json(
+                { message: "Format jam praktik tidak valid." },
+                { status: 400 }
+            );
+        }
+
+        // Pastikan dokter tersedia
         const cekDokter = await pool.query(
-            "SELECT id FROM users WHERE id = $1 AND role = 'dokter'",
+            `SELECT id
+             FROM users
+             WHERE id = $1
+             AND role = 'dokter'`,
             [dokter_id]
         );
 
@@ -94,43 +128,78 @@ export async function POST(request) {
             );
         }
 
-        const jam = await pool.query(
-            `SELECT $1::time AS mulai,
-                    ($1::time + INTERVAL '30 minutes')::time AS selesai`,
-            [jam_mulai]
-        );
+        // Konversi jam mulai menjadi menit
+        const [jam, menit] = jam_mulai.split(":").map(Number);
+        const menitMulai = jam * 60 + menit;
+        const menitSelesai = menitMulai + durasi;
 
-        const jamSelesai = jam.rows[0].selesai;
+        // Jadwal tidak boleh melewati tengah malam
+        if (menitSelesai > 24 * 60) {
+            return NextResponse.json(
+                {
+                    message:
+                        "Jam selesai praktik tidak boleh melewati tengah malam."
+                },
+                { status: 400 }
+            );
+        }
 
+        // Cek jadwal yang bertabrakan
         const cekBentrok = await pool.query(
-            `SELECT id FROM schedules
+            `SELECT id
+             FROM schedules
              WHERE dokter_id = $1
              AND hari = $2
-             AND jam_mulai < $3
-             AND (jam_mulai + durasi * INTERVAL '1 minute') > $4`,
-            [dokter_id, nomorHari, jamSelesai, jam_mulai]
+             AND (
+                EXTRACT(HOUR FROM jam_mulai) * 60
+                + EXTRACT(MINUTE FROM jam_mulai)
+             ) < $4
+             AND (
+                EXTRACT(HOUR FROM jam_mulai) * 60
+                + EXTRACT(MINUTE FROM jam_mulai)
+                + COALESCE(durasi, 30)
+             ) > $3
+             LIMIT 1`,
+            [
+                dokter_id,
+                hari,
+                menitMulai,
+                menitSelesai
+            ]
         );
 
         if (cekBentrok.rowCount > 0) {
             return NextResponse.json(
-                { message: "Jadwal dokter bertabrakan dengan jadwal lain." },
+                {
+                    message:
+                        "Jadwal dokter bertabrakan dengan jadwal lain pada hari tersebut."
+                },
                 { status: 409 }
             );
         }
 
+        // Simpan jadwal
         const result = await pool.query(
             `INSERT INTO schedules
-            (dokter_id, hari, jam_mulai, durasi, is_active)
-            VALUES ($1, $2, $3, 30, TRUE)
-            RETURNING *`,
-            [dokter_id, nomorHari, jam_mulai]
+                (dokter_id, hari, jam_mulai, durasi, is_active)
+             VALUES ($1, $2, $3, $4, TRUE)
+             RETURNING *`,
+            [
+                dokter_id,
+                hari,
+                jam_mulai,
+                durasi
+            ]
         );
 
-        return NextResponse.json({
-            success: true,
-            message: "Jadwal dokter berhasil ditambahkan.",
-            data: result.rows[0]
-        }, { status: 201 });
+        return NextResponse.json(
+            {
+                success: true,
+                message: "Jadwal dokter berhasil ditambahkan.",
+                data: result.rows[0]
+            },
+            { status: 201 }
+        );
 
     } catch (error) {
         console.error("Gagal menambahkan jadwal:", error);
