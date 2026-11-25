@@ -86,7 +86,6 @@ export async function GET() {
                     WHERE dokter.id = a.dokter_id
                 )
              WHERE a.dokter_id = $1
-             AND a.status = 'Approved'
              AND a.tanggal_booking = $2
              ORDER BY s.jam_mulai ASC`,
             [dokter.id, hariIni]
@@ -127,23 +126,28 @@ export async function GET() {
             [dokter.id]
         );
 
-        return NextResponse.json({
-            success: true,
-            data: {
-                total_pending: Number(
-                    hasilPending.rows[0].total
-                ),
+return NextResponse.json({
+    success: true,
+    data: {
+        total_pending: Number(
+            hasilPending.rows[0].total
+        ),
 
-                janji_temu_hari_ini:
-                    hasilJanjiHariIni.rows,
+        // Jumlah janji temu yang disetujui hari ini
+        approved_hari_ini:
+            hasilJanjiHariIni.rows.length,
 
-                jadwal_praktik:
-                    hasilJadwal.rows,
+        // Daftar janji temu hari ini
+        janji_temu_hari_ini:
+            hasilJanjiHariIni.rows,
 
-                pasien_terbaru:
-                    hasilPasienTerbaru.rows,
-            },
-        });
+        jadwal_praktik:
+            hasilJadwal.rows,
+
+        pasien_terbaru:
+            hasilPasienTerbaru.rows,
+    },
+});
 
     } catch (error) {
         console.error(

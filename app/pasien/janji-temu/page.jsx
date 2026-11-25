@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 
 // Memecah "YYYY-MM-DD" menjadi bagian-bagian untuk tampilan.
 function pecahTanggal(value) {
@@ -626,22 +627,21 @@ export default function JanjiTemuPage() {
             </div>
 
             {/* ================= MODAL PESAN JANJI ================= */}
-            {dokterDipilih && (
-                <div
-                    className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[#1d3d60]/30 p-4 backdrop-blur-md"
-                    onMouseDown={(e) => {
-                        if (e.target === e.currentTarget) {
-                            tutupForm();
-                        }
-                    }}
-                >
+            {dokterDipilih && typeof document !== "undefined" &&
+                createPortal(
                     <div
-                        className="harmoni-modal relative my-6 w-full max-w-3xl overflow-hidden rounded-[36px] sm:my-8"
-                        style={{ maxHeight: "calc(100vh - 3rem)" }}
-                        role="dialog"
-                        aria-modal="true"
-                        aria-label="Pesan janji temu"
+                        className="fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden bg-[#183b5c]/30 p-4 backdrop-blur-md"
+                        onMouseDown={(e) => {
+                            if (e.target === e.currentTarget) tutupForm();
+                        }}
                     >
+                        <div
+                            className="relative w-full max-w-[1100px] overflow-hidden rounded-[32px] border border-white/70 bg-white/40 shadow-2xl backdrop-blur-2xl"
+                            style={{ height: "auto", maxHeight: "calc(100dvh - 32px)" }}
+                            role="dialog"
+                            aria-modal="true"
+                            aria-label="Pesan janji temu"
+                        >
                         <button
                             type="button"
                             onClick={tutupForm}
@@ -652,7 +652,7 @@ export default function JanjiTemuPage() {
                             ×
                         </button>
 
-                        <div className="grid max-h-[calc(100vh-3rem)] overflow-y-auto md:grid-cols-[260px_1fr]">
+                        <div className="grid overflow-y-auto md:grid-cols-[260px_1fr]" style={{ maxHeight: "calc(100dvh - 32px)" }}>
                             {/* Ringkasan */}
                             <aside className="relative overflow-hidden bg-gradient-to-b from-[#5c96c4]/90 to-[#3f78a8]/90 p-7 text-white sm:p-8">
                                 <div className="pointer-events-none absolute -right-16 -top-16 h-52 w-52 rounded-full border border-white/30" />
@@ -864,8 +864,9 @@ export default function JanjiTemuPage() {
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
+                    </div>,
+                    document.body
+                )}
         </main>
     );
 }

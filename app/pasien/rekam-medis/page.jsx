@@ -37,7 +37,26 @@ export default function RekamMedisPasienPage() {
                 return;
             }
 
-            setRekamMedis(result.data || []);
+            // Urutan prioritas resep: siap diambil > menunggu diproses > sudah diambil.
+            // Jika prioritas sama, tampilkan pemeriksaan terbaru lebih dulu.
+            const dataTerurut = [...(result.data || [])].sort((a, b) => {
+                const prioritasStatus = (status) => {
+                    const value = (status || "").toLowerCase();
+                    if (value.includes("menunggu")) return 0;
+                    if (value.includes("siap")) return 1;
+                    if (value.includes("diambil")) return 2;
+                    return 3;
+                };
+
+                const selisihPrioritas = prioritasStatus(a.status_resep) - prioritasStatus(b.status_resep);
+                if (selisihPrioritas !== 0) return selisihPrioritas;
+
+                const tanggalA = new Date(a.tanggal_booking || a.created_at).getTime() || 0;
+                const tanggalB = new Date(b.tanggal_booking || b.created_at).getTime() || 0;
+                return tanggalB - tanggalA;
+            });
+
+            setRekamMedis(dataTerurut);
             setPesan("");
         } catch (error) {
             console.error("Gagal mengambil rekam medis:", error);
