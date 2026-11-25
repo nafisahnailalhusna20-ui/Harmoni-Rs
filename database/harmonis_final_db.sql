@@ -323,7 +323,7 @@ BEGIN
             UPDATE medicines
             SET stok = stok - item.jumlah
             WHERE id = item.medicine_id
-              AND stok >= item.jumlah;
+            AND stok >= item.jumlah;
 
             -- Jika stok tidak cukup, batalkan proses
             IF NOT FOUND THEN
@@ -377,3 +377,25 @@ DROP CONSTRAINT IF EXISTS schedules_durasi_check;
 ALTER TABLE schedules
 ADD CONSTRAINT schedules_durasi_check
 CHECK (durasi BETWEEN 15 AND 240);
+
+ALTER TABLE users
+ADD COLUMN IF NOT EXISTS sk_dokter TEXT,
+ADD COLUMN IF NOT EXISTS status_verifikasi VARCHAR(20)
+DEFAULT 'menunggu';
+
+UPDATE users
+SET status_verifikasi = 'terverifikasi'
+WHERE role = 'dokter'
+AND status_verifikasi IS NULL;
+
+ALTER TABLE users
+ADD COLUMN IF NOT EXISTS sk_dokter TEXT;
+
+ALTER TABLE users
+ADD COLUMN IF NOT EXISTS status_verifikasi VARCHAR(20)
+DEFAULT 'terverifikasi';
+
+UPDATE users
+SET status_verifikasi = 'terverifikasi'
+WHERE role = 'dokter'
+AND status_verifikasi IS NULL;

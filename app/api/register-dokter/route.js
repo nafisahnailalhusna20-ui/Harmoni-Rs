@@ -1,20 +1,25 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { hash } from "bcryptjs";
+import fs from "fs/promises";
+import path from "path";
+import crypto from "crypto";
 
 export async function POST(request) {
     try {
-        const {
-            full_name,
-            username,
-            email,
-            phone,
-            password,
-            confirm_password,
-            poli_id,
-        } = await request.json();
+        const formData = await request.formData();
 
-        // Validasi semua field wajib
+        const full_name = formData.get("full_name");
+        const username = formData.get("username");
+        const email = formData.get("email");
+        const phone = formData.get("phone");
+        const password = formData.get("password");
+        const confirm_password = formData.get("confirm_password");
+        const poli_id = formData.get("poli_id");
+        const sk_dokter = formData.get("sk_dokter");
+
+        // ================= VALIDASI FIELD =================
+
         if (
             !full_name ||
             !username ||
@@ -22,44 +27,77 @@ export async function POST(request) {
             !phone ||
             !password ||
             !confirm_password ||
-            !poli_id
+            !poli_id ||
+            !sk_dokter
         ) {
             return NextResponse.json(
                 {
                     success: false,
-                    message: "Semua field wajib diisi termasuk poliklinik.",
+                    message: "Semua field wajib diisi, termasuk dokumen SK dokter.",
                 },
                 { status: 400 }
             );
         }
 
-        // Validasi password cocok
+        // ================= VALIDASI SK =================
+
+        if (!(sk_dokter instanceof File)) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    message: "Dokumen SK dokter wajib diunggah.",
+                },
+                { status: 400 }
+            );
+        }
+
+        if (sk_dokter.size === 0) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    message: "File SK dokter tidak boleh kosong.",
+                },
+                { status: 400 }
+            );
+        }
+
+        // Maksimal ukuran file 5 MB
+        const maksimalUkuran = 5 * 1024 * 1024;
+
+        if (sk_dokter.size > maksimalUkuran) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    message: "Ukuran file SK maksimal 5 MB.",
+                },
+                { status: 400 }
+            );
+        }
+
+        // Format file yang diperbolehkan
+        const tipeFileDiizinkan = [
+            "application/pdf",
+            "image/jpeg",
+            "image/png",
+        ];
+
+        if (!tipeFileDiizinkan.includes(sk_dokter.type)) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    message: "File SK harus berupa PDF, JPG, atau PNG.",
+                },
+                { status: 400 }
+            );
+        }
+
+        // ================= VALIDASI PASSWORD =================
+
         if (password !== confirm_password) {
             return NextResponse.json(
                 {
                     success: false,
                     message: "Konfirmasi password tidak sama.",
-                },
-                { status: 400 }
-            );
-        }
-
-        // Validasi panjang data
-        if (full_name.trim().length > 120) {
-            return NextResponse.json(
-                {
-                    success: false,
-                    message: "Nama lengkap maksimal 120 karakter.",
-                },
-                { status: 400 }
-            );
-        }
-
-        if (username.trim().length < 3 || username.trim().length > 30) {
-            return NextResponse.json(
-                {
-                    success: false,
-                    message: "Username harus terdiri dari 3–30 karakter.",
                 },
                 { status: 400 }
             );
@@ -75,23 +113,68 @@ export async function POST(request) {
             );
         }
 
-        // Validasi format email
-        const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-        if (!emailValid) {
+        // ================= VALIDASI NAMA =================
+
+        if (full_name.trim().length > 120) {
             return NextResponse.json(
                 {
                     success: false,
-                    message: "Format email tidak valid.",
+                    message: "Nama lengkap maksimal 120 karakter.",
                 },
                 { status: 400 }
             );
         }
 
+        // ================= VALIDASI USERNAME =================
+
         const usernameBersih = username.trim();
+
+        if (
+            usernameBersih.length < 3 ||
+            usernameBersih.length > 30
+        ) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    message: "Username harus terdiri dari 3–30 karakter.",
+                },
+                { status: 400 }
+            );
+        }
+
+        // ================= VALIDASI EMAIL =================
+
         const emailBersih = email.trim().toLowerCase();
+
+        const emailValid =
+            /^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(emailBersih);
+
+        if (!emailValid) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    message: "Email harus menggunakan format Gmail yang valid.",
+                },
+                { status: 400 }
+            );
+        }
+
+        // ================= VALIDASI TELEPON =================
+
         const phoneBersih = phone.trim();
 
-        // Cek duplikasi username atau email
+        if (!/^[0-9]{10,15}$/.test(phoneBersih)) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    message: "Nomor telepon harus terdiri dari 10–15 angka.",
+                },
+                { status: 400 }
+            );
+        }
+
+        // ================= CEK USERNAME DAN EMAIL =================
+
         const cekUser = await pool.query(
             `SELECT id
              FROM users
@@ -110,9 +193,13 @@ export async function POST(request) {
             );
         }
 
-        // Cek duplikasi phone (UNIK)
+        // ================= CEK NOMOR TELEPON =================
+
         const cekPhone = await pool.query(
-            `SELECT id FROM users WHERE phone = $1 AND phone IS NOT NULL`,
+            `SELECT id
+             FROM users
+             WHERE phone = $1
+               AND phone IS NOT NULL`,
             [phoneBersih]
         );
 
@@ -126,9 +213,12 @@ export async function POST(request) {
             );
         }
 
-        // Validasi poli_id ada di DB
+        // ================= VALIDASI POLI =================
+
         const cekPoli = await pool.query(
-            `SELECT id FROM poli WHERE id = $1`,
+            `SELECT id
+             FROM poli
+             WHERE id = $1`,
             [poli_id]
         );
 
@@ -142,10 +232,47 @@ export async function POST(request) {
             );
         }
 
-        // Hash password
+        // ================= SIMPAN FILE SK =================
+
+        const ekstensiFile = path.extname(sk_dokter.name).toLowerCase();
+
+        const namaFile =
+            `${crypto.randomUUID()}${ekstensiFile}`;
+
+        const folderUpload = path.join(
+            process.cwd(),
+            "uploads",
+            "sk-dokter"
+        );
+
+        await fs.mkdir(folderUpload, {
+            recursive: true,
+        });
+
+        const lokasiFile = path.join(
+            folderUpload,
+            namaFile
+        );
+
+        const bufferFile = Buffer.from(
+            await sk_dokter.arrayBuffer()
+        );
+
+        await fs.writeFile(lokasiFile, bufferFile);
+
+        // Lokasi file yang disimpan di database
+        const skPath = path.join(
+            "uploads",
+            "sk-dokter",
+            namaFile
+        );
+
+        // ================= HASH PASSWORD =================
+
         const passwordHash = await hash(password, 10);
 
-        // Insert dokter baru dengan role='dokter' dan poli_id
+        // ================= SIMPAN AKUN DOKTER =================
+
         await pool.query(
             `INSERT INTO users (
                 username,
@@ -154,9 +281,11 @@ export async function POST(request) {
                 role,
                 full_name,
                 phone,
-                poli_id
+                poli_id,
+                sk_dokter,
+                status_verifikasi
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
             [
                 usernameBersih,
                 emailBersih,
@@ -165,13 +294,16 @@ export async function POST(request) {
                 full_name.trim(),
                 phoneBersih,
                 poli_id,
+                skPath,
+                "menunggu",
             ]
         );
 
         return NextResponse.json(
             {
                 success: true,
-                message: "Pendaftaran dokter berhasil! Silakan login.",
+                message:
+                    "Pendaftaran berhasil. Akun Anda menunggu verifikasi SK oleh admin.",
             },
             { status: 201 }
         );
@@ -179,21 +311,12 @@ export async function POST(request) {
     } catch (error) {
         console.error("Register dokter error:", error);
 
-        // Handle unique constraint violation dari DB
         if (error.code === "23505") {
-            if (error.constraint?.includes("phone")) {
-                return NextResponse.json(
-                    {
-                        success: false,
-                        message: "Nomor telepon sudah terdaftar.",
-                    },
-                    { status: 409 }
-                );
-            }
             return NextResponse.json(
                 {
                     success: false,
-                    message: "Username, email, atau nomor telepon sudah terdaftar.",
+                    message:
+                        "Username, email, atau nomor telepon sudah terdaftar.",
                 },
                 { status: 409 }
             );

@@ -12,7 +12,7 @@ export default function ProfilDokterPage() {
         full_name: "",
         phone: "",
         address: "",
-        birth_date: ""
+        birth_date: "",
     });
 
     const [fotoBaru, setFotoBaru] = useState(null);
@@ -50,12 +50,12 @@ export default function ProfilDokterPage() {
                     address: data.user.address || "",
                     birth_date: data.user.birth_date
                         ? String(data.user.birth_date).slice(0, 10)
-                        : ""
+                        : "",
                 });
 
                 setPreview(data.user.photo || "");
                 setPreviewHero(data.user.hero_photo || "");
-            } catch (err) {
+            } catch {
                 setPesan("Gagal mengambil data profil.");
                 setError(true);
             } finally {
@@ -71,7 +71,7 @@ export default function ProfilDokterPage() {
 
         setForm((prev) => ({
             ...prev,
-            [name]: value
+            [name]: value,
         }));
     }
 
@@ -81,7 +81,7 @@ export default function ProfilDokterPage() {
         const formatFoto = [
             "image/jpeg",
             "image/png",
-            "image/webp"
+            "image/webp",
         ];
 
         if (!formatFoto.includes(file.type)) {
@@ -147,7 +147,7 @@ export default function ProfilDokterPage() {
 
             const response = await fetch("/api/me", {
                 method: "PUT",
-                body: formData
+                body: formData,
             });
 
             const data = await response.json();
@@ -166,7 +166,7 @@ export default function ProfilDokterPage() {
                 address: data.user.address || "",
                 birth_date: data.user.birth_date
                     ? String(data.user.birth_date).slice(0, 10)
-                    : ""
+                    : "",
             });
 
             setPreview(data.user.photo || "");
@@ -177,7 +177,7 @@ export default function ProfilDokterPage() {
 
             setPesan("Profil berhasil diperbarui!");
             setError(false);
-        } catch (err) {
+        } catch {
             setPesan("Terjadi kesalahan saat menyimpan profil.");
             setError(true);
         } finally {
@@ -188,11 +188,20 @@ export default function ProfilDokterPage() {
     const inputClass =
         "w-full rounded-2xl border border-[#dce8f3] bg-white/75 px-4 py-3.5 text-sm text-[#244968] outline-none transition placeholder:text-[#9bb2c8] focus:border-[#8bb9df] focus:bg-white focus:ring-4 focus:ring-[#c9e2f5]/40";
 
+    const inisial = form.full_name
+        ? form.full_name
+              .trim()
+              .split(/\s+/)
+              .slice(0, 2)
+              .map((kata) => kata[0])
+              .join("")
+              .toUpperCase()
+        : "DR";
+
     if (loading) {
         return (
-            <main className="flex min-h-screen items-center justify-center bg-[#edf6fd]">
+            <main className="flex min-h-screen items-center justify-center bg-[#edf6fd] px-4">
                 <div className="rounded-3xl border border-white/80 bg-white/70 px-8 py-6 text-center shadow-xl shadow-blue-100/50 backdrop-blur-xl">
-                    <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-2 border-[#d6e8f6] border-t-[#568fbd]" />
                     <p className="text-sm font-medium text-[#5682a7]">
                         Menyiapkan profil dokter...
                     </p>
@@ -203,14 +212,12 @@ export default function ProfilDokterPage() {
 
     return (
         <main className="relative min-h-screen overflow-hidden bg-[radial-gradient(ellipse_at_top_left,#ffffff_0%,#edf6fd_38%,#dcecf9_75%,#eaf4fc_100%)] px-4 py-7 text-[#244968] sm:px-7 sm:py-10 lg:px-10">
-
-            {/* BACKGROUND DECOR */}
             <div className="pointer-events-none absolute -left-32 top-40 h-96 w-96 rounded-full bg-white/70 blur-[110px]" />
+
             <div className="pointer-events-none absolute -right-32 top-[520px] h-[430px] w-[430px] rounded-full bg-[#b9d9f2]/45 blur-[120px]" />
 
             <div className="relative mx-auto max-w-6xl">
-
-                {/* TOP NAVIGATION */}
+                {/* NAVIGATION */}
                 <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
                     <div>
                         <p className="text-[10px] font-extrabold tracking-[0.25em] text-[#78a4ca]">
@@ -237,9 +244,8 @@ export default function ProfilDokterPage() {
                     <button
                         type="button"
                         onClick={() => router.push("/dokter")}
-                        className="flex items-center gap-2 rounded-full border border-white/90 bg-white/55 px-5 py-3 text-sm font-semibold text-[#527fa5] shadow-[0_8px_25px_rgba(77,126,166,0.08)] backdrop-blur-xl transition hover:-translate-y-0.5 hover:bg-white"
+                        className="rounded-full border border-white/90 bg-white/55 px-5 py-3 text-sm font-semibold text-[#527fa5] shadow-[0_8px_25px_rgba(77,126,166,0.08)] backdrop-blur-xl transition hover:-translate-y-0.5 hover:bg-white"
                     >
-                        <span className="text-lg">←</span>
                         Kembali ke Dashboard
                     </button>
                 </header>
@@ -248,8 +254,7 @@ export default function ProfilDokterPage() {
                 <section className="mb-8 overflow-hidden rounded-[30px] border border-white/90 bg-white/45 p-6 shadow-[0_20px_60px_rgba(87,139,181,0.09)] backdrop-blur-2xl sm:p-8">
                     <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-center">
                         <div>
-                            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#dcebf7] bg-white/70 px-3.5 py-2 text-[10px] font-bold tracking-[0.16em] text-[#79a2c6]">
-                                <span className="h-1.5 w-1.5 rounded-full bg-[#83b9d8]" />
+                            <div className="mb-4 inline-flex rounded-full border border-[#dcebf7] bg-white/70 px-3.5 py-2 text-[10px] font-bold tracking-[0.16em] text-[#79a2c6]">
                                 DOCTOR ACCOUNT
                             </div>
 
@@ -272,8 +277,8 @@ export default function ProfilDokterPage() {
                                         className="h-full w-full object-cover"
                                     />
                                 ) : (
-                                    <div className="flex h-full items-center justify-center text-xl text-[#7fa7c9]">
-                                        ♡
+                                    <div className="flex h-full items-center justify-center bg-gradient-to-br from-[#f5fbff] to-[#d7eaf8] text-sm font-bold tracking-wide text-[#7fa7c9]">
+                                        {inisial}
                                     </div>
                                 )}
                             </div>
@@ -282,9 +287,11 @@ export default function ProfilDokterPage() {
                                 <p className="text-[10px] font-bold tracking-[0.15em] text-[#91aec8]">
                                     PROFIL AKTIF
                                 </p>
+
                                 <p className="mt-1 max-w-[180px] truncate text-sm font-bold text-[#315f85]">
                                     {form.full_name || "Dokter HARMONI"}
                                 </p>
+
                                 <p className="mt-1 text-xs text-[#8aa9c5]">
                                     Dokter
                                 </p>
@@ -293,59 +300,47 @@ export default function ProfilDokterPage() {
                     </div>
                 </section>
 
-                {/* FEEDBACK MESSAGE */}
+                {/* FEEDBACK */}
                 {pesan && (
                     <div
-                        className={`mb-6 flex items-start gap-3 rounded-2xl border px-5 py-4 text-sm ${error
+                        className={`mb-6 rounded-2xl border px-5 py-4 text-sm ${
+                            error
                                 ? "border-rose-100 bg-rose-50/90 text-rose-600"
                                 : "border-emerald-100 bg-emerald-50/90 text-emerald-700"
-                            }`}
+                        }`}
                     >
-                        <span className="text-lg">
-                            {error ? "!" : "✓"}
-                        </span>
-                        <p>{pesan}</p>
+                        {pesan}
                     </div>
                 )}
 
                 <form onSubmit={simpanProfil} className="space-y-6">
-
-                    {/* PHOTO SETTINGS */}
+                    {/* FOTO */}
                     <section className="rounded-[28px] border border-white/90 bg-white/60 p-5 shadow-[0_18px_50px_rgba(87,139,181,0.08)] backdrop-blur-2xl sm:p-8">
-                        <div className="mb-6 flex items-start justify-between gap-4">
-                            <div>
-                                <p className="text-[10px] font-extrabold tracking-[0.2em] text-[#8aaccb]">
-                                    01 — APPEARANCE
-                                </p>
-                                <h2 className="mt-2 text-xl font-bold text-[#244968]">
-                                    Foto & Tampilan
-                                </h2>
-                                <p className="mt-2 text-sm leading-6 text-[#789bbd]">
-                                    Atur foto yang muncul di bagian profil dan dashboard.
-                                </p>
-                            </div>
+                        <div className="mb-6">
+                            <p className="text-[10px] font-extrabold tracking-[0.2em] text-[#8aaccb]">
+                                01 — APPEARANCE
+                            </p>
 
-                            <span className="hidden rounded-full bg-[#e8f3fb] px-3 py-1.5 text-xs font-semibold text-[#6f9ec4] sm:inline-flex">
-                                2 foto
-                            </span>
+                            <h2 className="mt-2 text-xl font-bold text-[#244968]">
+                                Foto & Tampilan
+                            </h2>
+
+                            <p className="mt-2 text-sm leading-6 text-[#789bbd]">
+                                Atur foto yang muncul di bagian profil dan dashboard.
+                            </p>
                         </div>
 
                         <div className="grid gap-5 lg:grid-cols-2">
-
-                            {/* PROFILE PHOTO */}
+                            {/* FOTO PROFIL */}
                             <div className="rounded-3xl border border-[#e0edf7] bg-gradient-to-br from-white/90 to-[#f2f8fd]/90 p-5 sm:p-6">
-                                <div className="mb-5 flex items-center gap-3">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#e4f1fa] text-lg text-[#6c9fc7]">
-                                        ◉
-                                    </div>
-                                    <div>
-                                        <h3 className="text-sm font-bold text-[#315f85]">
-                                            Foto Profil
-                                        </h3>
-                                        <p className="mt-1 text-xs text-[#8aa9c5]">
-                                            Avatar & identitas akun
-                                        </p>
-                                    </div>
+                                <div className="mb-5">
+                                    <h3 className="text-sm font-bold text-[#315f85]">
+                                        Foto Profil
+                                    </h3>
+
+                                    <p className="mt-1 text-xs text-[#8aa9c5]">
+                                        Foto yang tampil pada akun dokter
+                                    </p>
                                 </div>
 
                                 <div className="flex flex-col items-center gap-5 rounded-2xl bg-white/70 p-5 sm:flex-row">
@@ -357,8 +352,8 @@ export default function ProfilDokterPage() {
                                                 className="h-full w-full object-cover"
                                             />
                                         ) : (
-                                            <div className="flex h-full items-center justify-center text-2xl text-[#8aaccb]">
-                                                ♡
+                                            <div className="flex h-full items-center justify-center bg-gradient-to-br from-[#f5fbff] to-[#d7eaf8] text-lg font-bold tracking-wide text-[#8aaccb]">
+                                                {inisial}
                                             </div>
                                         )}
                                     </div>
@@ -382,20 +377,16 @@ export default function ProfilDokterPage() {
                                 </div>
                             </div>
 
-                            {/* HERO PHOTO */}
+                            {/* FOTO HERO */}
                             <div className="rounded-3xl border border-[#e0edf7] bg-gradient-to-br from-white/90 to-[#f2f8fd]/90 p-5 sm:p-6">
-                                <div className="mb-5 flex items-center gap-3">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#e4f1fa] text-lg text-[#6c9fc7]">
-                                        ✦
-                                    </div>
-                                    <div>
-                                        <h3 className="text-sm font-bold text-[#315f85]">
-                                            Foto Hero Dashboard
-                                        </h3>
-                                        <p className="mt-1 text-xs text-[#8aa9c5]">
-                                            Gambar besar kartu sapaan
-                                        </p>
-                                    </div>
+                                <div className="mb-5">
+                                    <h3 className="text-sm font-bold text-[#315f85]">
+                                        Foto Hero Dashboard
+                                    </h3>
+
+                                    <p className="mt-1 text-xs text-[#8aa9c5]">
+                                        Gambar besar pada kartu sapaan dashboard
+                                    </p>
                                 </div>
 
                                 <div className="flex flex-col items-center gap-5 rounded-2xl bg-white/70 p-5 sm:flex-row">
@@ -407,8 +398,8 @@ export default function ProfilDokterPage() {
                                                 className="h-full w-full object-cover"
                                             />
                                         ) : (
-                                            <div className="flex h-full items-center justify-center text-2xl text-[#8aaccb]">
-                                                ✧
+                                            <div className="flex h-full items-center justify-center bg-gradient-to-br from-[#f5fbff] to-[#d7eaf8] px-3 text-center text-xs font-medium leading-5 text-[#8aaccb]">
+                                                Foto belum dipilih
                                             </div>
                                         )}
                                     </div>
@@ -434,26 +425,28 @@ export default function ProfilDokterPage() {
                         </div>
                     </section>
 
-                    {/* PERSONAL INFORMATION */}
+                    {/* INFORMASI PRIBADI */}
                     <section className="rounded-[28px] border border-white/90 bg-white/60 p-5 shadow-[0_18px_50px_rgba(87,139,181,0.08)] backdrop-blur-2xl sm:p-8">
                         <div className="mb-7">
                             <p className="text-[10px] font-extrabold tracking-[0.2em] text-[#8aaccb]">
                                 02 — PERSONAL DETAILS
                             </p>
+
                             <h2 className="mt-2 text-xl font-bold text-[#244968]">
                                 Informasi Pribadi
                             </h2>
+
                             <p className="mt-2 text-sm text-[#789bbd]">
                                 Pastikan data akun Anda tetap akurat.
                             </p>
                         </div>
 
                         <div className="grid gap-x-5 gap-y-5 sm:grid-cols-2">
-
                             <div>
                                 <label className="mb-2 block text-xs font-semibold text-[#527fa5]">
                                     Nama Lengkap
                                 </label>
+
                                 <input
                                     type="text"
                                     name="full_name"
@@ -469,6 +462,7 @@ export default function ProfilDokterPage() {
                                 <label className="mb-2 block text-xs font-semibold text-[#527fa5]">
                                     Username
                                 </label>
+
                                 <input
                                     type="text"
                                     name="username"
@@ -484,6 +478,7 @@ export default function ProfilDokterPage() {
                                 <label className="mb-2 block text-xs font-semibold text-[#527fa5]">
                                     Email
                                 </label>
+
                                 <input
                                     type="email"
                                     name="email"
@@ -499,6 +494,7 @@ export default function ProfilDokterPage() {
                                 <label className="mb-2 block text-xs font-semibold text-[#527fa5]">
                                     Nomor Telepon
                                 </label>
+
                                 <input
                                     type="tel"
                                     name="phone"
@@ -513,6 +509,7 @@ export default function ProfilDokterPage() {
                                 <label className="mb-2 block text-xs font-semibold text-[#527fa5]">
                                     Tanggal Lahir
                                 </label>
+
                                 <input
                                     type="date"
                                     name="birth_date"
@@ -526,6 +523,7 @@ export default function ProfilDokterPage() {
                                 <label className="mb-2 block text-xs font-semibold text-[#527fa5]">
                                     Alamat
                                 </label>
+
                                 <input
                                     type="text"
                                     name="address"
@@ -538,7 +536,7 @@ export default function ProfilDokterPage() {
                         </div>
                     </section>
 
-                    {/* FORM ACTIONS */}
+                    {/* TOMBOL SIMPAN */}
                     <div className="sticky bottom-4 z-10 flex flex-col justify-between gap-3 rounded-2xl border border-white/90 bg-white/75 p-4 shadow-[0_15px_45px_rgba(70,120,165,0.14)] backdrop-blur-2xl sm:flex-row sm:items-center sm:px-6">
                         <p className="text-xs leading-5 text-[#8aa9c5]">
                             Perubahan akan tersimpan pada akun dokter Anda.
@@ -560,11 +558,10 @@ export default function ProfilDokterPage() {
                             >
                                 {menyimpan
                                     ? "Menyimpan perubahan..."
-                                    : "Simpan Perubahan  →"}
+                                    : "Simpan Perubahan"}
                             </button>
                         </div>
                     </div>
-
                 </form>
 
                 <footer className="py-8 text-center text-[10px] font-semibold tracking-[0.18em] text-[#9bb5cc]">
