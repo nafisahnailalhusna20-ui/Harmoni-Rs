@@ -281,3 +281,99 @@ SELECT
     is_active
 FROM public.schedules
 ORDER BY id;
+
+SELECT * FROM medicines;
+
+
+-- =========================================
+-- HARMONI: OTOMATIS MENGURANGI STOK OBAT
+-- Saat status resep menjadi "Siap Diambil"
+-- =========================================
+
+CREATE OR REPLACE FUNCTION deduct_medicine_stock_when_ready()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    item RECORD;
+BEGIN
+    -- Stok hanya dikurangi saat transisi pertama:
+    -- Menunggu Diproses -> Siap Diambil
+    IF OLD.status = 'Menunggu Diproses'
+       AND NEW.status = 'Siap Diambil' THEN
+
+        -- Pastikan resep memiliki rincian obat
+        IF NOT EXISTS (
+            SELECT 1
+            FROM prescription_items
+            WHERE prescription_id = NEW.id
+        ) THEN
+            RAISE EXCEPTION
+                'Resep belum memiliki rincian obat.';	
+        END IF;
+
+        -- Kurangi stok setiap obat dalam resep
+        FOR item IN
+            SELECT medicine_id, jumlah
+            FROM prescription_items
+            WHERE prescription_id = NEW.id
+            ORDER BY medicine_id
+        LOOP
+
+            UPDATE medicines
+            SET stok = stok - item.jumlah
+            WHERE id = item.medicine_id
+              AND stok >= item.jumlah;
+
+            -- Jika stok tidak cukup, batalkan proses
+            IF NOT FOUND THEN
+                RAISE EXCEPTION
+                    'Stok obat dengan ID % tidak mencukupi.',
+                    item.medicine_id;
+            END IF;
+
+        END LOOP;
+
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+
+-- Hapus trigger lama jika sudah pernah dibuat
+DROP TRIGGER IF EXISTS trg_deduct_medicine_stock
+ON prescriptions;
+
+
+-- Pasang trigger baru
+CREATE TRIGGER trg_deduct_medicine_stock
+AFTER UPDATE OF status ON prescriptions
+FOR EACH ROW
+EXECUTE FUNCTION deduct_medicine_stock_when_ready();
+
+
+SELECT
+    trigger_name,
+    event_object_table,
+    action_timing,
+    event_manipulation
+FROM information_schema.triggers
+WHERE trigger_name = 'trg_deduct_medicine_stock';
+
+
+SELECT
+    id,
+    tanggal_booking,
+    status,
+    dokter_id,
+    pasien_id
+FROM appointments
+ORDER BY tanggal_booking DESC;
+
+ALTER TABLE schedules
+DROP CONSTRAINT IF EXISTS schedules_durasi_check;
+
+ALTER TABLE schedules
+ADD CONSTRAINT schedules_durasi_check
+CHECK (durasi BETWEEN 15 AND 240);
