@@ -7,8 +7,8 @@ const MENU_DOKTER = [
     { nama: "Janji Temu", href: "/dokter/janji-temu" },
     { nama: "Rekam Medis", href: "/dokter/rekam-medis" },
     { nama: "Cari Obat", href: "/dokter/obat" },
+        { nama: "Jadwal Saya", href: "/dokter/jadwal" },
     { nama: "Profil Dokter", href: "/dokter/profil" },
-    { nama: "Jadwal Saya", href: "/dokter/jadwal" },
 ];
 
 // Beranda hanya aktif di "/dokter"; menu lain tetap aktif di sub-halamannya.
