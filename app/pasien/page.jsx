@@ -1,373 +1,517 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-export default function DashboardPasien() {
+// Daftar layanan. Ubah href / teks di sini kalau route-mu berbeda.
+const LAYANAN = [
+    {
+        judul: "Janji Temu",
+        deskripsi: "Atur jadwal pemeriksaan dan kunjunganmu dengan mudah.",
+        href: "/pasien/janji-temu",
+    },
+    {
+        judul: "Rekam Medis",
+        deskripsi: "Catatan pemeriksaan dan informasi kesehatanmu, tersimpan rapi.",
+        href: "/pasien/rekam-medis",
+    },
+    {
+        judul: "Riwayat Kunjungan",
+        deskripsi: "Telusuri kembali pemeriksaan yang pernah kamu lakukan.",
+        href: "/pasien/riwayat",
+    },
+    {
+        judul: "Profil Saya",
+        deskripsi: "Pastikan data pribadi dan akunmu selalu terbarui.",
+        href: "/pasien/profil",
+    },
+    {
+        judul: "Cari Obat",
+        deskripsi: "Cek ketersediaan, jenis, dan masa berlaku obat di apotek.",
+        href: "/pasien/obat",
+    },
+];
+
+const HARI_SINGKAT = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"];
+
+export default function PasienPage() {
     const router = useRouter();
 
-    const [namaPasien, setNamaPasien] = useState("Pasien");
+    const [pasien, setPasien] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [logoutLoading, setLogoutLoading] = useState(false);
+    const [pesanError, setPesanError] = useState("");
+
+    const [now, setNow] = useState(null);
+    const [offsetBulan, setOffsetBulan] = useState(0);
+    const [cari, setCari] = useState("");
 
     useEffect(() => {
-        let masihAktif = true;
-
-        async function ambilProfil() {
+        async function ambilData() {
             try {
-                const response = await fetch("/api/me", {
-                    method: "GET",
-                    credentials: "include",
-                    cache: "no-store",
-                });
+                const res = await fetch("/api/me");
+                const data = await res.json();
 
-                const data = await response.json();
-
-                if (!masihAktif) return;
-
-                if (response.ok) {
-                    const user = data.user || data.data || data;
-
-                    setNamaPasien(
-                        user.full_name ||
-                        user.nama ||
-                        user.name ||
-                        user.username ||
-                        "Pasien"
-                    );
+                if (!res.ok || !data.success || data.user?.role !== "pasien") {
+                    router.push("/login");
+                    return;
                 }
+
+                setPasien(data.user);
             } catch (error) {
-                console.error("Gagal mengambil profil:", error);
+                console.error(error);
+                setPesanError("Terjadi kesalahan saat memuat halaman.");
             } finally {
-                if (masihAktif) {
-                    setLoading(false);
-                    setLogoutLoading(false);
-                }
+                setLoading(false);
             }
         }
 
-        ambilProfil();
+        ambilData();
+    }, [router]);
 
-        return () => {
-            masihAktif = false;
-        };
+    // Jam & tanggal (diisi setelah mount agar tidak beda dengan server)
+    useEffect(() => {
+        setNow(new Date());
+        const timer = setInterval(() => setNow(new Date()), 30000);
+        return () => clearInterval(timer);
     }, []);
 
-    async function handleLogout() {
-        if (logoutLoading) return;
-
-        setLogoutLoading(true);
-
+    async function logout() {
         try {
-            const response = await fetch("/api/logout", {
-                method: "POST",
-                credentials: "include",
-                cache: "no-store",
-            });
-
-            if (!response.ok) {
-                throw new Error("Logout gagal.");
-            }
-
-            router.replace("/login");
-            router.refresh();
-        } catch (error) {
-            console.error("Gagal logout:", error);
-            alert("Logout gagal. Silakan coba kembali.");
+            await fetch("/api/logout", { method: "POST" });
         } finally {
-            setLogoutLoading(false);
+            router.push("/login");
         }
     }
 
-    const layanan = [
-        {
-            nomor: "01",
-            label: "APPOINTMENT",
-            judul: "Janji Temu",
-            deskripsi:
-                "Temukan jadwal pemeriksaan yang sesuai dan atur kunjunganmu dengan lebih mudah.",
-            href: "/pasien/janji-temu",
-            simbol: "◷",
-            warna: "from-[#E5F1FF] to-[#F7FBFF]",
-        },
-        {
-            nomor: "02",
-            label: "MEDICAL RECORD",
-            judul: "Rekam Medis",
-            deskripsi:
-                "Seluruh catatan pemeriksaan dan informasi kesehatan tersimpan dalam satu tempat.",
-            href: "/pasien/rekam-medis",
-            simbol: "＋",
-            warna: "from-[#E8F4F5] to-[#F8FCFC]",
-        },
-        {
-            nomor: "03",
-            label: "VISIT ARCHIVE",
-            judul: "Riwayat Kunjungan",
-            deskripsi:
-                "Telusuri kembali perjalanan pemeriksaan dan kunjungan yang pernah dilakukan.",
-            href: "/pasien/riwayat",
-            simbol: "↻",
-            warna: "from-[#EDEBFA] to-[#FAF9FF]",
-        },
-        {
-            nomor: "04",
-            label: "PERSONAL DATA",
-            judul: "Profil Saya",
-            deskripsi:
-                "Pastikan informasi pribadi dan data akunmu selalu tersimpan dengan benar.",
-            href: "/pasien/profil",
-            simbol: "⌘",
-            warna: "from-[#F5EAF2] to-[#FFFAFD]",
-        },
-        {
-            nomor: "05",
-            label: "PHARMACY",
-            judul: "Cari Obat",
-            deskripsi:
-                "Cari ketersediaan obat, jenis, dan masa berlaku obat di apotek rumah sakit.",
-            href: "/pasien/obat",
-            simbol: "💊",
-            warna: "from-[#E6F7F2] to-[#F5FCFA]",
-        },
-    ];
+    const namaPasien = pasien?.full_name || pasien?.username || "Pasien";
+    const fotoPasien = pasien?.photo || "";
+
+    const inisial = namaPasien
+        .trim()
+        .split(/\s+/)
+        .slice(0, 2)
+        .map((kata) => kata[0])
+        .join("")
+        .toUpperCase();
+
+    // ---- data jam & kalender ----
+    const jam = now ? String(now.getHours()).padStart(2, "0") : "--";
+    const menit = now ? String(now.getMinutes()).padStart(2, "0") : "--";
+    const progresHari = now
+        ? ((now.getHours() * 60 + now.getMinutes()) / 1440) * 100
+        : 0;
+
+    let sapaan = "Halo";
+    if (now) {
+        const h = now.getHours();
+        sapaan =
+            h < 11 ? "Selamat pagi" : h < 15 ? "Selamat siang" : h < 18 ? "Selamat sore" : "Selamat malam";
+    }
+
+    const tanggalPanjang = now
+        ? now.toLocaleDateString("id-ID", {
+            weekday: "long",
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+        })
+        : "";
+
+    let kalender = null;
+    if (now) {
+        const basis = new Date(now.getFullYear(), now.getMonth() + offsetBulan, 1);
+        const jumlahHari = new Date(basis.getFullYear(), basis.getMonth() + 1, 0).getDate();
+        const geser = (basis.getDay() + 6) % 7; // Senin = 0
+        const sel = [
+            ...Array.from({ length: geser }, () => null),
+            ...Array.from({ length: jumlahHari }, (_, i) => i + 1),
+        ];
+        kalender = {
+            judul: basis.toLocaleDateString("id-ID", { month: "long", year: "numeric" }),
+            sel,
+            bulanIni:
+                basis.getMonth() === now.getMonth() && basis.getFullYear() === now.getFullYear(),
+        };
+    }
+
+    const hasilCari = LAYANAN.filter((l) =>
+        `${l.judul} ${l.deskripsi}`.toLowerCase().includes(cari.trim().toLowerCase())
+    );
+
+    if (loading) {
+        return (
+            <main className="flex min-h-screen items-center justify-center bg-[#eaf4fc]">
+                <div className="flex flex-col items-center gap-4 text-sm text-[#7198bb]">
+                    <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-[#cfe3f4] border-t-[#477da9]" />
+                    Memuat portal pasien...
+                </div>
+            </main>
+        );
+    }
+
+    if (!pasien) return null;
 
     return (
-        <main className="relative min-h-screen overflow-hidden bg-[#F3F7FC] text-[#31577F]">
+        <main className="harmoni-scene relative min-h-screen overflow-hidden px-3 py-4 text-[#244968] sm:px-8 sm:py-8 lg:px-10">
+            <style>{`
+                @keyframes harmoniRise {
+                    from { opacity: 0; transform: translate3d(0, 16px, 0); }
+                    to { opacity: 1; transform: translate3d(0, 0, 0); }
+                }
+                @keyframes harmoniOrbit {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
+                }
+                .harmoni-enter { animation: harmoniRise .9s cubic-bezier(.16,.78,.25,1) both; }
 
-            <div className="pointer-events-none absolute inset-0 overflow-hidden">
-                <div className="absolute -right-48 -top-48 h-[650px] w-[650px] rounded-full bg-[#C9E2FF]/50 blur-[130px]" />
+                /* ---------- Latar belakang (yang terlihat menembus kaca) ---------- */
+                .harmoni-scene {
+                    background:
+                        radial-gradient(70% 50% at 8% 0%, #ffffff 0%, transparent 62%),
+                        linear-gradient(165deg, #eaf4fc 0%, #d3e6f7 55%, #c2dbf1 100%);
+                }
+                .hs { position: absolute; border-radius: 9999px; pointer-events: none; }
+                .hs-1 { width: 520px; height: 520px; left: -150px; top: 140px; background: linear-gradient(145deg, #ffffff 0%, #9fc8ec 100%); opacity: .9; }
+                .hs-2 { width: 430px; height: 430px; right: -70px; top: -90px; background: linear-gradient(145deg, #e3f0fb 0%, #6aa3d4 100%); opacity: .85; }
+                .hs-3 { width: 470px; height: 470px; right: 6%; bottom: -150px; background: linear-gradient(145deg, #bcdcf5 0%, #4a86b8 100%); opacity: .8; }
+                .hs-4 { width: 720px; height: 720px; left: 28%; top: 26%; border: 1px solid rgba(255,255,255,.75); }
+                .hs-5 { width: 240px; height: 240px; left: 16%; bottom: 6%; background: linear-gradient(145deg, #ffffff 0%, #7fb2de 100%); opacity: .85; }
 
-                <div className="absolute -bottom-56 -left-48 h-[600px] w-[600px] rounded-full bg-[#DCEBFA]/60 blur-[130px]" />
+                /* ---------- Jendela kaca utama ---------- */
+                .harmoni-window {
+                    position: relative; z-index: 1;
+                    background: linear-gradient(145deg, rgba(255,255,255,.34), rgba(255,255,255,.12));
+                    backdrop-filter: blur(40px) saturate(1.7);
+                    -webkit-backdrop-filter: blur(40px) saturate(1.7);
+                    border: 1px solid rgba(255,255,255,.7);
+                    box-shadow: 0 40px 100px rgba(55,105,155,.2), inset 0 1.5px 0 rgba(255,255,255,.95), inset 0 -1px 0 rgba(255,255,255,.3);
+                }
 
-                <div className="absolute left-[38%] top-[42%] h-[300px] w-[300px] rounded-full bg-white/50 blur-[100px]" />
-            </div>
+                /* ---------- Panel kaca di dalam jendela ---------- */
+                .harmoni-panel {
+                    position: relative; overflow: hidden; isolation: isolate;
+                    background:
+                        radial-gradient(120% 90% at 0% 0%, rgba(255,255,255,.5), transparent 55%),
+                        linear-gradient(145deg, rgba(255,255,255,.36), rgba(255,255,255,.1));
+                    backdrop-filter: blur(28px) saturate(1.6);
+                    -webkit-backdrop-filter: blur(28px) saturate(1.6);
+                    border: 1px solid rgba(255,255,255,.6);
+                    box-shadow: 0 10px 30px rgba(55,105,155,.1), inset 0 1px 0 rgba(255,255,255,.95);
+                }
+                .harmoni-tile { transition: transform .45s cubic-bezier(.2,.7,.2,1), background .45s ease, box-shadow .45s ease; }
+                .harmoni-tile:hover, .harmoni-tile:focus-visible {
+                    transform: translateY(-3px);
+                    background:
+                        radial-gradient(120% 90% at 0% 0%, rgba(255,255,255,.75), transparent 58%),
+                        linear-gradient(145deg, rgba(255,255,255,.5), rgba(255,255,255,.18));
+                    box-shadow: 0 18px 44px rgba(55,105,155,.16), inset 0 1px 0 rgba(255,255,255,1);
+                }
+                .harmoni-focus:focus-visible { outline: 2px solid #3f78a8; outline-offset: 3px; }
 
-            <div className="relative mx-auto max-w-[1440px] px-6 sm:px-10 lg:px-16">
+                .harmoni-chip {
+                    background: rgba(255,255,255,.5);
+                    border: 1px solid rgba(255,255,255,.85);
+                    box-shadow: inset 0 1px 0 rgba(255,255,255,.95);
+                    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+                }
 
-                <header className="flex flex-col gap-5 border-b border-[#DCE8F5] py-7 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-center gap-4">
-                        <div>
-                            <h1 className="text-2xl font-bold tracking-[0.25em] text-[#31577F] sm:text-[27px]">
-                                HARMONI
-                            </h1>
-                        </div>
+                /* ---------- Bola kaca di hero ---------- */
+                .harmoni-sphere {
+                    width: 210px; height: 210px; border-radius: 9999px;
+                    background: radial-gradient(circle at 32% 26%, #ffffff 0, rgba(255,255,255,.75) 11%, #b9d9f3 42%, #5f98cb 100%);
+                    box-shadow: inset -20px -26px 50px rgba(255,255,255,.35), inset 10px 10px 30px rgba(255,255,255,.5), 0 40px 80px rgba(60,110,160,.35);
+                }
+                .harmoni-ring {
+                    position: absolute; inset: -34px; border-radius: 9999px;
+                    border: 1px solid rgba(255,255,255,.85);
+                    box-shadow: 0 0 30px rgba(255,255,255,.4);
+                    animation: harmoniOrbit 40s linear infinite;
+                }
+                .harmoni-ring::after {
+                    content: ""; position: absolute; top: 12%; left: 8%; width: 14px; height: 14px; border-radius: 9999px;
+                    background: #fff; box-shadow: 0 0 16px 4px rgba(255,255,255,.9);
+                }
 
-                        <span className="h-7 w-px bg-[#BBD2EA]" />
+                .harmoni-name {
+                    display: block; font-size: clamp(2rem, 4.2vw, 3.6rem); line-height: 1.08; letter-spacing: -.045em; font-weight: 700;
+                    text-wrap: balance;
+                }
+                .harmoni-name span {
+                    background: linear-gradient(100deg, #315f88 8%, #6798c5 50%, #3e78a8 92%);
+                    -webkit-background-clip: text; background-clip: text; color: transparent;
+                }
 
-                        <p className="text-xs tracking-[0.12em] text-[#7A9FC5]">
+                @media (prefers-reduced-motion: reduce) {
+                    .harmoni-enter, .harmoni-ring { animation: none !important; }
+                    .harmoni-tile { transition: none !important; }
+                    .harmoni-tile:hover { transform: none !important; }
+                }
+            `}</style>
+
+            {/* bentuk latar */}
+            <div className="hs hs-1" aria-hidden="true" />
+            <div className="hs hs-2" aria-hidden="true" />
+            <div className="hs hs-3" aria-hidden="true" />
+            <div className="hs hs-4" aria-hidden="true" />
+            <div className="hs hs-5" aria-hidden="true" />
+
+            <div className="harmoni-window harmoni-enter mx-auto max-w-[1280px] rounded-[32px] p-4 sm:rounded-[40px] sm:p-6">
+                {/* ================= HEADER ================= */}
+                <header className="flex flex-wrap items-center gap-4">
+                    <div className="mr-auto flex items-center gap-4">
+                        <h1 className="text-xl font-extrabold tracking-[0.3em] text-[#315f88] sm:text-2xl">
+                            HARMONI
+                        </h1>
+                        <span className="hidden h-6 w-px bg-[#8fb6d8]/60 md:block" />
+                        <p className="hidden text-xs tracking-[0.08em] text-[#6f93b6] md:block">
                             Hospital Information System
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-4">
+                    <label className="harmoni-chip order-last flex w-full items-center gap-3 rounded-full px-5 py-3 sm:order-none sm:w-[300px]">
+                        <span className="text-sm text-[#7e9fc0]" aria-hidden="true">⌕</span>
+                        <input
+                            type="search"
+                            value={cari}
+                            onChange={(e) => setCari(e.target.value)}
+                            placeholder="Cari layanan"
+                            aria-label="Cari layanan"
+                            className="w-full bg-transparent text-sm text-[#315879] placeholder:text-[#8aa9c6] focus:outline-none"
+                        />
+                    </label>
 
-                        <div className="hidden items-center gap-2.5 rounded-full border border-white/80 bg-white/55 px-4 py-2.5 shadow-[0_5px_20px_rgba(74,115,160,0.06)] backdrop-blur-xl sm:flex">
-                            <span className="relative flex h-2 w-2">
-                                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-40" />
-                                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-                            </span>
+                    <button
+                        onClick={() => router.push("/pasien/profil")}
+                        className="harmoni-chip harmoni-focus flex items-center gap-3 rounded-full py-1.5 pl-1.5 pr-4 transition hover:bg-white/80"
+                    >
+                        <span className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#f7fcff] to-[#c4dff3] ring-2 ring-white/80">
+                            {fotoPasien ? (
+                                <img src={fotoPasien} alt={`Foto ${namaPasien}`} className="h-full w-full object-cover" />
+                            ) : (
+                                <span className="text-xs font-bold text-[#5c8db5]">{inisial}</span>
+                            )}
+                        </span>
+                        <span className="hidden max-w-[120px] truncate text-xs font-semibold text-[#426f96] sm:block">
+                            {namaPasien}
+                        </span>
+                    </button>
 
-                            <span className="text-[11px] tracking-wide text-[#7898B9]">
-                                Patient portal
-                            </span>
-                        </div>
-
-                        <button
-                            type="button"
-                            onClick={handleLogout}
-                            disabled={logoutLoading}
-                            className="rounded-full border border-white/90 bg-white/65 px-5 py-2.5 text-sm text-[#527CA7] shadow-[0_5px_20px_rgba(74,115,160,0.08)] backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:bg-white hover:shadow-[0_10px_28px_rgba(74,115,160,0.13)] disabled:cursor-wait disabled:opacity-60"
-                        >
-                            {logoutLoading ? "Keluar..." : "Keluar ↗"}
-                        </button>
-                    </div>
+                    <button
+                        onClick={logout}
+                        className="harmoni-chip harmoni-focus rounded-full px-5 py-3 text-xs font-semibold text-[#5c82a5] transition hover:bg-white/80"
+                    >
+                        Keluar
+                    </button>
                 </header>
 
-                <section className="grid gap-10 py-12 lg:grid-cols-[1fr_310px] lg:items-end lg:py-16">
-
-                    <div>
-                        <div className="mb-6 flex items-center gap-3">
-                            <span className="h-px w-9 bg-[#83ACD6]" />
-
-                            <p className="text-[10px] font-semibold tracking-[0.32em] text-[#83A5C9]">
-                                PERSONAL HEALTH SPACE
-                            </p>
-                        </div>
-
-                        <h2 className="max-w-3xl text-[38px] font-medium leading-[1.16] tracking-[-0.04em] text-[#31577F] sm:text-5xl lg:text-[58px]">
-                            Selamat datang,
-                            <br />
-
-                            <span className="font-normal text-[#7CA8D5]">
-                                {loading ? "..." : namaPasien}.
-                            </span>
-                        </h2>
-
-                        <p className="mt-6 max-w-xl text-sm leading-7 text-[#7899BA] sm:text-base">
-                            Ruang pribadimu untuk mengakses layanan kesehatan,
-                            memantau pemeriksaan, dan menjaga informasi tetap
-                            terorganisir.
-                        </p>
-                    </div>
-
-                    <div className="relative overflow-hidden rounded-[26px] border border-white/90 bg-white/40 p-6 shadow-[0_18px_50px_rgba(91,132,176,0.07)] backdrop-blur-2xl">
-
-                        <div className="absolute -right-5 -top-8 h-32 w-32 rounded-full border border-[#C5DDF5]/70" />
-
-                        <div className="absolute -right-1 -top-4 h-24 w-24 rounded-full border border-[#C5DDF5]/50" />
-
-                        <div className="relative">
-                            <p className="text-[10px] tracking-[0.25em] text-[#8BAAC9]">
-                                YOUR CARE SPACE
-                            </p>
-
-                            <div className="mt-5 flex items-end justify-between">
-                                <div>
-                                    <p className="text-3xl font-light tracking-tight text-[#4776A4]">
-                                        H+
-                                    </p>
-
-                                    <p className="mt-2 text-xs leading-5 text-[#88A6C4]">
-                                        Health, made
-                                        <br />
-                                        more personal.
-                                    </p>
-                                </div>
-
-                                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/90 bg-gradient-to-br from-white/90 to-[#DCEBFA] text-xl text-[#719CC8] shadow-[0_8px_24px_rgba(105,151,197,0.12)]">
-                                    ✳
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <section className="mb-7 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-
-                    <div>
-                        <p className="mb-3 text-[10px] font-semibold tracking-[0.3em] text-[#88A8C9]">
-                            THE PATIENT DIRECTORY
-                        </p>
-
-                        <h3 className="text-2xl font-medium tracking-tight text-[#31577F] sm:text-3xl">
-                            Layanan kesehatan
-                        </h3>
-                    </div>
-
-                    <p className="max-w-sm text-sm leading-6 text-[#86A4C3]">
-                        Empat ruang layanan yang dirancang untuk menemani
-                        perjalanan perawatanmu.
-                    </p>
-                </section>
-
-                <section className="grid gap-5 lg:grid-cols-12">
-
-                    <Link
-                        href={layanan[0].href}
-                        className="group relative flex min-h-[330px] flex-col justify-between overflow-hidden rounded-[30px] border border-white/90 bg-gradient-to-br from-white/75 via-[#F5FAFF]/65 to-[#DCEEFF]/70 p-7 shadow-[0_20px_60px_rgba(88,132,179,0.09)] backdrop-blur-2xl transition duration-500 hover:-translate-y-1 hover:shadow-[0_28px_70px_rgba(88,132,179,0.16)] sm:p-9 lg:col-span-7"
+                {/* ================= BODY ================= */}
+                <div className="mt-5 grid gap-5 lg:grid-cols-[170px_1fr]">
+                    {/* ---- Sidebar ---- */}
+                    <nav
+                        aria-label="Menu portal pasien"
+                        className="harmoni-panel hidden h-fit flex-col gap-1 rounded-[26px] p-3 lg:flex"
                     >
-                        <div className="pointer-events-none absolute -right-16 -top-16 h-72 w-72 rounded-full border border-[#BBD9F5]/60 transition duration-700 group-hover:scale-110" />
+                        <span className="rounded-2xl bg-white/75 px-4 py-3 text-xs font-semibold text-[#2b5a84] shadow-[0_6px_18px_rgba(75,125,165,0.12)]">
+                            Beranda
+                        </span>
+                        {LAYANAN.map((l) => (
+                            <button
+                                key={l.judul}
+                                onClick={() => router.push(l.href)}
+                                className="harmoni-focus rounded-2xl px-4 py-3 text-left text-xs font-medium text-[#6388a9] transition hover:bg-white/50 hover:text-[#2b5a84]"
+                            >
+                                {l.judul}
+                            </button>
+                        ))}
+                    </nav>
 
-                        <div className="pointer-events-none absolute -right-5 top-8 h-52 w-52 rounded-full border border-[#C8E0F7]/60" />
+                    <div className="grid gap-5">
+                        {/* ---- Hero + jam + kalender ---- */}
+                        <div className="grid gap-5 xl:grid-cols-12">
+                            {/* Hero */}
+                            <section
+                                className="harmoni-panel harmoni-enter relative rounded-[30px] p-6 sm:p-9 xl:col-span-7 xl:row-span-2"
+                                style={{ animationDelay: "120ms" }}
+                            >
+                                <div className="relative z-10 max-w-[420px]">
+                                    <span className="harmoni-chip inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold text-[#5f8fb8]">
+                                        <span className="h-2 w-2 rounded-full bg-[#7fcaae]" />
+                                        Portal pasien
+                                    </span>
 
-                        <div className="relative flex items-start justify-between">
-                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white bg-white/65 text-2xl text-[#6F9FCB] shadow-[0_8px_25px_rgba(92,143,192,0.10)]">
-                                {layanan[0].simbol}
+                                    <h2 className="mt-7">
+                                        <span className="block text-lg font-medium text-[#6f93b6] sm:text-xl">
+                                            Selamat datang,
+                                        </span>
+                                        <span className="harmoni-name mt-1">
+                                            <span>{namaPasien}.</span>
+                                        </span>
+                                    </h2>
+
+                                    <p className="mt-4 max-w-sm text-sm leading-7 text-[#6f93b6]">
+                                        Ruang pribadimu untuk mengakses layanan kesehatan, memantau
+                                        pemeriksaan, dan menjaga informasi tetap terorganisir.
+                                    </p>
+
+                                    <div className="mt-7 flex flex-wrap gap-3">
+                                        <button
+                                            onClick={() => router.push("/pasien/janji-temu")}
+                                            className="harmoni-focus rounded-2xl bg-gradient-to-br from-[#5c96c4] to-[#407ba9] px-5 py-3.5 text-xs font-bold text-white shadow-[0_12px_28px_rgba(63,121,169,0.3)] transition hover:-translate-y-0.5"
+                                        >
+                                            Buat janji temu
+                                        </button>
+                                        <button
+                                            onClick={() => router.push("/pasien/rekam-medis")}
+                                            className="harmoni-chip harmoni-focus rounded-2xl px-5 py-3.5 text-xs font-semibold text-[#477aa5] transition hover:bg-white/80"
+                                        >
+                                            Lihat rekam medis
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* bola kaca */}
+                                <div className="pointer-events-none absolute -bottom-6 -right-2 hidden h-[300px] w-[300px] items-center justify-center sm:flex xl:-right-4">
+                                    <div className="relative">
+                                        <div className="harmoni-ring" />
+                                        <div className="harmoni-sphere flex items-center justify-center">
+                                            <span className="text-5xl font-semibold tracking-tight text-white drop-shadow-[0_4px_14px_rgba(40,90,140,0.35)]">
+                                                H+
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+
+                            {/* Jam */}
+                            <section
+                                className="harmoni-panel harmoni-enter rounded-[30px] p-6 xl:col-span-5"
+                                style={{ animationDelay: "200ms" }}
+                            >
+                                <p className="text-xs font-medium text-[#7e9fc0]">{sapaan}</p>
+                                <p className="mt-2 text-6xl font-light tracking-tight text-[#2b5a84]">
+                                    {jam}
+                                    <span className="mx-0.5 text-[#8fb6d8]">:</span>
+                                    {menit}
+                                </p>
+                                <p className="mt-2 text-sm text-[#6f93b6]">{tanggalPanjang || "\u00A0"}</p>
+
+                                <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-white/60">
+                                    <div
+                                        className="h-full rounded-full bg-gradient-to-r from-[#9cc9ee] to-[#4f8bbf]"
+                                        style={{ width: `${progresHari}%` }}
+                                    />
+                                </div>
+                            </section>
+
+                            {/* Kalender */}
+                            <section
+                                className="harmoni-panel harmoni-enter rounded-[30px] p-6 xl:col-span-5"
+                                style={{ animationDelay: "280ms" }}
+                            >
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-sm font-semibold capitalize text-[#2b5a84]">
+                                        {kalender?.judul || "\u00A0"}
+                                    </h3>
+                                    <div className="flex gap-1.5">
+                                        <button
+                                            onClick={() => setOffsetBulan((o) => o - 1)}
+                                            aria-label="Bulan sebelumnya"
+                                            className="harmoni-chip harmoni-focus flex h-7 w-7 items-center justify-center rounded-full text-xs text-[#5f8fb8] hover:bg-white/80"
+                                        >
+                                            ‹
+                                        </button>
+                                        <button
+                                            onClick={() => setOffsetBulan((o) => o + 1)}
+                                            aria-label="Bulan berikutnya"
+                                            className="harmoni-chip harmoni-focus flex h-7 w-7 items-center justify-center rounded-full text-xs text-[#5f8fb8] hover:bg-white/80"
+                                        >
+                                            ›
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="mt-4 grid grid-cols-7 gap-y-1 text-center">
+                                    {HARI_SINGKAT.map((h) => (
+                                        <span key={h} className="pb-2 text-[11px] font-medium text-[#8aa9c6]">
+                                            {h}
+                                        </span>
+                                    ))}
+                                    {kalender?.sel.map((tgl, i) => {
+                                        const hariIni = kalender.bulanIni && tgl === now.getDate();
+                                        return (
+                                            <span
+                                                key={i}
+                                                className={`mx-auto flex h-8 w-8 items-center justify-center rounded-full text-xs ${hariIni
+                                                        ? "bg-white/90 font-bold text-[#2b5a84] shadow-[0_6px_16px_rgba(75,125,165,0.2)]"
+                                                        : "text-[#5f86ab]"
+                                                    }`}
+                                            >
+                                                {tgl}
+                                            </span>
+                                        );
+                                    })}
+                                </div>
+                            </section>
+                        </div>
+
+                        {/* ---- Layanan ---- */}
+                        <section>
+                            <div className="mb-4 flex flex-wrap items-end justify-between gap-2 px-1">
+                                <h2 className="text-xl font-semibold tracking-tight text-[#254968]">
+                                    Layanan kesehatan
+                                </h2>
+                                <p className="text-xs text-[#7e9fc0]">
+                                    Semua yang kamu butuhkan untuk perjalanan perawatanmu.
+                                </p>
                             </div>
 
-                            <span className="text-[11px] tracking-[0.25em] text-[#91B2D2]">
-                                {layanan[0].nomor} / 04
-                            </span>
-                        </div>
-
-                        <div className="relative mt-10">
-                            <p className="text-[10px] font-semibold tracking-[0.25em] text-[#8CAFD1]">
-                                {layanan[0].label}
-                            </p>
-
-                            <h4 className="mt-3 text-3xl font-medium tracking-tight text-[#31577F] sm:text-4xl">
-                                {layanan[0].judul}
-                            </h4>
-
-                            <p className="mt-4 max-w-md text-sm leading-7 text-[#789BBF]">
-                                {layanan[0].deskripsi}
-                            </p>
-                        </div>
-
-                        <div className="relative mt-8 flex items-center justify-between border-t border-white/80 pt-5">
-                            <span className="text-xs tracking-wide text-[#729BC3]">
-                                Buka layanan
-                            </span>
-
-                            <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/90 bg-white/65 text-[#6F9FCB] transition duration-300 group-hover:rotate-45 group-hover:bg-white">
-                                ↗
-                            </span>
-                        </div>
-                    </Link>
-
-                    <div className="grid gap-5 lg:col-span-5">
-
-                        {layanan.slice(1).map((item) => (
-                            <Link
-                                key={item.nomor}
-                                href={item.href}
-                                className="group relative flex items-center gap-5 overflow-hidden rounded-[25px] border border-white/90 bg-white/45 p-5 shadow-[0_12px_35px_rgba(88,132,179,0.06)] backdrop-blur-2xl transition duration-300 hover:-translate-y-1 hover:bg-white/70 hover:shadow-[0_20px_45px_rgba(88,132,179,0.12)] sm:p-6"
-                            >
-                                <div
-                                    className={`flex h-[68px] w-[68px] shrink-0 items-center justify-center rounded-[22px] border border-white/90 bg-gradient-to-br ${item.warna} text-2xl text-[#709CC6] shadow-[0_8px_25px_rgba(92,143,192,0.08)] transition duration-300 group-hover:scale-105`}
-                                >
-                                    {item.simbol}
+                            {hasilCari.length === 0 ? (
+                                <div className="harmoni-panel flex min-h-[140px] items-center justify-center rounded-[26px] text-sm text-[#7e9fc0]">
+                                    Tidak ada layanan yang cocok dengan pencarianmu.
                                 </div>
+                            ) : (
+                                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                                    {hasilCari.map((item, i) => (
+                                        <button
+                                            key={item.judul}
+                                            type="button"
+                                            onClick={() => router.push(item.href)}
+                                            style={{ animationDelay: `${360 + i * 60}ms` }}
+                                            className="harmoni-panel harmoni-tile harmoni-enter harmoni-focus group flex min-h-[190px] flex-col justify-between rounded-[26px] p-5 text-left"
+                                        >
+                                            <div>
+                                                <h3 className="text-base font-semibold tracking-tight text-[#2b5a84]">
+                                                    {item.judul}
+                                                </h3>
+                                                <p className="mt-2 text-xs leading-6 text-[#6f93b6]">
+                                                    {item.deskripsi}
+                                                </p>
+                                            </div>
 
-                                <div className="min-w-0 flex-1">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-[9px] tracking-[0.2em] text-[#9AB5D1]">
-                                            {item.nomor}
-                                        </span>
-
-                                        <span className="h-px w-5 bg-[#C5D9ED]" />
-                                    </div>
-
-                                    <h4 className="mt-2 text-lg font-medium text-[#3C6792] transition group-hover:text-[#6598C8] sm:text-xl">
-                                        {item.judul}
-                                    </h4>
-
-                                    <p className="mt-1.5 line-clamp-2 text-xs leading-5 text-[#87A4C1] sm:text-sm">
-                                        {item.deskripsi}
-                                    </p>
+                                            <span className="harmoni-chip mt-5 inline-flex w-fit items-center gap-2 rounded-full py-1.5 pl-4 pr-1.5 text-xs font-medium text-[#3f78a8]">
+                                                Buka
+                                                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/85 text-[#4a86b8] transition-transform duration-300 group-hover:translate-x-0.5">
+                                                    →
+                                                </span>
+                                            </span>
+                                        </button>
+                                    ))}
                                 </div>
+                            )}
+                        </section>
 
-                                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/90 bg-white/60 text-sm text-[#7DA5CC] transition duration-300 group-hover:rotate-45 group-hover:bg-white">
-                                    ↗
-                                </span>
-                            </Link>
-                        ))}
-
+                        {pesanError && (
+                            <div className="rounded-2xl border border-rose-200 bg-rose-50/80 px-4 py-3 text-sm text-rose-600">
+                                {pesanError}
+                            </div>
+                        )}
                     </div>
-                </section>
+                </div>
 
-                <footer className="mt-14 flex flex-col gap-4 border-t border-[#DCE8F5] py-7 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <p className="text-xs font-semibold tracking-[0.22em] text-[#5E87B0]">
-                            HARMONI
-                        </p>
-
-                        <p className="mt-1 text-[10px] tracking-wide text-[#9AB4CF]">
-                            Hospital Information System
-                        </p>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                        <span className="h-px w-8 bg-[#B9D2EA]" />
-
-                        <p className="text-xs text-[#89A7C6]">
-                            A healthier journey, one step at a time.
-                        </p>
-                    </div>
+                <footer className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-white/50 px-1 pt-4 text-[10px] text-[#7e9fc0]">
+                    <span className="font-bold tracking-[0.18em]">HARMONI HEALTHCARE</span>
+                    <span>Portal Pasien</span>
                 </footer>
-
             </div>
         </main>
     );

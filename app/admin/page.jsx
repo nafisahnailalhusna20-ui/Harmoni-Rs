@@ -56,44 +56,49 @@ export default function AdminPage() {
     }
 
     const menuAdmin = [
-        {
-            nama: "Manajemen Poli",
-            deskripsi: "Kelola unit pelayanan dan informasi poli rumah sakit.",
-            href: "/admin/poli",
-            kategori: "MASTER DATA",
-        },
-        {
-            nama: "Manajemen Dokter",
-            deskripsi: "Atur data dokter serta penempatan poli.",
-            href: "/admin/dokter",
-            kategori: "MASTER DATA",
-        },
-        {
-            nama: "Manajemen Obat",
-            deskripsi: "Pantau data obat dan ketersediaan stok.",
-            href: "/admin/obat",
-            kategori: "FARMASI",
-        },
-        {
-            nama: "Manajemen Jadwal",
-            deskripsi: "Kelola jadwal praktik dokter rumah sakit.",
-            href: "/admin/jadwal",
-            kategori: "OPERASIONAL",
-        },
-        {
-            nama: "Manajemen Pasien",
-            deskripsi: "Lihat dan kelola data pasien terdaftar.",
-            href: "/admin/pasien",
-            kategori: "DATA PASIEN",
-        },
-        {
-            nama: "Manajemen Janji Temu",
-            deskripsi: "Periksa dan verifikasi pengajuan konsultasi.",
-            href: "/admin/janji-temu",
-            kategori: "PELAYANAN",
-        },
-    ];
-
+    {
+        nama: "Manajemen Poli",
+        deskripsi: "Kelola unit pelayanan dan informasi poli rumah sakit.",
+        href: "/admin/poli",
+        kategori: "MASTER DATA",
+    },
+    {
+        nama: "Manajemen Dokter",
+        deskripsi: "Atur data dokter serta penempatan poli.",
+        href: "/admin/dokter",
+        kategori: "MASTER DATA",
+    },
+    {
+        nama: "Manajemen Obat",
+        deskripsi: "Pantau data obat dan ketersediaan stok.",
+        href: "/admin/obat",
+        kategori: "FARMASI",
+    },
+    {
+        nama: "Manajemen Jadwal",
+        deskripsi: "Kelola jadwal praktik dokter rumah sakit.",
+        href: "/admin/jadwal",
+        kategori: "OPERASIONAL",
+    },
+    {
+        nama: "Manajemen Pasien",
+        deskripsi: "Lihat dan kelola data pasien terdaftar.",
+        href: "/admin/pasien",
+        kategori: "DATA PASIEN",
+    },
+    {
+        nama: "Manajemen Janji Temu",
+        deskripsi: "Periksa dan verifikasi pengajuan konsultasi.",
+        href: "/admin/janji-temu",
+        kategori: "PELAYANAN",
+    },
+    {
+        nama: "Manajemen Farmasi",
+        deskripsi: "Kelola resep dan status pengambilan obat pasien.",
+        href: "/admin/farmasi",
+        kategori: "FARMASI",
+    },
+];
     const statistikItems = [
         {
             label: "Total pasien",

@@ -1,7 +1,9 @@
+
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import ConfirmModal from "../../components/ConfirmModal";
 
 export default function PoliPage() {
     const router = useRouter();
@@ -13,6 +15,10 @@ export default function PoliPage() {
     const [pesan, setPesan] = useState("");
     const [menyimpan, setMenyimpan] = useState(false);
     const [menghapus, setMenghapus] = useState(null);
+
+    // Konfirmasi hapus
+    const [targetHapus, setTargetHapus] = useState(null);
+    const [errorHapus, setErrorHapus] = useState("");
 
     const [form, setForm] = useState({
         nama: "",
@@ -38,6 +44,7 @@ export default function PoliPage() {
             setDaftarPoli(
                 Array.isArray(hasil.data) ? hasil.data : []
             );
+
         } catch (error) {
             console.error("Gagal mengambil data poli:", error);
             setPesan(error.message || "Data poli gagal dimuat.");
@@ -62,6 +69,7 @@ export default function PoliPage() {
                 if (aktif) {
                     await ambilPoli();
                 }
+
             } catch (error) {
                 console.error("Gagal memeriksa sesi:", error);
                 router.replace("/login");
@@ -116,16 +124,13 @@ export default function PoliPage() {
                 body: JSON.stringify({
                     nama: form.nama.trim(),
                     deskripsi: form.deskripsi.trim(),
-
-                    // Tetap menjaga kompatibilitas API lama.
-                    // Ikon tidak lagi ditampilkan di form.
                     ikon: poliDipilih?.ikon || "",
                 }),
             });
 
             const hasil = await response.json();
 
-            if (!response.ok) {
+            if (!response.ok || hasil.success === false) {
                 setPesan(
                     hasil.message || "Data gagal disimpan."
                 );
@@ -141,24 +146,41 @@ export default function PoliPage() {
             });
 
             await ambilPoli();
+
         } catch (error) {
             console.error("Gagal menyimpan poli:", error);
+
             setPesan(
                 "Terjadi kesalahan saat menyimpan data."
             );
+
         } finally {
             setMenyimpan(false);
         }
     }
 
-    async function hapusPoli(id) {
-        const yakin = window.confirm(
-            "Yakin ingin menghapus data poli ini?"
-        );
+    // Membuka modal konfirmasi
+    function bukaKonfirmasiHapus(poli) {
+        setErrorHapus("");
+        setTargetHapus(poli);
+    }
 
-        if (!yakin) return;
+    // Membatalkan penghapusan
+    function batalHapus() {
+        if (menghapus !== null) return;
+
+        setTargetHapus(null);
+        setErrorHapus("");
+    }
+
+    // Menghapus poli setelah dikonfirmasi
+    async function hapusPoli() {
+        if (!targetHapus || menghapus !== null) return;
+
+        const id = targetHapus.id;
 
         setMenghapus(id);
+        setErrorHapus("");
 
         try {
             const response = await fetch(
@@ -170,18 +192,24 @@ export default function PoliPage() {
 
             const hasil = await response.json();
 
-            if (!response.ok) {
-                window.alert(
+            if (!response.ok || hasil.success === false) {
+                setErrorHapus(
                     hasil.message || "Data gagal dihapus."
                 );
                 return;
             }
 
+            setTargetHapus(null);
+
             await ambilPoli();
+
         } catch (error) {
             console.error("Gagal menghapus poli:", error);
 
-            window.alert("Data poli gagal dihapus.");
+            setErrorHapus(
+                "Terjadi kesalahan saat menghapus data poli."
+            );
+
         } finally {
             setMenghapus(null);
         }
@@ -195,6 +223,7 @@ export default function PoliPage() {
 
             {/* Background */}
             <div className="pointer-events-none absolute inset-0 overflow-hidden">
+
                 <div className="absolute -left-36 -top-40 h-[480px] w-[480px] rounded-full bg-white/75 blur-[90px]" />
 
                 <div className="absolute -right-32 top-20 h-[520px] w-[520px] rounded-full bg-[#a9cfee]/45 blur-[100px]" />
@@ -202,10 +231,12 @@ export default function PoliPage() {
                 <div className="absolute bottom-[-230px] left-[28%] h-[520px] w-[680px] rounded-full bg-[#d4e7f8]/80 blur-[100px]" />
 
                 <div className="absolute inset-0 bg-gradient-to-br from-white/35 via-transparent to-[#9fc4e8]/20" />
+
             </div>
 
             {/* Header */}
             <header className="relative z-10 border-b border-white/70 bg-white/45 backdrop-blur-2xl">
+
                 <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-4 px-5 py-5 sm:px-8 lg:px-12">
 
                     <button
@@ -213,6 +244,7 @@ export default function PoliPage() {
                         onClick={() => router.push("/admin")}
                         className="group text-left"
                     >
+
                         <span className="block text-[25px] font-semibold tracking-[0.19em] text-[#345b86] transition group-hover:text-[#5b8fc1]">
                             HARMONI
                         </span>
@@ -220,6 +252,7 @@ export default function PoliPage() {
                         <span className="mt-1 block text-[10px] tracking-[0.22em] text-[#7898bd] sm:text-xs">
                             HOSPITAL INFORMATION SYSTEM
                         </span>
+
                     </button>
 
                     <button
@@ -227,39 +260,49 @@ export default function PoliPage() {
                         onClick={() => router.push("/admin")}
                         className="rounded-full border border-white/80 bg-white/45 px-4 py-2.5 text-xs font-medium text-[#52769e] shadow-sm backdrop-blur-xl transition hover:-translate-y-0.5 hover:bg-white/80 sm:px-5 sm:text-sm"
                     >
+
                         <span className="mr-2">←</span>
+
                         Kembali ke dashboard
+
                     </button>
+
                 </div>
+
             </header>
 
             <div className="relative z-10 mx-auto max-w-[1500px] px-5 pb-10 pt-8 sm:px-8 sm:pt-12 lg:px-12">
 
-                {/* Hero: mengikuti susunan halaman Dokter */}
+                {/* Hero */}
                 <section className="mb-12 flex flex-col justify-between gap-10 md:flex-row md:items-center">
 
                     {/* Hero kiri */}
                     <div className="max-w-3xl">
+
                         <p className="mb-5 text-[10px] font-semibold tracking-[0.24em] text-[#7a9fc7] sm:text-xs">
                             ADMINISTRATION / MASTER DATA
                         </p>
 
                         <h1 className="text-4xl font-light leading-[1.12] tracking-[-0.04em] text-[#31577f] sm:text-5xl lg:text-6xl">
+
                             Ruang pelayanan
+
                             <br />
 
                             <span className="font-medium text-[#7099c3]">
                                 HARMONI.
                             </span>
+
                         </h1>
 
                         <p className="mt-5 max-w-xl text-sm leading-7 text-[#7794b6] sm:text-base">
                             Kelola informasi poli sebagai bagian dari
                             pelayanan rumah sakit yang terintegrasi.
                         </p>
+
                     </div>
 
-                    {/* Hero kanan: nomor besar + tombol */}
+                    {/* Hero kanan */}
                     <div className="relative flex w-full flex-col items-start justify-center md:w-[330px] md:shrink-0 md:items-end md:text-right">
 
                         <span
@@ -270,15 +313,21 @@ export default function PoliPage() {
                         </span>
 
                         <div className="relative z-10">
+
                             <p className="text-[10px] font-medium tracking-[0.2em] text-[#7f9fc3] sm:text-xs">
                                 POLI DIRECTORY
                             </p>
 
                             <p className="mt-3 max-w-[260px] text-base leading-7 text-[#4e739c]">
+
                                 Semua unit pelayanan,
+
                                 <br className="hidden md:block" />
+
                                 tersusun dengan rapi.
+
                             </p>
+
                         </div>
 
                         <button
@@ -286,6 +335,7 @@ export default function PoliPage() {
                             onClick={() => bukaForm()}
                             className="relative z-10 mt-7 inline-flex min-h-14 w-full items-center justify-center gap-4 rounded-[22px] border border-white/35 bg-gradient-to-br from-[#315981] to-[#6b9ec9] px-6 text-sm font-semibold text-white shadow-[0_14px_32px_rgba(61,105,151,.24)] transition duration-200 hover:-translate-y-1 hover:shadow-[0_18px_38px_rgba(61,105,151,.30)] active:translate-y-0 md:w-[290px]"
                         >
+
                             <span className="text-lg">＋</span>
 
                             Tambah poli
@@ -293,18 +343,23 @@ export default function PoliPage() {
                             <span className="ml-auto text-base">
                                 ↗
                             </span>
+
                         </button>
+
                     </div>
+
                 </section>
 
                 {/* Daftar poli */}
                 <section className="rounded-[30px] border border-white/75 bg-white/45 p-4 shadow-[0_25px_80px_rgba(76,117,161,.12)] backdrop-blur-2xl sm:rounded-[36px] sm:p-7 lg:p-9">
 
-                    {/* Judul daftar dan total poli */}
+                    {/* Judul daftar */}
                     <div className="flex flex-col justify-between gap-5 border-b border-[#c9dced]/70 pb-6 sm:flex-row sm:items-center">
 
                         <div>
+
                             <p className="flex items-center gap-2 text-[10px] font-semibold tracking-[0.2em] text-[#8aa8c9]">
+
                                 <span className="text-[#527da8]">
                                     01
                                 </span>
@@ -312,6 +367,7 @@ export default function PoliPage() {
                                 <span className="h-px w-5 bg-[#c4d9ec]" />
 
                                 DIRECTORY
+
                             </p>
 
                             <h2 className="mt-2 text-2xl font-medium tracking-tight text-[#345b84] sm:text-3xl">
@@ -321,15 +377,18 @@ export default function PoliPage() {
                             <p className="mt-2 text-sm text-[#829fbe]">
                                 Unit pelayanan yang tersedia di HARMONI.
                             </p>
+
                         </div>
 
-                        {/* Jumlah poli, seperti jumlah dokter */}
+                        {/* Jumlah poli */}
                         <div className="flex items-center gap-4 border-l border-[#c9dced]/80 pl-5">
+
                             <span className="text-4xl font-light tracking-tight text-[#527da8]">
                                 {daftarPoli.length}
                             </span>
 
                             <div>
+
                                 <p className="text-sm text-[#7798bc]">
                                     poli terdaftar
                                 </p>
@@ -337,21 +396,40 @@ export default function PoliPage() {
                                 <p className="mt-1 text-xs text-[#91a9c5]">
                                     Data master rumah sakit
                                 </p>
+
                             </div>
+
                         </div>
+
                     </div>
 
-                    {/* Table */}
+                    {/* Notifikasi error */}
+                    {!tampilForm && pesan && daftarPoli.length > 0 && (
+                        <div
+                            role="alert"
+                            className="mt-5 rounded-xl border border-[#f0d9df] bg-[#fff3f5] px-4 py-3 text-sm text-[#b36f7e]"
+                        >
+                            {pesan}
+                        </div>
+                    )}
+
+                    {/* Tabel */}
                     <div className="mt-6 overflow-hidden rounded-[22px] border border-white/80 bg-white/55 shadow-[0_10px_35px_rgba(83,122,164,.07)]">
 
                         {loading ? (
+
                             <div className="flex min-h-52 flex-col items-center justify-center gap-3 text-sm text-[#829fbe]">
+
                                 <span className="h-7 w-7 animate-spin rounded-full border-2 border-[#c8dced] border-t-[#5d8fbe]" />
 
                                 Memuat data poli...
+
                             </div>
+
                         ) : pesan && daftarPoli.length === 0 ? (
+
                             <div className="p-10 text-center">
+
                                 <p className="text-sm text-[#7897b8]">
                                     {pesan}
                                 </p>
@@ -363,9 +441,13 @@ export default function PoliPage() {
                                 >
                                     Coba muat ulang
                                 </button>
+
                             </div>
+
                         ) : daftarPoli.length === 0 ? (
+
                             <div className="flex min-h-52 flex-col items-center justify-center px-6 text-center">
+
                                 <p className="text-lg font-medium text-[#456b94]">
                                     Belum ada data poli
                                 </p>
@@ -374,13 +456,19 @@ export default function PoliPage() {
                                     Tambahkan poli pertama untuk mulai
                                     mengelola data pelayanan.
                                 </p>
+
                             </div>
+
                         ) : (
+
                             <div className="overflow-x-auto">
+
                                 <table className="w-full min-w-[680px] border-collapse text-left">
 
                                     <thead>
+
                                         <tr className="bg-[#eaf3fb]/75 text-[10px] font-semibold tracking-[0.16em] text-[#7898bb]">
+
                                             <th className="w-20 px-5 py-5">
                                                 NO.
                                             </th>
@@ -396,44 +484,51 @@ export default function PoliPage() {
                                             <th className="w-44 px-5 py-5 text-right">
                                                 AKSI
                                             </th>
+
                                         </tr>
+
                                     </thead>
 
                                     <tbody>
+
                                         {daftarPoli.map((poli, index) => (
+
                                             <tr
                                                 key={poli.id}
                                                 className="border-t border-[#dce8f4]/80 transition hover:bg-white/65"
                                             >
+
                                                 <td className="px-5 py-5 text-xs tabular-nums text-[#a0b5cc]">
-                                                    {String(index + 1).padStart(
-                                                        2,
-                                                        "0"
-                                                    )}
+                                                    {String(index + 1).padStart(2, "0")}
                                                 </td>
 
                                                 <td className="px-5 py-5">
+
                                                     <div className="flex items-center gap-3">
+
                                                         <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#80a9d2] shadow-[0_0_0_4px_rgba(128,169,210,.13)]" />
 
                                                         <span className="text-sm font-medium text-[#45698f]">
                                                             {poli.nama}
                                                         </span>
+
                                                     </div>
+
                                                 </td>
 
                                                 <td className="max-w-[520px] px-5 py-5 text-sm leading-6 text-[#819bb8]">
+
                                                     {poli.deskripsi || "—"}
+
                                                 </td>
 
                                                 <td className="px-5 py-5">
+
                                                     <div className="flex justify-end gap-2">
 
                                                         <button
                                                             type="button"
-                                                            onClick={() =>
-                                                                bukaForm(poli)
-                                                            }
+                                                            onClick={() => bukaForm(poli)}
                                                             className="rounded-xl border border-[#d5e6f5] bg-[#edf5fc] px-3.5 py-2 text-xs font-medium text-[#5d86b1] transition hover:border-[#a9cce9] hover:bg-white"
                                                         >
                                                             Edit
@@ -441,43 +536,56 @@ export default function PoliPage() {
 
                                                         <button
                                                             type="button"
-                                                            onClick={() =>
-                                                                hapusPoli(poli.id)
-                                                            }
-                                                            disabled={
-                                                                menghapus === poli.id
-                                                            }
+                                                            onClick={() => bukaKonfirmasiHapus(poli)}
+                                                            disabled={menghapus !== null}
                                                             className="rounded-xl border border-[#f0dce1] bg-[#fff5f6]/80 px-3.5 py-2 text-xs font-medium text-[#b77d8b] transition hover:bg-[#ffeaee] disabled:opacity-50"
                                                         >
+
                                                             {menghapus === poli.id
                                                                 ? "..."
                                                                 : "Hapus"}
+
                                                         </button>
+
                                                     </div>
+
                                                 </td>
+
                                             </tr>
+
                                         ))}
+
                                     </tbody>
+
                                 </table>
+
                             </div>
+
                         )}
+
                     </div>
+
                 </section>
 
                 {/* Footer */}
                 <footer className="flex flex-col justify-between gap-2 px-2 pt-7 text-[10px] tracking-[0.12em] text-[#91abc7] sm:flex-row">
+
                     <span>HARMONI · 2026</span>
 
                     <span>CARE THROUGH CONNECTION</span>
+
                 </footer>
+
             </div>
 
             {/* Form tambah / edit */}
             {tampilForm && (
+
                 <div
                     className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[#28496c]/25 px-4 py-8 backdrop-blur-md"
                     onClick={tutupForm}
                 >
+
                     <div
                         role="dialog"
                         aria-modal="true"
@@ -485,8 +593,11 @@ export default function PoliPage() {
                         className="my-auto w-full max-w-xl rounded-[30px] border border-white/80 bg-[#f5f9fe]/90 p-6 shadow-[0_30px_100px_rgba(39,75,116,.25)] backdrop-blur-2xl sm:p-8"
                         onClick={(e) => e.stopPropagation()}
                     >
+
                         <div className="flex items-start justify-between gap-4">
+
                             <div>
+
                                 <p className="text-[10px] font-semibold tracking-[0.2em] text-[#8aa8c9]">
                                     MASTER DATA / POLI
                                 </p>
@@ -495,14 +606,17 @@ export default function PoliPage() {
                                     id="form-poli-title"
                                     className="mt-2 text-2xl font-medium text-[#365d85]"
                                 >
+
                                     {poliDipilih
                                         ? "Perbarui poli"
                                         : "Poli baru"}
+
                                 </h3>
 
                                 <p className="mt-2 text-sm text-[#8aa3bf]">
                                     Lengkapi informasi unit pelayanan.
                                 </p>
+
                             </div>
 
                             <button
@@ -514,13 +628,16 @@ export default function PoliPage() {
                             >
                                 ×
                             </button>
+
                         </div>
 
                         <form
                             onSubmit={simpanPoli}
                             className="mt-7 space-y-5"
                         >
+
                             <div>
+
                                 <label
                                     htmlFor="nama-poli"
                                     className="mb-2 block text-xs font-medium text-[#55789e]"
@@ -542,9 +659,11 @@ export default function PoliPage() {
                                     className={inputClass}
                                     required
                                 />
+
                             </div>
 
                             <div>
+
                                 <label
                                     htmlFor="deskripsi-poli"
                                     className="mb-2 block text-xs font-medium text-[#55789e]"
@@ -566,18 +685,24 @@ export default function PoliPage() {
                                     className={`${inputClass} resize-y`}
                                     required
                                 />
+
                             </div>
 
                             {pesan && (
+
                                 <p
                                     role="alert"
                                     className="rounded-xl border border-[#f0d9df] bg-[#fff3f5] px-4 py-3 text-sm text-[#b36f7e]"
                                 >
+
                                     {pesan}
+
                                 </p>
+
                             )}
 
                             <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
+
                                 <button
                                     type="button"
                                     onClick={tutupForm}
@@ -592,17 +717,38 @@ export default function PoliPage() {
                                     disabled={menyimpan}
                                     className="rounded-2xl bg-gradient-to-r from-[#315981] to-[#6598c4] px-6 py-3 text-sm font-medium text-white shadow-[0_10px_25px_rgba(61,105,151,.2)] transition hover:-translate-y-0.5 disabled:opacity-50"
                                 >
+
                                     {menyimpan
                                         ? "Menyimpan..."
                                         : poliDipilih
                                             ? "Simpan perubahan"
                                             : "Tambah poli"}
+
                                 </button>
+
                             </div>
+
                         </form>
+
                     </div>
+
                 </div>
+
             )}
+
+            {/* Custom modal konfirmasi hapus */}
+            <ConfirmModal
+                open={targetHapus !== null}
+                title="Hapus data poli?"
+                description={`Apakah Anda yakin ingin menghapus ${targetHapus?.nama || "poli ini"}? Data yang telah dihapus tidak dapat dikembalikan.`}
+                onCancel={batalHapus}
+                onConfirm={hapusPoli}
+                loading={menghapus !== null}
+                error={errorHapus}
+                confirmText="Ya, Hapus"
+            />
+
         </main>
     );
 }
+        

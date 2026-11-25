@@ -16,11 +16,10 @@ function BadgeTipe({ tipe }) {
     const isKeras = tipe?.toLowerCase() === "keras";
     return (
         <span
-            className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold tracking-wide ${
-                isKeras
+            className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold tracking-wide ${isKeras
                     ? "border border-orange-200 bg-orange-50 text-orange-600"
                     : "border border-sky-200 bg-sky-50 text-sky-600"
-            }`}
+                }`}
         >
             {isKeras ? "⚠ Obat Keras" : "✓ Obat Bebas"}
         </span>
@@ -104,8 +103,8 @@ export default function CariObatPublik() {
             <nav className="relative z-10 mx-auto max-w-7xl px-5 pt-6 sm:px-8">
                 <div className="flex items-center justify-between rounded-[26px] border border-white/80 bg-white/55 px-5 py-4 shadow-[0_12px_40px_rgba(74,125,180,0.08)] backdrop-blur-2xl sm:px-8">
                     <Link href="/" className="group flex items-center gap-3">
-                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-[#78baf0] to-[#397bb9] text-xl font-semibold text-white shadow-lg shadow-blue-200/70 transition duration-300 group-hover:rotate-6 group-hover:scale-105">
-                            💊
+                        <div className="flex h-16 w-16 items-center justify-center rounded-[22px] border border-white/90 bg-gradient-to-br from-white/90 to-[#dceeff]/80 shadow-lg transition duration-300 group-hover:scale-105">
+                            {/* Icon Cari Obat nanti ditambahkan di sini */}
                         </div>
                         <div>
                             <h2 className="text-base font-bold tracking-tight text-[#285781] sm:text-lg">

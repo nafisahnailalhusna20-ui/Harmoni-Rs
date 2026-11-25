@@ -78,515 +78,371 @@ export default function RekamMedisPasienPage() {
         const value = (status || "").toLowerCase();
 
         if (value.includes("diambil")) {
-            return "border-[#cde5d9] bg-[#e8f4ee]/80 text-[#6c9a87]";
+            return "border-emerald-200/80 bg-emerald-50/60 text-emerald-700";
         }
 
         if (value.includes("siap")) {
-            return "border-[#d2e2f5] bg-[#eaf3ff]/80 text-[#7196c0]";
+            return "border-sky-200/80 bg-sky-50/60 text-sky-700";
         }
 
-        return "border-[#e6dfd2] bg-[#f6f1e8]/80 text-[#a28c6b]";
+        return "border-amber-200/80 bg-amber-50/60 text-amber-700";
     }
 
     return (
-        <main className="relative min-h-screen overflow-hidden bg-[#eaf2ff] text-[#456b96]">
+        <main className="harmoni-scene relative min-h-screen overflow-hidden px-3 py-4 text-[#244968] sm:px-8 sm:py-8 lg:px-10">
+            <style>{`
+                @keyframes harmoniRise {
+                    from { opacity: 0; transform: translate3d(0, 16px, 0); }
+                    to { opacity: 1; transform: translate3d(0, 0, 0); }
+                }
+                .harmoni-enter { animation: harmoniRise .9s cubic-bezier(.16,.78,.25,1) both; }
 
-            <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                .harmoni-scene {
+                    background:
+                        radial-gradient(70% 50% at 8% 0%, #ffffff 0%, transparent 62%),
+                        linear-gradient(165deg, #eaf4fc 0%, #d3e6f7 55%, #c2dbf1 100%);
+                }
+                .hs { position: absolute; border-radius: 9999px; pointer-events: none; }
+                .hs-1 { width: 520px; height: 520px; left: -150px; top: 140px; background: linear-gradient(145deg, #ffffff 0%, #9fc8ec 100%); opacity: .9; }
+                .hs-2 { width: 430px; height: 430px; right: -70px; top: -90px; background: linear-gradient(145deg, #e3f0fb 0%, #6aa3d4 100%); opacity: .85; }
+                .hs-3 { width: 470px; height: 470px; right: 6%; bottom: -150px; background: linear-gradient(145deg, #bcdcf5 0%, #4a86b8 100%); opacity: .8; }
+                .hs-4 { width: 720px; height: 720px; left: 28%; top: 26%; border: 1px solid rgba(255,255,255,.75); }
+                .hs-5 { width: 240px; height: 240px; left: 16%; bottom: 6%; background: linear-gradient(145deg, #ffffff 0%, #7fb2de 100%); opacity: .85; }
 
-                <div className="absolute -left-40 -top-40 h-[600px] w-[600px] rounded-full bg-white/80 blur-[120px]" />
+                .harmoni-window {
+                    position: relative; z-index: 1;
+                    background: linear-gradient(145deg, rgba(255,255,255,.34), rgba(255,255,255,.12));
+                    backdrop-filter: blur(40px) saturate(1.7);
+                    -webkit-backdrop-filter: blur(40px) saturate(1.7);
+                    border: 1px solid rgba(255,255,255,.7);
+                    box-shadow: 0 40px 100px rgba(55,105,155,.2), inset 0 1.5px 0 rgba(255,255,255,.95), inset 0 -1px 0 rgba(255,255,255,.3);
+                }
+                .harmoni-panel {
+                    position: relative; overflow: hidden; isolation: isolate;
+                    background:
+                        radial-gradient(120% 90% at 0% 0%, rgba(255,255,255,.5), transparent 55%),
+                        linear-gradient(145deg, rgba(255,255,255,.36), rgba(255,255,255,.1));
+                    backdrop-filter: blur(28px) saturate(1.6);
+                    -webkit-backdrop-filter: blur(28px) saturate(1.6);
+                    border: 1px solid rgba(255,255,255,.6);
+                    box-shadow: 0 10px 30px rgba(55,105,155,.1), inset 0 1px 0 rgba(255,255,255,.95);
+                }
+                .harmoni-tile { transition: transform .45s cubic-bezier(.2,.7,.2,1), background .45s ease, box-shadow .45s ease; }
+                .harmoni-tile:hover {
+                    transform: translateY(-3px);
+                    background:
+                        radial-gradient(120% 90% at 0% 0%, rgba(255,255,255,.75), transparent 58%),
+                        linear-gradient(145deg, rgba(255,255,255,.5), rgba(255,255,255,.18));
+                    box-shadow: 0 18px 44px rgba(55,105,155,.16), inset 0 1px 0 rgba(255,255,255,1);
+                }
+                .harmoni-chip {
+                    background: rgba(255,255,255,.5);
+                    border: 1px solid rgba(255,255,255,.85);
+                    box-shadow: inset 0 1px 0 rgba(255,255,255,.95);
+                    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+                }
+                .harmoni-chip-on {
+                    background: rgba(255,255,255,.92);
+                    border: 1px solid #fff;
+                    box-shadow: 0 6px 16px rgba(75,125,165,.18), inset 0 1px 0 #fff;
+                }
+                .harmoni-modal {
+                    background:
+                        radial-gradient(120% 70% at 0% 0%, rgba(255,255,255,.7), transparent 55%),
+                        linear-gradient(145deg, rgba(255,255,255,.78), rgba(236,245,253,.66));
+                    backdrop-filter: blur(40px) saturate(1.7);
+                    -webkit-backdrop-filter: blur(40px) saturate(1.7);
+                    border: 1px solid rgba(255,255,255,.85);
+                    box-shadow: 0 40px 110px rgba(30,70,115,.35), inset 0 1.5px 0 #fff;
+                }
+                .harmoni-focus:focus-visible { outline: 2px solid #3f78a8; outline-offset: 3px; }
+                .harmoni-title {
+                    background: linear-gradient(100deg, #315f88 8%, #6798c5 50%, #3e78a8 92%);
+                    -webkit-background-clip: text; background-clip: text; color: transparent;
+                }
+                @media (prefers-reduced-motion: reduce) {
+                    .harmoni-enter { animation: none !important; }
+                    .harmoni-tile { transition: none !important; }
+                    .harmoni-tile:hover { transform: none !important; }
+                }
+                @keyframes harmoniOrbit { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+                .harmoni-sphere {
+                    width: 190px; height: 190px; border-radius: 9999px;
+                    background: radial-gradient(circle at 32% 26%, #ffffff 0, rgba(255,255,255,.75) 11%, #b9d9f3 42%, #5f98cb 100%);
+                    box-shadow: inset -20px -26px 50px rgba(255,255,255,.35), inset 10px 10px 30px rgba(255,255,255,.5), 0 40px 80px rgba(60,110,160,.35);
+                }
+                .harmoni-ring {
+                    position: absolute; inset: -30px; border-radius: 9999px;
+                    border: 1px solid rgba(255,255,255,.85);
+                    box-shadow: 0 0 30px rgba(255,255,255,.4);
+                    animation: harmoniOrbit 40s linear infinite;
+                }
+                .harmoni-ring::after {
+                    content: ""; position: absolute; top: 12%; left: 8%; width: 12px; height: 12px; border-radius: 9999px;
+                    background: #fff; box-shadow: 0 0 16px 4px rgba(255,255,255,.9);
+                }
+                .harmoni-hairline { background: linear-gradient(90deg, transparent, rgba(255,255,255,.95), transparent); height: 1px; }
+                @media (prefers-reduced-motion: reduce) { .harmoni-ring { animation: none !important; } }
+            `}</style>
 
-                <div className="absolute -right-48 top-20 h-[650px] w-[650px] rounded-full bg-[#c7ddfb]/60 blur-[130px]" />
+            <div className="hs hs-1" aria-hidden="true" />
+            <div className="hs hs-2" aria-hidden="true" />
+            <div className="hs hs-3" aria-hidden="true" />
+            <div className="hs hs-4" aria-hidden="true" />
+            <div className="hs hs-5" aria-hidden="true" />
 
-                <div className="absolute bottom-[-250px] left-[25%] h-[700px] w-[700px] rounded-full bg-[#d4e6ff]/70 blur-[150px]" />
-
-                <div className="absolute left-[45%] top-[35%] h-[300px] w-[300px] rounded-full bg-white/40 blur-[100px]" />
-            </div>
-
-            <div className="relative mx-auto max-w-[1450px] px-5 py-7 sm:px-8 lg:px-14 lg:py-10">
-                <header className="flex items-center justify-between gap-5 border-b border-white/60 pb-7">
-
+            <div className="harmoni-window harmoni-enter mx-auto max-w-[1180px] rounded-[32px] p-4 sm:rounded-[44px] sm:p-7">
+                {/* ================= HEADER ================= */}
+                <header className="flex flex-wrap items-center justify-between gap-4 px-1">
                     <div className="flex items-center gap-4">
-
-                        <div className="relative flex h-12 w-12 items-center justify-center rounded-[18px] border border-white/90 bg-gradient-to-br from-white/90 to-[#dceaff]/80 shadow-[inset_0_1px_0_white,0_10px_25px_rgba(94,137,188,0.15)] backdrop-blur-xl">
-                            <span className="text-xl font-semibold text-[#75a1d2]">
-                                H
-                            </span>
-                        </div>
-
-                        <div>
-                            <h2 className="text-lg font-bold tracking-[0.24em] text-[#426a96] sm:text-xl">
-                                HARMONI
-                            </h2>
-
-                            <p className="mt-1 text-[9px] tracking-[0.2em] text-[#91accb] sm:text-[10px]">
-                                HOSPITAL INFORMATION SYSTEM
-                            </p>
-                        </div>
-
-                    </div>
-
-                    <button
-                        onClick={() => router.push("/pasien")}
-                        className="group flex items-center gap-3 rounded-full border border-white/80 bg-white/40 px-4 py-3 text-xs text-[#7396bc] shadow-[inset_0_1px_0_white,0_8px_25px_rgba(88,130,180,0.08)] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:bg-white/70 hover:shadow-[0_15px_35px_rgba(88,130,180,0.15)] sm:px-6 sm:text-sm"
-                    >
-                        <span className="transition-transform duration-300 group-hover:-translate-x-1">
-                            ←
-                        </span>
-
-                        Dashboard
-                    </button>
-
-                </header>
-                <section className="relative mb-16 mt-14 grid gap-10 lg:mb-20 lg:mt-20 lg:grid-cols-[1fr_320px] lg:items-center">
-
-                    <div className="relative z-10">
-
-                        <div className="mb-6 flex items-center gap-3">
-                            <span className="h-px w-10 bg-[#9bbce1]" />
-
-                            <p className="text-[9px] font-semibold tracking-[0.32em] text-[#87a9cf] sm:text-[10px]">
-                                PERSONAL MEDICAL ARCHIVE
-                            </p>
-                        </div>
-
-                        <h1 className="max-w-4xl text-[38px] font-light leading-[1.15] tracking-[-0.045em] text-[#426990] sm:text-5xl lg:text-[66px]">
-                            Your health,
-                            <br />
-
-                            <span className="font-medium text-[#8bb4e2]">
-                                beautifully documented.
-                            </span>
-                        </h1>
-
-                        <p className="mt-7 max-w-xl text-sm leading-7 text-[#83a1c2] sm:text-base">
-                            Semua perjalanan kesehatan Anda tersimpan
-                            dengan rapi, mulai dari hasil pemeriksaan,
-                            catatan dokter, hingga resep obat.
-                        </p>
-
-                    </div>
-                    <div className="relative mx-auto w-full max-w-[320px]">
-                        <div className="absolute -inset-5 rounded-[45px] bg-[#c7defb]/50 blur-2xl" />
-                        <div className="absolute -right-3 -top-3 h-full w-full rotate-[5deg] rounded-[32px] border border-white/50 bg-[#d7e8fb]/35 shadow-[0_20px_45px_rgba(95,139,190,0.10)] backdrop-blur-xl" />
-                        <div className="absolute -bottom-3 -left-3 h-full w-full rotate-[-4deg] rounded-[32px] border border-white/60 bg-white/25 shadow-[0_20px_45px_rgba(95,139,190,0.08)] backdrop-blur-xl" />
-                        <div className="relative overflow-hidden rounded-[32px] border border-white/90 bg-gradient-to-br from-white/75 via-white/45 to-[#dceaff]/60 p-7 shadow-[inset_0_1px_0_white,inset_0_-1px_0_rgba(160,195,232,0.3),0_30px_70px_rgba(80,126,180,0.18)] backdrop-blur-3xl">
-                            <div className="absolute -right-10 -top-10 h-36 w-36 rounded-full bg-white/60 blur-3xl" />
-
-                            <div className="relative flex items-center justify-between">
-                                <p className="text-[9px] font-semibold tracking-[0.25em] text-[#9ab5d5]">
-                                    HEALTH RECORDS
-                                </p>
-
-                                <span className="h-2 w-2 rounded-full bg-[#a9cbdc] shadow-[0_0_0_5px_rgba(169,203,220,0.18)]" />
-                            </div>
-
-                            <div className="relative mt-8 flex items-end justify-between">
-
-                                <div>
-                                    <p className="text-6xl font-light tracking-tight text-[#6e9dce]">
-                                        {String(rekamMedis.length).padStart(2, "0")}
-                                    </p>
-
-                                    <p className="mt-3 text-xs text-[#91accb]">
-                                        Total pemeriksaan
-                                    </p>
-                                </div>
-
-                                <div className="flex h-14 w-14 items-center justify-center rounded-[20px] border border-white/90 bg-gradient-to-br from-white/90 to-[#dceaff]/80 shadow-[inset_0_1px_0_white,0_12px_25px_rgba(88,130,180,0.12)]">
-                                    <span className="text-2xl font-light text-[#8bb1dc]">
-                                        +
-                                    </span>
-                                </div>
-
-                            </div>
-
-                            <div className="relative mt-7 h-px bg-gradient-to-r from-[#c4dcf7] via-white to-transparent" />
-
-                            <p className="relative mt-4 text-[9px] tracking-[0.2em] text-[#a0b8d4]">
-                                HARMONI · MEDICAL CENTER
-                            </p>
-
-                        </div>
-                    </div>
-
-                </section>
-
-                <section>
-
-                    <div className="mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
-
-                        <div>
-                            <p className="text-[9px] font-semibold tracking-[0.3em] text-[#9ab5d5]">
-                                YOUR HEALTH JOURNEY
-                            </p>
-
-                            <h2 className="mt-3 text-2xl font-medium tracking-tight text-[#456d98] sm:text-3xl">
-                                Riwayat pemeriksaan
-                            </h2>
-
-                            <p className="mt-2 text-sm text-[#8ba8c9]">
-                                Catatan medis pribadi Anda.
-                            </p>
-                        </div>
-
-                        <button
-                            onClick={() => ambilRekamMedis(true)}
-                            disabled={loading || refreshing}
-                            className="flex items-center gap-3 self-start rounded-full border border-white/80 bg-white/45 px-5 py-3 text-xs text-[#7396bc] shadow-[inset_0_1px_0_white,0_8px_25px_rgba(88,130,180,0.08)] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:bg-white/75 disabled:opacity-50 sm:self-auto"
-                        >
-                            <span className={refreshing ? "animate-spin" : ""}>
-                                ↻
-                            </span>
-
-                            {refreshing ? "Memuat..." : "Perbarui data"}
-                        </button>
-
-                    </div>
-
-                    <div className="relative">
-
-                        <div className="absolute -inset-3 rounded-[42px] bg-gradient-to-br from-white/70 via-[#d8e9ff]/40 to-[#c5ddf9]/50 blur-sm" />
-
-                        <div className="relative overflow-hidden rounded-[32px] border border-white/85 bg-white/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_30px_80px_rgba(77,121,174,0.13)] backdrop-blur-3xl sm:rounded-[40px]">
-
-                            <div className="relative border-b border-white/60 bg-white/20 px-6 py-6 sm:px-10 sm:py-8">
-
-                                <div className="absolute right-0 top-0 h-32 w-64 rounded-full bg-[#d7e9ff]/30 blur-3xl" />
-
-                                <div className="relative flex items-center gap-4">
-
-                                    <div className="flex h-11 w-11 items-center justify-center rounded-[16px] border border-white/90 bg-white/55 shadow-[inset_0_1px_0_white,0_8px_20px_rgba(90,132,181,0.08)]">
-                                        <span className="text-lg text-[#8db2dc]">
-                                            ◇
-                                        </span>
-                                    </div>
-
-                                    <div>
-                                        <h3 className="text-lg font-medium text-[#52769e] sm:text-xl">
-                                            Medical records
-                                        </h3>
-
-                                        <p className="mt-1 text-xs text-[#98b1ce]">
-                                            Riwayat dan dokumentasi pemeriksaan
-                                        </p>
-                                    </div>
-
-                                </div>
-
-                            </div>
-
-                            {loading && (
-                                <div className="flex min-h-[300px] flex-col items-center justify-center px-6 py-16">
-
-                                    <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-[22px] border border-white/90 bg-gradient-to-br from-white/80 to-[#dceaff]/70 shadow-[inset_0_1px_0_white,0_15px_35px_rgba(88,130,180,0.12)]">
-                                        <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#d4e5f7] border-t-[#8db4df]" />
-                                    </div>
-
-                                    <p className="text-sm text-[#8ba8c9]">
-                                        Memuat riwayat kesehatan...
-                                    </p>
-
-                                </div>
-                            )}
-                            {!loading && pesan && (
-                                <div className="flex min-h-[300px] flex-col items-center justify-center px-6 py-16 text-center">
-
-                                    <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-[22px] border border-white/90 bg-white/55 text-xl text-[#b08c9b] shadow-[0_12px_30px_rgba(130,110,150,0.08)]">
-                                        !
-                                    </div>
-
-                                    <p className="text-sm text-[#9c879b]">
-                                        {pesan}
-                                    </p>
-
-                                    <button
-                                        onClick={() => ambilRekamMedis()}
-                                        className="mt-5 rounded-full border border-white/90 bg-white/60 px-5 py-2.5 text-xs text-[#789bc3] shadow-sm transition hover:bg-white/90"
-                                    >
-                                        Coba lagi
-                                    </button>
-
-                                </div>
-                            )}
-                            {!loading && !pesan && rekamMedis.length === 0 && (
-                                <div className="flex min-h-[300px] flex-col items-center justify-center px-6 py-16 text-center">
-
-                                    <div className="relative mb-7 flex h-20 w-20 items-center justify-center rounded-[28px] border border-white/90 bg-gradient-to-br from-white/80 to-[#dceaff]/70 shadow-[inset_0_1px_0_white,0_18px_40px_rgba(88,130,180,0.12)]">
-                                        <span className="text-3xl font-light text-[#8db4df]">
-                                            +
-                                        </span>
-                                    </div>
-
-                                    <h3 className="text-xl font-medium text-[#52769e]">
-                                        Belum ada rekam medis
-                                    </h3>
-
-                                    <p className="mt-3 max-w-md text-sm leading-6 text-[#91accb]">
-                                        Catatan pemeriksaan akan muncul di sini
-                                        setelah dokter menyelesaikan pemeriksaan
-                                        Anda.
-                                    </p>
-
-                                </div>
-                            )}
-                            {!loading && !pesan && rekamMedis.length > 0 && (
-                                <div className="space-y-8 p-4 sm:p-8 lg:p-10">
-
-                                    {rekamMedis.map((item, index) => {
-                                        const resep = Array.isArray(item.resep)
-                                            ? item.resep
-                                            : [];
-
-                                        return (
-                                            <article
-                                                key={item.id}
-                                                className="group relative"
-                                            >
-                                                <div className="absolute inset-0 translate-y-3 rounded-[32px] bg-[#bfd7f4]/40 blur-[1px]" />
-
-                                                <div className="relative overflow-hidden rounded-[30px] border border-white/90 bg-gradient-to-br from-white/65 via-white/40 to-[#e3efff]/55 shadow-[inset_0_1px_0_white,inset_0_-1px_0_rgba(164,198,234,0.25),0_20px_55px_rgba(80,124,177,0.12)] backdrop-blur-3xl transition-all duration-500 group-hover:-translate-y-1 group-hover:shadow-[inset_0_1px_0_white,0_30px_70px_rgba(80,124,177,0.18)]">
-
-                                                    <div className="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full bg-white/45 blur-[70px]" />
-
-                                                    <div className="relative flex flex-col gap-6 border-b border-white/70 px-5 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-8 sm:py-8">
-
-                                                        <div className="flex items-center gap-5">
-
-
-                                                            <div className="relative shrink-0">
-
-                                                                <div className="absolute -inset-2 rounded-[27px] bg-gradient-to-br from-white/90 via-[#d7e8fb]/80 to-[#bcd5f2]/70 shadow-[0_12px_30px_rgba(83,126,177,0.14)]" />
-
-                                                                <div className="relative h-[82px] w-[82px] overflow-hidden rounded-[22px] border-[3px] border-white/95 bg-gradient-to-br from-[#eaf3ff] to-[#cbdff5] shadow-[inset_0_1px_0_white,0_10px_25px_rgba(83,126,177,0.18)] sm:h-[100px] sm:w-[100px] sm:rounded-[26px]">
-
-                                                                    {item.foto_dokter ? (
-                                                                        <img
-                                                                            src={item.foto_dokter}
-                                                                            alt={`Foto ${item.nama_dokter || "dokter"}`}
-                                                                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                                                        />
-                                                                    ) : (
-                                                                        <div className="flex h-full w-full items-center justify-center">
-                                                                            <span className="text-2xl font-medium text-[#7da6d5]">
-                                                                                {inisialDokter(item.nama_dokter)}
-                                                                            </span>
-                                                                        </div>
-                                                                    )}
-
-                                                                </div>
-
-                                                                <span className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full border-[3px] border-white bg-[#b9d8ca] shadow-md" />
-
-                                                            </div>
-
-                                                            <div className="min-w-0">
-
-                                                                <p className="text-[9px] font-semibold tracking-[0.24em] text-[#a0b8d4] sm:text-[10px]">
-                                                                    ATTENDING PHYSICIAN
-                                                                </p>
-
-                                                                <h3 className="mt-2 break-words text-xl font-medium tracking-tight text-[#4b719b] sm:text-2xl">
-                                                                    {item.nama_dokter || "Dokter"}
-                                                                </h3>
-
-                                                                <p className="mt-1.5 text-sm text-[#8ba8c9]">
-                                                                    {item.nama_poli || "Poli tidak tersedia"}
-                                                                </p>
-
-                                                            </div>
-
-                                                        </div>
-
-                                                        <div className="sm:text-right">
-
-                                                            <div className="inline-flex items-center gap-2 rounded-full border border-white/90 bg-white/45 px-4 py-2.5 text-xs text-[#789bc3] shadow-[inset_0_1px_0_white,0_8px_20px_rgba(88,130,180,0.08)] backdrop-blur-xl">
-                                                                <span className="text-[#a4bfdc]">
-                                                                    ◷
-                                                                </span>
-
-                                                                {formatTanggal(
-                                                                    item.tanggal_booking ||
-                                                                    item.created_at
-                                                                )}
-                                                            </div>
-
-                                                            <p className="mt-3 text-[9px] tracking-[0.2em] text-[#b0c5dc]">
-                                                                RECORD {String(index + 1).padStart(2, "0")}
-                                                            </p>
-
-                                                        </div>
-                                                    </div>
-                                                    <div className="relative grid gap-4 p-5 sm:grid-cols-2 sm:p-8">
-                                                        <div className="relative overflow-hidden rounded-[24px] border border-white/90 bg-white/35 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_12px_30px_rgba(85,127,178,0.06)] backdrop-blur-xl sm:p-6">
-
-                                                            <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-[#d9eaff]/60 blur-2xl" />
-
-                                                            <div className="relative">
-                                                                <div className="mb-4 flex items-center gap-3">
-                                                                    <span className="flex h-8 w-8 items-center justify-center rounded-[12px] border border-white/90 bg-white/55 text-xs text-[#8aafd8] shadow-sm">
-                                                                        D
-                                                                    </span>
-
-                                                                    <p className="text-[10px] font-semibold tracking-[0.2em] text-[#9ab5d5]">
-                                                                        DIAGNOSIS
-                                                                    </p>
-                                                                </div>
-
-                                                                <p className="text-base leading-7 text-[#52769e]">
-                                                                    {item.diagnosis || "-"}
-                                                                </p>
-                                                            </div>
-
-                                                        </div>
-
-                                                        <div className="relative overflow-hidden rounded-[24px] border border-white/90 bg-white/35 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_12px_30px_rgba(85,127,178,0.06)] backdrop-blur-xl sm:p-6">
-
-                                                            <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-[#d9eaff]/60 blur-2xl" />
-
-                                                            <div className="relative">
-                                                                <div className="mb-4 flex items-center gap-3">
-                                                                    <span className="flex h-8 w-8 items-center justify-center rounded-[12px] border border-white/90 bg-white/55 text-xs text-[#8aafd8] shadow-sm">
-                                                                        T
-                                                                    </span>
-
-                                                                    <p className="text-[10px] font-semibold tracking-[0.2em] text-[#9ab5d5]">
-                                                                        TINDAKAN
-                                                                    </p>
-                                                                </div>
-
-                                                                <p className="text-base leading-7 text-[#52769e]">
-                                                                    {item.tindakan || "-"}
-                                                                </p>
-                                                            </div>
-
-                                                        </div>
-
-                                                        <div className="relative overflow-hidden rounded-[24px] border border-white/90 bg-gradient-to-br from-white/50 to-[#eaf3ff]/35 p-5 shadow-[inset_0_1px_0_white,0_12px_30px_rgba(85,127,178,0.06)] backdrop-blur-xl sm:col-span-2 sm:p-7">
-                                                            <div className="absolute -right-5 -top-12 text-[130px] font-serif leading-none text-white/35">
-                                                                “
-                                                            </div>
-
-                                                            <div className="relative">
-                                                                <div className="flex items-center gap-3">
-                                                                    <span className="h-px w-7 bg-[#a7c6e8]" />
-
-                                                                    <p className="text-[10px] font-semibold tracking-[0.2em] text-[#9ab5d5]">
-                                                                        CATATAN DOKTER
-                                                                    </p>
-                                                                </div>
-
-                                                                <p className="mt-5 whitespace-pre-line text-sm leading-7 text-[#6486aa] sm:text-base">
-                                                                    {item.catatan ||
-                                                                        "Tidak ada catatan tambahan dari dokter."}
-                                                                </p>
-                                                            </div>
-
-                                                        </div>
-
-                                                    </div>
-
-                                                    <div className="relative border-t border-white/70 bg-white/15 px-5 py-6 sm:px-8 sm:py-8">
-
-                                                        <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
-
-                                                            <div>
-                                                                <p className="text-[9px] font-semibold tracking-[0.25em] text-[#a0b8d4]">
-                                                                    PHARMACY
-                                                                </p>
-
-                                                                <h4 className="mt-2 text-lg font-medium text-[#52769e]">
-                                                                    Resep obat
-                                                                </h4>
-                                                            </div>
-
-                                                            {item.status_resep && (
-                                                                <span className={`rounded-full border px-4 py-2 text-xs ${getStatusResep(item.status_resep)}`}>
-                                                                    {item.status_resep}
-                                                                </span>
-                                                            )}
-
-                                                        </div>
-
-                                                        {resep.length > 0 ? (
-                                                            <div className="grid gap-3 sm:grid-cols-2">
-
-                                                                {resep.map((obat, obatIndex) => (
-                                                                    <div
-                                                                        key={`${item.id}-${obatIndex}`}
-                                                                        className="group/medicine flex items-center justify-between gap-4 rounded-[20px] border border-white/90 bg-white/40 px-4 py-4 shadow-[inset_0_1px_0_white,0_8px_22px_rgba(88,130,180,0.07)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:bg-white/65 hover:shadow-[0_15px_30px_rgba(88,130,180,0.12)]"
-                                                                    >
-
-                                                                        <div className="flex min-w-0 items-center gap-4">
-
-                                                                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[15px] border border-white/90 bg-gradient-to-br from-white/80 to-[#dceaff]/70 shadow-[inset_0_1px_0_white,0_7px_16px_rgba(88,130,180,0.08)]">
-                                                                                <span className="text-xs font-medium text-[#8aafd8]">
-                                                                                    Rx
-                                                                                </span>
-                                                                            </div>
-
-                                                                            <div className="min-w-0">
-                                                                                <p className="break-words text-sm font-medium text-[#52769e]">
-                                                                                    {obat.nama_obat}
-                                                                                </p>
-
-                                                                                <p className="mt-1 text-[10px] text-[#9ab2ce]">
-                                                                                    Jumlah obat
-                                                                                </p>
-                                                                            </div>
-
-                                                                        </div>
-
-                                                                        <span className="shrink-0 rounded-xl border border-white/90 bg-white/55 px-3 py-2 text-xs text-[#7c9fc6] shadow-sm">
-                                                                            {obat.jumlah}
-                                                                        </span>
-
-                                                                    </div>
-                                                                ))}
-
-                                                            </div>
-                                                        ) : (
-                                                            <div className="rounded-[20px] border border-white/80 bg-white/30 px-5 py-4 backdrop-blur-xl">
-                                                                <p className="text-sm text-[#91aaca]">
-                                                                    Tidak ada resep obat untuk pemeriksaan ini.
-                                                                </p>
-                                                            </div>
-                                                        )}
-
-                                                    </div>
-
-                                                </div>
-
-                                            </article>
-                                        );
-                                    })}
-
-                                </div>
-                            )}
-
-                        </div>
-
-                    </div>
-
-                </section>
-
-                <footer className="mt-14 flex flex-col justify-between gap-4 border-t border-white/60 pt-7 sm:flex-row sm:items-center">
-
-                    <div>
-                        <p className="text-xs font-semibold tracking-[0.25em] text-[#7399c3]">
+                        <h2 className="text-xl font-extrabold tracking-[0.3em] text-[#315f88] sm:text-2xl">
                             HARMONI
-                        </p>
-
-                        <p className="mt-1 text-[10px] text-[#9bb4d1]">
+                        </h2>
+                        <span className="hidden h-6 w-px bg-[#8fb6d8]/60 md:block" />
+                        <p className="hidden text-xs tracking-[0.08em] text-[#6f93b6] md:block">
                             Hospital Information System
                         </p>
                     </div>
 
-                    <p className="text-xs text-[#8ca9ca]">
-                        Your health, thoughtfully documented.
-                    </p>
+                    <button
+                        onClick={() => router.push("/pasien")}
+                        className="harmoni-chip harmoni-focus group flex items-center gap-2 rounded-full px-5 py-3 text-xs font-semibold text-[#477aa5] transition hover:bg-white/80"
+                    >
+                        <span className="transition group-hover:-translate-x-1">←</span>
+                        Dashboard
+                    </button>
+                </header>
 
+                {/* ================= HERO ================= */}
+                <section
+                    className="harmoni-panel harmoni-enter mt-7 rounded-[36px] p-7 sm:p-11"
+                    style={{ animationDelay: "100ms" }}
+                >
+                    <div className="grid gap-10 sm:grid-cols-[1fr_auto] sm:items-center">
+                        <div>
+                            <span className="harmoni-chip inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold text-[#5f8fb8]">
+                                <span className="h-2 w-2 rounded-full bg-[#7fcaae]" />
+                                Arsip medis pribadi
+                            </span>
+
+                            <h1 className="mt-6 text-4xl font-bold leading-[1.08] tracking-[-0.04em] sm:text-6xl">
+                                <span className="harmoni-title">Rekam medis,</span>
+                                <br />
+                                <span className="font-medium text-[#86b0d8]">tersimpan rapi.</span>
+                            </h1>
+
+                            <p className="mt-5 max-w-md text-sm leading-7 text-[#6f93b6] sm:text-base">
+                                Hasil pemeriksaan, catatan dokter, hingga resep obat, semuanya ada di
+                                satu tempat.
+                            </p>
+
+                            <button
+                                onClick={() => ambilRekamMedis(true)}
+                                disabled={loading || refreshing}
+                                className="harmoni-chip harmoni-focus mt-7 inline-flex items-center gap-2.5 rounded-full px-5 py-3 text-xs font-semibold text-[#477aa5] transition hover:bg-white/80 disabled:opacity-50"
+                            >
+                                {refreshing && (
+                                    <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#cfe3f4] border-t-[#477da9]" />
+                                )}
+                                {refreshing ? "Memuat..." : "Perbarui data"}
+                            </button>
+                        </div>
+
+                        {/* Bola kaca: jumlah pemeriksaan */}
+                        <div className="relative mx-auto flex h-[250px] w-[250px] items-center justify-center">
+                            <div className="harmoni-ring" />
+                            <div className="harmoni-sphere flex flex-col items-center justify-center text-white">
+                                <span className="text-6xl font-semibold tracking-tight drop-shadow-[0_4px_14px_rgba(40,90,140,0.35)]">
+                                    {loading ? "…" : rekamMedis.length}
+                                </span>
+                                <span className="mt-1 text-xs font-medium text-white/90">pemeriksaan</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* ================= RIWAYAT ================= */}
+                <section className="mt-8">
+                    <h3 className="mb-6 px-1 text-2xl font-semibold tracking-tight text-[#254968]">
+                        Riwayat pemeriksaan
+                    </h3>
+
+                    {loading && (
+                        <div className="grid gap-5">
+                            {[1, 2].map((n) => (
+                                <div key={n} className="harmoni-panel h-64 animate-pulse rounded-[32px]" />
+                            ))}
+                        </div>
+                    )}
+
+                    {!loading && pesan && (
+                        <div className="harmoni-panel flex min-h-[240px] flex-col items-center justify-center rounded-[32px] px-6 text-center">
+                            <p className="text-sm text-rose-600">{pesan}</p>
+                            <button
+                                onClick={() => ambilRekamMedis()}
+                                className="harmoni-focus mt-5 rounded-2xl bg-gradient-to-br from-[#5c96c4] to-[#407ba9] px-6 py-3 text-xs font-bold text-white shadow-[0_10px_26px_rgba(63,121,169,0.3)] transition hover:-translate-y-0.5"
+                            >
+                                Coba lagi
+                            </button>
+                        </div>
+                    )}
+
+                    {!loading && !pesan && rekamMedis.length === 0 && (
+                        <div className="harmoni-panel flex min-h-[260px] flex-col items-center justify-center rounded-[32px] px-6 text-center">
+                            <h3 className="text-xl font-semibold text-[#2b5a84]">Belum ada rekam medis</h3>
+                            <p className="mt-2 max-w-md text-sm leading-6 text-[#6f93b6]">
+                                Catatan pemeriksaan akan muncul di sini setelah dokter menyelesaikan
+                                pemeriksaanmu.
+                            </p>
+                        </div>
+                    )}
+
+                    {!loading && !pesan && rekamMedis.length > 0 && (
+                        <div className="space-y-5">
+                            {rekamMedis.map((item, index) => {
+                                const resep = Array.isArray(item.resep) ? item.resep : [];
+                                const tgl = new Date(item.tanggal_booking || item.created_at);
+                                const tglValid = !Number.isNaN(tgl.getTime());
+                                const hariAngka = tglValid
+                                    ? tgl.toLocaleDateString("id-ID", { day: "2-digit", timeZone: "Asia/Makassar" })
+                                    : "-";
+                                const bulanTahun = tglValid
+                                    ? tgl.toLocaleDateString("id-ID", { month: "long", year: "numeric", timeZone: "Asia/Makassar" })
+                                    : "";
+                                const terakhir = index === rekamMedis.length - 1;
+
+                                return (
+                                    <div
+                                        key={item.id}
+                                        style={{ animationDelay: `${Math.min(index, 6) * 70}ms` }}
+                                        className="harmoni-enter grid gap-x-5 sm:grid-cols-[110px_20px_1fr]"
+                                    >
+                                        {/* Tanggal (layar lebar) */}
+                                        <div className="hidden pt-5 text-right sm:block">
+                                            <p className="text-5xl font-light leading-none tracking-tight text-[#2b5a84]">
+                                                {hariAngka}
+                                            </p>
+                                            <p className="mt-2 text-xs capitalize leading-5 text-[#7e9fc0]">
+                                                {bulanTahun}
+                                            </p>
+                                        </div>
+
+                                        {/* Garis waktu */}
+                                        <div className="relative hidden sm:block" aria-hidden="true">
+                                            <span className="absolute left-1/2 top-8 h-3.5 w-3.5 -translate-x-1/2 rounded-full bg-gradient-to-br from-[#7fb2de] to-[#407ba9] ring-4 ring-white/70" />
+                                            {!terakhir && (
+                                                <span className="absolute -bottom-5 left-1/2 top-12 w-px -translate-x-1/2 bg-gradient-to-b from-white/90 to-white/20" />
+                                            )}
+                                        </div>
+
+                                        {/* Kartu */}
+                                        <article className="harmoni-panel rounded-[32px]">
+                                            <div className="flex flex-wrap items-center justify-between gap-3 p-6 pb-0 sm:p-8 sm:pb-0">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="h-14 w-14 shrink-0 overflow-hidden rounded-full border-[3px] border-white/90 bg-gradient-to-br from-[#f7fcff] to-[#c4dff3] shadow-[0_10px_24px_rgba(60,110,160,0.22)]">
+                                                        {item.foto_dokter ? (
+                                                            <img
+                                                                src={item.foto_dokter}
+                                                                alt={`Foto ${item.nama_dokter || "dokter"}`}
+                                                                className="h-full w-full object-cover"
+                                                            />
+                                                        ) : (
+                                                            <div className="flex h-full w-full items-center justify-center text-base font-semibold text-[#5c8db5]">
+                                                                {inisialDokter(item.nama_dokter)}
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="min-w-0">
+                                                        <h4 className="break-words text-base font-semibold tracking-tight text-[#2b5a84]">
+                                                            {item.nama_dokter || "Dokter"}
+                                                        </h4>
+                                                        <p className="mt-0.5 text-xs text-[#6f93b6]">
+                                                            {item.nama_poli || "Poli tidak tersedia"}
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                {/* Tanggal (HP) */}
+                                                <span className="harmoni-chip rounded-full px-4 py-2 text-xs font-semibold text-[#477aa5] sm:hidden">
+                                                    {formatTanggal(item.tanggal_booking || item.created_at)}
+                                                </span>
+                                            </div>
+
+                                            {/* Diagnosis sebagai sorotan */}
+                                            <div className="px-6 pt-7 sm:px-8">
+                                                <p className="text-xs font-semibold text-[#7e9fc0]">Diagnosis</p>
+                                                <p className="mt-2 text-2xl font-semibold leading-snug tracking-tight text-[#254968] sm:text-3xl">
+                                                    {item.diagnosis || "-"}
+                                                </p>
+                                            </div>
+
+                                            <div className="mx-6 mt-7 harmoni-hairline sm:mx-8" />
+
+                                            <div className="grid gap-6 px-6 py-6 sm:grid-cols-2 sm:px-8">
+                                                <div>
+                                                    <p className="text-xs font-semibold text-[#7e9fc0]">Tindakan</p>
+                                                    <p className="mt-2 text-sm leading-7 text-[#3f6c95]">
+                                                        {item.tindakan || "-"}
+                                                    </p>
+                                                </div>
+
+                                                <div>
+                                                    <p className="text-xs font-semibold text-[#7e9fc0]">Catatan dokter</p>
+                                                    <p className="mt-2 whitespace-pre-line text-sm leading-7 text-[#5f86ab]">
+                                                        {item.catatan || "Tidak ada catatan tambahan dari dokter."}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            {/* Resep */}
+                                            <div className="border-t border-white/60 bg-white/20 px-6 py-6 sm:px-8">
+                                                <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                                                    <p className="text-sm font-semibold text-[#2b5a84]">Resep obat</p>
+
+                                                    {item.status_resep && (
+                                                        <span
+                                                            className={`rounded-full border px-4 py-1.5 text-xs font-semibold backdrop-blur-md ${getStatusResep(
+                                                                item.status_resep
+                                                            )}`}
+                                                        >
+                                                            {item.status_resep}
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                {resep.length > 0 ? (
+                                                    <div className="flex flex-wrap gap-2.5">
+                                                        {resep.map((obat, obatIndex) => (
+                                                            <span
+                                                                key={`${item.id}-${obatIndex}`}
+                                                                className="harmoni-chip inline-flex items-center gap-3 rounded-full py-1.5 pl-4 pr-1.5 text-sm font-medium text-[#2b5a84]"
+                                                            >
+                                                                {obat.nama_obat}
+                                                                <span className="flex min-w-[28px] items-center justify-center rounded-full bg-white/90 px-2 py-1 text-xs font-semibold text-[#477aa5]">
+                                                                    {obat.jumlah}
+                                                                </span>
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-sm text-[#6f93b6]">
+                                                        Tidak ada resep obat untuk pemeriksaan ini.
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </article>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </section>
+
+                <footer className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-white/50 px-1 pt-4 text-[10px] text-[#7e9fc0]">
+                    <span className="font-bold tracking-[0.18em]">HARMONI HEALTHCARE</span>
+                    <span>Rekam Medis</span>
                 </footer>
-
             </div>
         </main>
     );

@@ -1,7 +1,9 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import ConfirmModal from "../../components/ConfirmModal";
 
 function formatTanggalLokal(tanggal) {
     const tahun = tanggal.getFullYear();
@@ -17,6 +19,11 @@ export default function ObatPage() {
     const [tampilForm, setTampilForm] = useState(false);
     const [obatDipilih, setObatDipilih] = useState(null);
     const [pesan, setPesan] = useState("");
+
+    // State konfirmasi hapus
+    const [targetHapus, setTargetHapus] = useState(null);
+    const [menghapus, setMenghapus] = useState(false);
+    const [errorHapus, setErrorHapus] = useState("");
 
     const [batasTanggal, setBatasTanggal] = useState({
         hariIni: "",
@@ -56,8 +63,10 @@ export default function ObatPage() {
             const response = await fetch("/api/admin/obat");
             const data = await response.json();
 
-            if (data.success) {
-                setObat(data.data);
+            if (response.ok && data.success) {
+                setObat(
+                    Array.isArray(data.data) ? data.data : []
+                );
             } else {
                 setPesan(data.message || "Data obat gagal dimuat.");
             }
@@ -141,7 +150,7 @@ export default function ObatPage() {
 
             const data = await response.json();
 
-            if (!response.ok) {
+            if (!response.ok || data.success === false) {
                 setPesan(data.message || "Data obat gagal disimpan.");
                 return;
             }
@@ -158,28 +167,62 @@ export default function ObatPage() {
         }
     }
 
-    async function hapusObat(id) {
-        const yakin = confirm("Yakin ingin menghapus obat ini?");
+    // Membuka modal konfirmasi hapus
+    function bukaKonfirmasiHapus(item) {
+        setErrorHapus("");
+        setTargetHapus(item);
+    }
 
-        if (!yakin) return;
+    // Membatalkan penghapusan
+    function batalHapus() {
+        if (menghapus) return;
+
+        setTargetHapus(null);
+        setErrorHapus("");
+    }
+
+    // Menghapus obat setelah dikonfirmasi
+    async function hapusObat() {
+        if (!targetHapus || menghapus) return;
+
+        setMenghapus(true);
+        setErrorHapus("");
+        setPesan("");
 
         try {
-            const response = await fetch(`/api/admin/obat/${id}`, {
-                method: "DELETE",
-            });
+            const response = await fetch(
+                `/api/admin/obat/${targetHapus.id}`,
+                {
+                    method: "DELETE",
+                }
+            );
 
             const data = await response.json();
 
-            if (!response.ok) {
-                setPesan(data.message || "Obat gagal dihapus.");
+            if (!response.ok || data.success === false) {
+                setErrorHapus(
+                    data.message || "Obat gagal dihapus."
+                );
                 return;
             }
 
-            setPesan(data.message);
+            setTargetHapus(null);
+
+            setPesan(
+                data.message || "Data obat berhasil dihapus."
+            );
+
             await ambilData();
+
         } catch (error) {
             console.error("Gagal menghapus obat:", error);
-            setPesan("Terjadi kesalahan saat menghapus obat.");
+
+            setErrorHapus(
+                "Terjadi kesalahan saat menghapus obat."
+            );
+
+        } finally {
+            setMenghapus(false);
         }
     }
 
@@ -200,9 +243,13 @@ export default function ObatPage() {
 
             {/* Background atmosphere */}
             <div className="pointer-events-none absolute inset-0">
+
                 <div className="absolute -left-40 -top-40 h-[520px] w-[520px] rounded-full bg-[#D9EAFE]/80 blur-[100px]" />
+
                 <div className="absolute right-[-100px] top-[18%] h-[500px] w-[500px] rounded-full bg-[#B9D9F5]/60 blur-[110px]" />
+
                 <div className="absolute bottom-[-180px] left-[35%] h-[450px] w-[450px] rounded-full bg-white/70 blur-[100px]" />
+
             </div>
 
             <div className="relative mx-auto max-w-[1500px] px-5 py-7 sm:px-8 lg:px-12">
@@ -211,7 +258,9 @@ export default function ObatPage() {
                 <header className="flex flex-wrap items-center justify-between gap-5 border-b border-white/80 pb-6">
 
                     <Link href="/admin" className="group">
+
                         <div className="flex items-baseline gap-3">
+
                             <span className="text-2xl font-bold tracking-[0.22em] text-[#29496B] sm:text-3xl">
                                 HARMONI
                             </span>
@@ -219,68 +268,88 @@ export default function ObatPage() {
                             <span className="hidden text-[10px] tracking-[0.18em] text-[#7598BB] sm:inline">
                                 Hospital Information System
                             </span>
+
                         </div>
 
                         <p className="mt-1 text-[10px] tracking-[0.22em] text-[#7899BA] sm:hidden">
                             HOSPITAL INFORMATION SYSTEM
                         </p>
+
                     </Link>
 
                     <Link
                         href="/admin"
                         className="rounded-full border border-white/80 bg-white/45 px-5 py-2.5 text-sm text-[#52799F] backdrop-blur-xl transition hover:bg-white/80 hover:text-[#29496B]"
                     >
+
                         <span className="mr-2">←</span>
                         Dashboard
+
                     </Link>
+
                 </header>
 
                 {/* Hero section */}
                 <section className="relative grid gap-10 py-12 sm:py-16 lg:grid-cols-[1fr_300px] lg:items-end lg:py-20">
 
                     <div>
+
                         <div className="mb-6 flex items-center gap-3">
+
                             <span className="h-px w-9 bg-[#8CB8E2]" />
 
                             <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#7197BC]">
                                 Pharmacy / Administration
                             </p>
+
                         </div>
 
                         <h1 className="max-w-3xl text-5xl font-semibold leading-[0.98] tracking-[-0.055em] text-[#29496B] sm:text-6xl lg:text-7xl">
+
                             Ruang
+
                             <br />
 
                             <span className="font-light text-[#79A9D8]">
                                 persediaan obat.
                             </span>
+
                         </h1>
 
                         <p className="mt-7 max-w-lg text-sm leading-7 text-[#6F91B4] sm:text-base">
                             Pantau ketersediaan obat dan kelola
                             persediaan rumah sakit dalam satu tempat.
                         </p>
+
                     </div>
 
                     {/* Hero side */}
                     <div className="relative flex flex-col items-start gap-6 lg:items-end lg:text-right">
 
                         <div className="relative">
+
                             <span className="pointer-events-none absolute -right-2 -top-14 text-[110px] font-light leading-none text-[#B5D5F2]/45">
                                 03
                             </span>
 
                             <div className="relative">
+
                                 <p className="text-[10px] uppercase tracking-[0.2em] text-[#7399BD]">
                                     Pharmacy inventory
                                 </p>
 
                                 <p className="mt-3 text-sm leading-6 text-[#52799F]">
+
                                     Semua persediaan,
+
                                     <br />
+
                                     tercatat dengan rapi.
+
                                 </p>
+
                             </div>
+
                         </div>
 
                         <button
@@ -288,13 +357,19 @@ export default function ObatPage() {
                             onClick={bukaTambah}
                             className="group flex min-h-[58px] items-center gap-5 rounded-[22px] border border-white/70 bg-gradient-to-br from-[#426F9B] to-[#79A9D4] px-7 text-sm font-semibold text-white shadow-[0_18px_40px_-18px_rgba(61,112,160,0.65)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_45px_-18px_rgba(61,112,160,0.7)] active:translate-y-0"
                         >
+
                             <span className="text-xl font-light">+</span>
+
                             Tambah obat
+
                             <span className="ml-3 transition-transform group-hover:translate-x-1">
                                 ↗
                             </span>
+
                         </button>
+
                     </div>
+
                 </section>
 
                 {/* Main glass panel */}
@@ -304,7 +379,9 @@ export default function ObatPage() {
                     <div className="flex flex-wrap items-end justify-between gap-6 border-b border-[#C9DDF0]/70 pb-7">
 
                         <div>
+
                             <div className="mb-4 flex items-center gap-3">
+
                                 <span className="text-[10px] font-semibold tracking-[0.2em] text-[#8BAAC9]">
                                     01
                                 </span>
@@ -314,6 +391,7 @@ export default function ObatPage() {
                                 <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#789CBD]">
                                     Pharmacy directory
                                 </span>
+
                             </div>
 
                             <h2 className="text-2xl font-semibold tracking-tight text-[#29496B] sm:text-3xl">
@@ -323,12 +401,14 @@ export default function ObatPage() {
                             <p className="mt-2 text-sm text-[#7797B7]">
                                 Informasi persediaan yang terhubung dengan HARMONI.
                             </p>
+
                         </div>
 
                         {/* Mini statistics */}
                         <div className="flex items-center gap-6">
 
                             <div className="border-l border-[#BCD5EC] pl-5">
+
                                 <p className="text-3xl font-light text-[#527FA9] sm:text-4xl">
                                     {totalObat}
                                 </p>
@@ -336,9 +416,11 @@ export default function ObatPage() {
                                 <p className="mt-1 text-[10px] uppercase tracking-[0.12em] text-[#8AA8C5]">
                                     Jenis obat
                                 </p>
+
                             </div>
 
                             <div className="border-l border-[#BCD5EC] pl-5">
+
                                 <p className="text-3xl font-light text-[#527FA9] sm:text-4xl">
                                     {stokMenipis}
                                 </p>
@@ -346,8 +428,11 @@ export default function ObatPage() {
                                 <p className="mt-1 text-[10px] uppercase tracking-[0.12em] text-[#8AA8C5]">
                                     Stok rendah
                                 </p>
+
                             </div>
+
                         </div>
+
                     </div>
 
                     {/* Feedback message */}
@@ -359,21 +444,28 @@ export default function ObatPage() {
 
                     {/* Add / edit form */}
                     {tampilForm && (
+
                         <form
                             onSubmit={simpanObat}
                             className="mt-7 rounded-[26px] border border-white/90 bg-white/55 p-5 shadow-sm backdrop-blur-xl sm:p-7"
                         >
+
                             <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+
                                 <div>
+
                                     <p className="text-[10px] uppercase tracking-[0.18em] text-[#86A7C8]">
                                         Pharmacy record
                                     </p>
 
                                     <h3 className="mt-2 text-xl font-semibold text-[#29496B]">
+
                                         {obatDipilih
                                             ? "Perbarui informasi obat"
                                             : "Tambah obat baru"}
+
                                     </h3>
+
                                 </div>
 
                                 <button
@@ -387,11 +479,13 @@ export default function ObatPage() {
                                 >
                                     ✕ Tutup
                                 </button>
+
                             </div>
 
                             <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
 
                                 <div>
+
                                     <label className={labelStyle}>
                                         Nama obat
                                     </label>
@@ -405,9 +499,11 @@ export default function ObatPage() {
                                         required
                                         className={inputStyle}
                                     />
+
                                 </div>
 
                                 <div>
+
                                     <label className={labelStyle}>
                                         Jenis obat
                                     </label>
@@ -419,6 +515,7 @@ export default function ObatPage() {
                                         required
                                         className={inputStyle}
                                     >
+
                                         <option value="">
                                             Pilih jenis obat
                                         </option>
@@ -430,10 +527,13 @@ export default function ObatPage() {
                                         <option value="biasa">
                                             Obat Biasa
                                         </option>
+
                                     </select>
+
                                 </div>
 
                                 <div className="md:col-span-2">
+
                                     <label className={labelStyle}>
                                         Deskripsi
                                     </label>
@@ -447,9 +547,11 @@ export default function ObatPage() {
                                         rows="3"
                                         className={inputStyle}
                                     />
+
                                 </div>
 
                                 <div>
+
                                     <label className={labelStyle}>
                                         Jumlah stok
                                     </label>
@@ -465,9 +567,11 @@ export default function ObatPage() {
                                         required
                                         className={inputStyle}
                                     />
+
                                 </div>
 
                                 <div>
+
                                     <label className={labelStyle}>
                                         Tanggal kedaluwarsa
                                     </label>
@@ -485,10 +589,13 @@ export default function ObatPage() {
                                     <p className="mt-2 text-xs leading-5 text-[#8AA5C0]">
                                         Maksimal 10 tahun dari hari ini.
                                     </p>
+
                                 </div>
+
                             </div>
 
                             <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+
                                 <button
                                     type="button"
                                     onClick={() => {
@@ -505,25 +612,36 @@ export default function ObatPage() {
                                     type="submit"
                                     className="rounded-2xl bg-gradient-to-r from-[#426F9B] to-[#79A9D4] px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-[#83AED5]/25 transition hover:-translate-y-0.5 hover:shadow-xl"
                                 >
+
                                     {obatDipilih
                                         ? "Simpan perubahan"
                                         : "Simpan obat"}
+
                                 </button>
+
                             </div>
+
                         </form>
+
                     )}
 
                     {/* Table */}
                     <div className="mt-7 overflow-hidden rounded-[24px] border border-white/90 bg-white/35">
 
                         {loading ? (
+
                             <div className="px-6 py-16 text-center">
+
                                 <p className="text-sm text-[#7899BA]">
                                     Sedang memuat data obat...
                                 </p>
+
                             </div>
+
                         ) : obat.length === 0 ? (
+
                             <div className="px-6 py-16 text-center">
+
                                 <p className="text-lg font-medium text-[#52799F]">
                                     Belum ada obat terdaftar
                                 </p>
@@ -531,13 +649,19 @@ export default function ObatPage() {
                                 <p className="mt-2 text-sm text-[#8AA5C0]">
                                     Tambahkan data obat untuk mulai mengelola persediaan.
                                 </p>
+
                             </div>
+
                         ) : (
+
                             <div className="overflow-x-auto">
+
                                 <table className="w-full min-w-[760px] text-left">
 
                                     <thead>
+
                                         <tr className="border-b border-[#C9DDF0]/70 bg-[#E5F0FA]/55 text-[10px] uppercase tracking-[0.15em] text-[#789CBD]">
+
                                             <th className="px-5 py-5 font-semibold">
                                                 No.
                                             </th>
@@ -561,75 +685,98 @@ export default function ObatPage() {
                                             <th className="px-5 py-5 text-right font-semibold">
                                                 Aksi
                                             </th>
+
                                         </tr>
+
                                     </thead>
 
                                     <tbody>
+
                                         {obat.map((item, index) => {
+
                                             const stokRendah =
                                                 Number(item.stok) <= 10;
 
                                             return (
+
                                                 <tr
                                                     key={item.id}
                                                     className="border-b border-[#D7E6F3]/65 text-sm text-[#456887] transition duration-200 last:border-b-0 hover:bg-white/55"
                                                 >
+
                                                     <td className="px-5 py-5 text-xs text-[#8BA9C6]">
                                                         {String(index + 1).padStart(2, "0")}
                                                     </td>
 
                                                     <td className="px-5 py-5">
+
                                                         <p className="font-semibold text-[#29496B]">
                                                             {item.nama}
                                                         </p>
 
                                                         {item.deskripsi && (
+
                                                             <p className="mt-1 max-w-xs truncate text-xs text-[#8AA5C0]">
                                                                 {item.deskripsi}
                                                             </p>
+
                                                         )}
+
                                                     </td>
 
                                                     <td className="px-5 py-5">
+
                                                         <span className="inline-flex rounded-full border border-[#C9DDF0] bg-[#EDF5FC]/75 px-3 py-1.5 text-xs text-[#668DB5]">
+
                                                             {item.tipe === "keras"
                                                                 ? "Obat Keras"
                                                                 : "Obat Biasa"}
+
                                                         </span>
+
                                                     </td>
 
                                                     <td className="px-5 py-5">
+
                                                         <span
-                                                            className={`inline-flex items-center gap-2 font-medium ${stokRendah
-                                                                ? "text-[#C47D75]"
-                                                                : "text-[#527FA9]"
-                                                                }`}
+                                                            className={`inline-flex items-center gap-2 font-medium ${
+                                                                stokRendah
+                                                                    ? "text-[#C47D75]"
+                                                                    : "text-[#527FA9]"
+                                                            }`}
                                                         >
+
                                                             {item.stok}
 
                                                             {stokRendah && (
+
                                                                 <span className="rounded-full bg-[#FBE8E5] px-2 py-1 text-[10px]">
                                                                     Rendah
                                                                 </span>
+
                                                             )}
+
                                                         </span>
+
                                                     </td>
 
                                                     <td className="px-5 py-5 text-xs text-[#7899BA]">
+
                                                         {item.tanggal_kadaluarsa
                                                             ? String(
                                                                 item.tanggal_kadaluarsa
                                                             ).slice(0, 10)
                                                             : "-"}
+
                                                     </td>
 
                                                     <td className="px-5 py-5">
+
                                                         <div className="flex justify-end gap-2">
+
                                                             <button
                                                                 type="button"
-                                                                onClick={() =>
-                                                                    bukaEdit(item)
-                                                                }
+                                                                onClick={() => bukaEdit(item)}
                                                                 className="rounded-xl border border-[#C5DDF1] bg-[#EAF4FC]/80 px-3.5 py-2 text-xs font-medium text-[#527FA9] transition hover:border-[#8DB9E0] hover:bg-white"
                                                             >
                                                                 Edit
@@ -637,26 +784,35 @@ export default function ObatPage() {
 
                                                             <button
                                                                 type="button"
-                                                                onClick={() =>
-                                                                    hapusObat(item.id)
-                                                                }
-                                                                className="rounded-xl border border-[#F0D5D8] bg-[#FFF0F1]/75 px-3.5 py-2 text-xs font-medium text-[#C47D85] transition hover:border-[#E6AEB5] hover:bg-white"
+                                                                onClick={() => bukaKonfirmasiHapus(item)}
+                                                                disabled={menghapus}
+                                                                className="rounded-xl border border-[#F0D5D8] bg-[#FFF0F1]/75 px-3.5 py-2 text-xs font-medium text-[#C47D85] transition hover:border-[#E6AEB5] hover:bg-white disabled:opacity-50"
                                                             >
                                                                 Hapus
                                                             </button>
+
                                                         </div>
+
                                                     </td>
+
                                                 </tr>
+
                                             );
                                         })}
+
                                     </tbody>
+
                                 </table>
+
                             </div>
+
                         )}
+
                     </div>
 
                     {/* Footer */}
                     <div className="mt-5 flex flex-wrap items-center justify-between gap-3 px-1">
+
                         <p className="text-[10px] uppercase tracking-[0.16em] text-[#91ABC4]">
                             HARMONI · Pharmacy management
                         </p>
@@ -664,15 +820,33 @@ export default function ObatPage() {
                         <p className="text-xs text-[#8AA5C0]">
                             {totalObat} data obat tersimpan
                         </p>
+
                     </div>
+
                 </section>
 
                 <footer className="relative py-8 text-center">
+
                     <p className="text-[10px] tracking-[0.2em] text-[#91ABC4]">
                         CARE THROUGH CONNECTION
                     </p>
+
                 </footer>
+
             </div>
+
+            {/* Custom modal konfirmasi hapus */}
+            <ConfirmModal
+                open={targetHapus !== null}
+                title="Hapus data obat?"
+                description={`Apakah Anda yakin ingin menghapus ${targetHapus?.nama || "obat ini"}? Data yang telah dihapus tidak dapat dikembalikan.`}
+                onCancel={batalHapus}
+                onConfirm={hapusObat}
+                loading={menghapus}
+                error={errorHapus}
+                confirmText="Ya, Hapus"
+            />
+
         </main>
     );
 }

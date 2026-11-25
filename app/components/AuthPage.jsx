@@ -216,14 +216,7 @@ export default function AuthPage({ mode = "login" }) {
                         <div className="w-full max-w-[410px]">
 
                             <div className="mb-7">
-                                <div className="mb-4 flex items-center gap-3">
-                                    <span className="h-px w-8 bg-[#6C9BCB]" />
-
-                                    <p className="text-[10px] font-bold tracking-[0.25em] text-[#6C91BC]">
-                                        SECURE ACCESS
-                                    </p>
-                                </div>
-
+                                
                                 <h1 className="text-[36px] font-bold tracking-[-0.04em] text-[#193B65] xl:text-[40px]">
                                     Selamat datang.
                                 </h1>

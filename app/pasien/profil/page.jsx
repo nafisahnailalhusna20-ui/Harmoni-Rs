@@ -236,111 +236,159 @@ export default function ProfilPasienPage() {
         .toUpperCase();
 
     const inputClass =
-        "w-full rounded-2xl border border-[#DCEAF6] bg-[#F8FCFF] px-4 py-3.5 text-sm text-[#31577F] outline-none transition placeholder:text-[#A6BCD0] focus:border-[#8BB9DF] focus:bg-white focus:ring-4 focus:ring-[#DCECF9]";
+        "w-full rounded-2xl border border-white/80 bg-white/45 px-4 py-3.5 text-sm text-[#2b5a84] shadow-[inset_0_1px_0_rgba(255,255,255,0.9),inset_0_-1px_2px_rgba(75,125,165,0.06)] outline-none backdrop-blur-md transition placeholder:text-[#9db7d0] focus:border-white focus:bg-white/80 focus:ring-4 focus:ring-[#9cc9ee]/40";
+
+    const labelClass = "mb-2 block text-xs font-semibold text-[#5f86ab]";
+
+    const bannerClass = (isError) =>
+        `mb-5 rounded-2xl border px-5 py-3.5 text-sm backdrop-blur-md ${isError
+            ? "border-rose-200/80 bg-rose-50/70 text-rose-600"
+            : "border-emerald-200/80 bg-emerald-50/70 text-emerald-700"
+        }`;
 
     if (loading) {
         return (
-            <main className="flex min-h-screen items-center justify-center bg-[#EDF6FD]">
+            <main className="flex min-h-screen items-center justify-center bg-[#eaf4fc]">
                 <div className="text-center">
-                    <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-[3px] border-[#D6E8F6] border-t-[#6EA5D0]" />
-                    <p className="text-sm text-[#7FA4C4]">
-                        Menyiapkan profilmu...
-                    </p>
+                    <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-[3px] border-[#cfe3f4] border-t-[#477da9]" />
+                    <p className="text-sm text-[#7198bb]">Menyiapkan profilmu...</p>
                 </div>
             </main>
         );
     }
 
     return (
-        <main className="relative min-h-screen overflow-hidden bg-[#EDF6FD] px-4 py-7 sm:px-8 sm:py-10">
+        <main className="harmoni-scene relative min-h-screen overflow-hidden px-3 py-4 text-[#244968] sm:px-8 sm:py-8 lg:px-10">
+            <style>{`
+                @keyframes harmoniRise {
+                    from { opacity: 0; transform: translate3d(0, 16px, 0); }
+                    to { opacity: 1; transform: translate3d(0, 0, 0); }
+                }
+                .harmoni-enter { animation: harmoniRise .9s cubic-bezier(.16,.78,.25,1) both; }
 
-            <div className="pointer-events-none absolute -left-40 -top-32 h-[450px] w-[450px] rounded-full bg-[#D5EAF9]/80 blur-[110px]" />
+                .harmoni-scene {
+                    background:
+                        radial-gradient(70% 50% at 8% 0%, #ffffff 0%, transparent 62%),
+                        linear-gradient(165deg, #eaf4fc 0%, #d3e6f7 55%, #c2dbf1 100%);
+                }
+                .hs { position: absolute; border-radius: 9999px; pointer-events: none; }
+                .hs-1 { width: 520px; height: 520px; left: -150px; top: 140px; background: linear-gradient(145deg, #ffffff 0%, #9fc8ec 100%); opacity: .9; }
+                .hs-2 { width: 430px; height: 430px; right: -70px; top: -90px; background: linear-gradient(145deg, #e3f0fb 0%, #6aa3d4 100%); opacity: .85; }
+                .hs-3 { width: 470px; height: 470px; right: 6%; bottom: -150px; background: linear-gradient(145deg, #bcdcf5 0%, #4a86b8 100%); opacity: .8; }
+                .hs-4 { width: 720px; height: 720px; left: 28%; top: 26%; border: 1px solid rgba(255,255,255,.75); }
+                .hs-5 { width: 240px; height: 240px; left: 16%; bottom: 6%; background: linear-gradient(145deg, #ffffff 0%, #7fb2de 100%); opacity: .85; }
 
-            <div className="pointer-events-none absolute -right-40 top-[450px] h-[500px] w-[500px] rounded-full bg-[#C7E2F5]/60 blur-[120px]" />
+                .harmoni-window {
+                    position: relative; z-index: 1;
+                    background: linear-gradient(145deg, rgba(255,255,255,.34), rgba(255,255,255,.12));
+                    backdrop-filter: blur(40px) saturate(1.7);
+                    -webkit-backdrop-filter: blur(40px) saturate(1.7);
+                    border: 1px solid rgba(255,255,255,.7);
+                    box-shadow: 0 40px 100px rgba(55,105,155,.2), inset 0 1.5px 0 rgba(255,255,255,.95), inset 0 -1px 0 rgba(255,255,255,.3);
+                }
+                .harmoni-panel {
+                    position: relative; overflow: hidden; isolation: isolate;
+                    background:
+                        radial-gradient(120% 90% at 0% 0%, rgba(255,255,255,.5), transparent 55%),
+                        linear-gradient(145deg, rgba(255,255,255,.36), rgba(255,255,255,.1));
+                    backdrop-filter: blur(28px) saturate(1.6);
+                    -webkit-backdrop-filter: blur(28px) saturate(1.6);
+                    border: 1px solid rgba(255,255,255,.6);
+                    box-shadow: 0 10px 30px rgba(55,105,155,.1), inset 0 1px 0 rgba(255,255,255,.95);
+                }
+                .harmoni-chip {
+                    background: rgba(255,255,255,.5);
+                    border: 1px solid rgba(255,255,255,.85);
+                    box-shadow: inset 0 1px 0 rgba(255,255,255,.95);
+                    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+                }
+                .harmoni-focus:focus-visible { outline: 2px solid #3f78a8; outline-offset: 3px; }
+                .harmoni-title {
+                    background: linear-gradient(100deg, #315f88 8%, #6798c5 50%, #3e78a8 92%);
+                    -webkit-background-clip: text; background-clip: text; color: transparent;
+                }
+                @media (prefers-reduced-motion: reduce) {
+                    .harmoni-enter { animation: none !important; }
+                }
+            `}</style>
 
-            <div className="relative mx-auto max-w-6xl">
-                <header className="mb-8 flex items-center justify-between gap-4">
-                    <div>
-                        <p className="text-[10px] font-extrabold tracking-[0.25em] text-[#79A6CC]">
-                            HARMONI HEALTHCARE
-                        </p>
+            <div className="hs hs-1" aria-hidden="true" />
+            <div className="hs hs-2" aria-hidden="true" />
+            <div className="hs hs-3" aria-hidden="true" />
+            <div className="hs hs-4" aria-hidden="true" />
+            <div className="hs hs-5" aria-hidden="true" />
 
-                        <p className="mt-2 text-xs text-[#9AB6CE]">
-                            Your personal health space
+            <div className="harmoni-window harmoni-enter mx-auto max-w-[1180px] rounded-[32px] p-4 sm:rounded-[40px] sm:p-6">
+                {/* ================= HEADER ================= */}
+                <header className="flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                        <h1 className="text-xl font-extrabold tracking-[0.3em] text-[#315f88] sm:text-2xl">
+                            HARMONI
+                        </h1>
+                        <span className="hidden h-6 w-px bg-[#8fb6d8]/60 md:block" />
+                        <p className="hidden text-xs tracking-[0.08em] text-[#6f93b6] md:block">
+                            Hospital Information System
                         </p>
                     </div>
 
                     <button
                         type="button"
                         onClick={() => router.push("/pasien")}
-                        className="group flex items-center gap-2 rounded-full border border-white/90 bg-white/70 px-4 py-3 text-xs font-semibold text-[#5D8DB5] shadow-sm backdrop-blur-xl transition hover:bg-white"
+                        className="harmoni-chip harmoni-focus group flex items-center gap-2 rounded-full px-5 py-3 text-xs font-semibold text-[#477aa5] transition hover:bg-white/80"
                     >
-                        <span className="transition group-hover:-translate-x-1">
-                            ←
-                        </span>
+                        <span className="transition group-hover:-translate-x-1">←</span>
                         Dashboard
                     </button>
                 </header>
-                <section className="relative mb-8 overflow-hidden rounded-[32px] border border-white/90 bg-gradient-to-br from-[#DCEFFA] via-[#F5FBFF] to-[#D5E8F8] p-6 shadow-[0_22px_60px_rgba(89,145,190,0.12)] sm:p-10">
 
-                    <div className="pointer-events-none absolute -right-12 -top-20 h-72 w-72 rounded-full border-[38px] border-white/35" />
+                {/* ================= JUDUL ================= */}
+                <div className="mt-8 px-1">
+                    <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+                        <span className="harmoni-title">Profil saya</span>
+                    </h2>
+                    <p className="mt-2 text-sm leading-7 text-[#6f93b6]">
+                        Hai, {namaPasien.split(" ")[0]}. Pastikan informasi pribadimu selalu
+                        lengkap dan terbaru.
+                    </p>
+                </div>
 
-                    <div className="pointer-events-none absolute right-24 top-24 h-32 w-32 rounded-full bg-white/40 blur-3xl" />
+                {pesan && (
+                    <div className={`${bannerClass(error)} mt-6 mb-0`} role="status">
+                        {pesan}
+                    </div>
+                )}
 
-                    <div className="pointer-events-none absolute bottom-0 right-0 h-32 w-64 rounded-tl-[100px] bg-white/20" />
+                {/* ================= BODY ================= */}
+                <div className="mt-6 grid gap-5 lg:grid-cols-[320px_1fr]">
+                    {/* ---- Kolom kiri: foto & akun ---- */}
+                    <aside className="grid h-fit gap-5">
+                        <section
+                            className="harmoni-panel harmoni-enter flex flex-col items-center rounded-[30px] px-6 py-9 text-center"
+                            style={{ animationDelay: "100ms" }}
+                        >
+                            <div className="relative">
+                                <div className="absolute -inset-4 rounded-full border border-white/80" />
 
-                    <div className="relative flex flex-col gap-8 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="group relative flex h-40 w-40 items-center justify-center overflow-hidden rounded-full border-[6px] border-white/90 bg-gradient-to-br from-[#d4e8f7] to-[#eef8fe] text-4xl font-bold text-[#78a8d0] shadow-[0_22px_50px_rgba(60,110,160,0.28)]">
+                                    {foto ? (
+                                        <img
+                                            src={foto}
+                                            alt="Foto profil pasien"
+                                            className="h-full w-full object-cover"
+                                        />
+                                    ) : (
+                                        inisial
+                                    )}
 
-                        <div className="max-w-xl">
-                            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/90 bg-white/65 px-4 py-2 text-[10px] font-bold tracking-[0.17em] text-[#6E9FC5] backdrop-blur-md">
-                                <span className="h-1.5 w-1.5 rounded-full bg-[#8DBDDF]" />
-                                MY PERSONAL SPACE
-                            </div>
+                                    <label
+                                        htmlFor="foto-input"
+                                        className="absolute inset-0 flex cursor-pointer items-center justify-center bg-[#2b5a84]/45 text-xs font-semibold text-white opacity-0 backdrop-blur-[2px] transition-opacity group-hover:opacity-100"
+                                    >
+                                        {uploadingFoto ? "Mengunggah..." : "Ubah foto"}
+                                    </label>
+                                </div>
 
-                            <h1 className="text-3xl font-bold leading-tight tracking-tight text-[#294D70] sm:text-5xl">
-                                Your profile,
-                                <br />
-                                <span className="font-medium text-[#78A8D0]">
-                                    your little space.
-                                </span>
-                            </h1>
-
-                            <p className="mt-5 max-w-md text-sm leading-7 text-[#7F9FBD]">
-                                Hai, {namaPasien.split(" ")[0]}!
-                                <br />
-                                Yuk, pastikan informasi pribadimu
-                                selalu lengkap dan terbaru.
-                            </p>
-
-                            <div className="mt-6 flex items-center gap-2 text-xs font-medium text-[#7CA6C8]">
-                                <span className="text-base">✦</span>
-                                A little care starts with you.
-                            </div>
-                        </div>
-
-                        <div className="relative mx-auto sm:mx-0">
-                            <div className="absolute -inset-5 rounded-full border border-white/70" />
-
-                            <div className="absolute -right-1 top-6 h-5 w-5 rounded-full border-4 border-[#E4F1FA] bg-[#A8D8C7]" />
-
-                            <div className="group relative flex h-36 w-36 items-center justify-center overflow-hidden rounded-full border-[7px] border-white/90 bg-gradient-to-br from-[#D4E8F7] to-[#EEF8FE] text-3xl font-bold text-[#78A8D0] shadow-[0_18px_45px_rgba(87,145,191,0.2)] sm:h-44 sm:w-44">
-                                {foto ? (
-                                    <img
-                                        src={foto}
-                                        alt="Foto profil pasien"
-                                        className="h-full w-full object-cover"
-                                    />
-                                ) : (
-                                    inisial
-                                )}
-
-                                <label
-                                    htmlFor="foto-input"
-                                    className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center bg-black/40 text-xs font-semibold text-white opacity-0 transition-opacity group-hover:opacity-100"
-                                >
-                                    <span>📷</span>
-                                    <span>{uploadingFoto ? "Mengunggah..." : "Ubah Foto"}</span>
-                                </label>
+                                <span className="absolute bottom-2 right-2 h-5 w-5 rounded-full border-[3px] border-white bg-[#7fcaae]" />
                             </div>
 
                             <input
@@ -352,302 +400,268 @@ export default function ProfilPasienPage() {
                                 className="hidden"
                             />
 
+                            <h3 className="mt-7 text-xl font-semibold tracking-tight text-[#2b5a84]">
+                                {namaPasien}
+                            </h3>
+                            <p className="mt-1 max-w-full truncate text-xs text-[#7e9fc0]">
+                                {form.email || "Email belum diisi"}
+                            </p>
+
+                            <span className="harmoni-chip mt-4 inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold text-[#5f8fb8]">
+                                <span className="h-2 w-2 rounded-full bg-[#7fcaae]" />
+                                Akun aktif
+                            </span>
+
                             <label
                                 htmlFor="foto-input"
-                                className="absolute -bottom-3 left-1/2 -translate-x-1/2 cursor-pointer whitespace-nowrap rounded-full border border-white/90 bg-white/90 px-4 py-1.5 text-[10px] font-bold tracking-wide text-[#527FA5] shadow-sm backdrop-blur-md transition hover:bg-white hover:text-[#31577F]"
+                                className="harmoni-chip harmoni-focus mt-6 cursor-pointer rounded-2xl px-5 py-3 text-xs font-semibold text-[#477aa5] transition hover:bg-white/80"
                             >
-                                {uploadingFoto ? "Mengunggah..." : "✎ Ganti Foto"}
+                                {uploadingFoto ? "Mengunggah..." : "Ganti foto"}
                             </label>
-                        </div>
-                    </div>
-                </section>
-                {pesan && (
-                    <div
-                        className={`mb-6 rounded-2xl border px-5 py-4 text-sm ${error
-                            ? "border-rose-100 bg-rose-50 text-rose-600"
-                            : "border-emerald-100 bg-emerald-50 text-emerald-700"
-                            }`}
-                    >
-                        {error ? "!" : "✓"} &nbsp; {pesan}
-                    </div>
-                )}
-
-                <form onSubmit={simpanProfil} className="space-y-6">
-                    <section className="rounded-[30px] border border-white/90 bg-white/75 p-6 shadow-[0_16px_50px_rgba(89,145,190,0.08)] backdrop-blur-xl sm:p-9">
-
-                        <div className="mb-8 flex items-start justify-between gap-4">
-                            <div>
-                                <p className="text-[10px] font-extrabold tracking-[0.2em] text-[#8AB2D2]">
-                                    01 / ABOUT YOU
-                                </p>
-
-                                <h2 className="mt-2 text-xl font-bold text-[#31577F]">
-                                    Informasi Pribadi
-                                </h2>
-
-                                <p className="mt-2 text-sm text-[#91ADC6]">
-                                    Informasi dasar tentang dirimu.
-                                </p>
-                            </div>
-
-                            <div className="hidden h-12 w-12 items-center justify-center rounded-2xl bg-[#EAF5FC] text-xl text-[#78A8D0] sm:flex">
-                                ♡
-                            </div>
-                        </div>
-
-                        <div className="grid gap-5 sm:grid-cols-2">
-
-                            <div>
-                                <label className="mb-2.5 block text-xs font-semibold text-[#5F85A8]">
-                                    Nama Lengkap
-                                </label>
-
-                                <input
-                                    type="text"
-                                    name="full_name"
-                                    value={form.full_name}
-                                    onChange={handleChange}
-                                    className={inputClass}
-                                    placeholder="Nama lengkapmu"
-                                    required
-                                />
-                            </div>
-
-                            <div>
-                                <label className="mb-2.5 block text-xs font-semibold text-[#5F85A8]">
-                                    Username
-                                </label>
-
-                                <input
-                                    type="text"
-                                    name="username"
-                                    value={form.username}
-                                    onChange={handleChange}
-                                    className={inputClass}
-                                    placeholder="Username"
-                                    required
-                                />
-                            </div>
-
-                            <div>
-                                <label className="mb-2.5 block text-xs font-semibold text-[#5F85A8]">
-                                    Email
-                                </label>
-
-                                <input
-                                    type="email"
-                                    name="email"
-                                    value={form.email}
-                                    onChange={handleChange}
-                                    className={inputClass}
-                                    placeholder="Email aktif"
-                                    required
-                                />
-                            </div>
-
-                            <div>
-                                <label className="mb-2.5 block text-xs font-semibold text-[#5F85A8]">
-                                    Nomor Telepon
-                                </label>
-
-                                <input
-                                    type="tel"
-                                    name="phone"
-                                    value={form.phone}
-                                    onChange={handleChange}
-                                    className={inputClass}
-                                    placeholder="Nomor telepon"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="mb-2.5 block text-xs font-semibold text-[#5F85A8]">
-                                    Tanggal Lahir
-                                </label>
-
-                                <input
-                                    type="date"
-                                    name="birth_date"
-                                    value={form.birth_date}
-                                    onChange={handleChange}
-                                    className={inputClass}
-                                />
-                            </div>
-
-                            <div>
-                                <label className="mb-2.5 block text-xs font-semibold text-[#5F85A8]">
-                                    Alamat
-                                </label>
-
-                                <input
-                                    type="text"
-                                    name="address"
-                                    value={form.address}
-                                    onChange={handleChange}
-                                    className={inputClass}
-                                    placeholder="Alamat tempat tinggal"
-                                />
-                            </div>
-                        </div>
-                    </section>
-                    <section className="overflow-hidden rounded-[30px] border border-white/90 bg-white/75 shadow-[0_16px_50px_rgba(89,145,190,0.08)] backdrop-blur-xl">
-
-                        <div className="flex flex-col gap-5 p-6 sm:flex-row sm:items-center sm:p-8">
-
-                            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#E1F0FA] to-[#D5E8F7] text-2xl text-[#75A6CE]">
-                                ✧
-                            </div>
-
-                            <div className="flex-1">
-                                <p className="text-[10px] font-extrabold tracking-[0.2em] text-[#8AB2D2]">
-                                    02 / YOUR ACCOUNT
-                                </p>
-
-                                <h2 className="mt-2 text-lg font-bold text-[#31577F]">
-                                    Akun HARMONI
-                                </h2>
-
-                                <p className="mt-1 text-sm leading-6 text-[#91ADC6]">
-                                    Data akunmu digunakan untuk
-                                    mengakses layanan HARMONI.
-                                </p>
-                            </div>
-
-                            <div className="rounded-full bg-[#EAF5FC] px-4 py-2 text-[10px] font-bold tracking-wide text-[#76A5C9]">
-                                ● ACCOUNT ACTIVE
-                            </div>
-                        </div>
-
-                        <div className="h-px bg-gradient-to-r from-transparent via-[#DCEAF6] to-transparent" />
-
-                        <div className="px-6 py-5 sm:px-8">
-                            <p className="text-xs leading-6 text-[#91ADC6]">
-                                Pastikan email dan nomor telepon yang
-                                terdaftar masih bisa kamu gunakan.
+                            <p className="mt-3 text-[11px] text-[#8aa9c6]">
+                                JPG, PNG, atau WebP · maksimal 2 MB
                             </p>
-                        </div>
-                    </section>
+                        </section>
 
-                    {/* SECTION 03: GANTI PASSWORD */}
-                    <section className="rounded-[30px] border border-white/90 bg-white/75 p-6 shadow-[0_16px_50px_rgba(89,145,190,0.08)] backdrop-blur-xl sm:p-9">
-                        <div className="mb-6 flex items-start justify-between gap-4">
-                            <div>
-                                <p className="text-[10px] font-extrabold tracking-[0.2em] text-[#8AB2D2]">
-                                    03 / KEAMANAN
-                                </p>
-                                <h2 className="mt-2 text-xl font-bold text-[#31577F]">
-                                    Ganti Password
-                                </h2>
-                                <p className="mt-2 text-sm text-[#91ADC6]">
-                                    Perbarui password akunmu untuk menjaga keamanan data.
-                                </p>
-                            </div>
-                            <div className="hidden h-12 w-12 items-center justify-center rounded-2xl bg-[#EAF5FC] text-xl text-[#78A8D0] sm:flex">
-                                🔒
-                            </div>
-                        </div>
+                        <section
+                            className="harmoni-panel harmoni-enter rounded-[26px] p-6"
+                            style={{ animationDelay: "180ms" }}
+                        >
+                            <h3 className="text-sm font-semibold text-[#2b5a84]">Akun HARMONI</h3>
+                            <p className="mt-2 text-xs leading-6 text-[#6f93b6]">
+                                Data akunmu dipakai untuk mengakses layanan HARMONI. Pastikan
+                                email dan nomor telepon yang terdaftar masih bisa kamu gunakan.
+                            </p>
+                        </section>
+                    </aside>
 
-                        {pesanPassword && (
-                            <div
-                                className={`mb-6 rounded-2xl border px-5 py-4 text-sm ${errorPassword
-                                    ? "border-rose-100 bg-rose-50 text-rose-600"
-                                    : "border-emerald-100 bg-emerald-50 text-emerald-700"
-                                }`}
-                            >
-                                {errorPassword ? "!" : "✓"} &nbsp; {pesanPassword}
-                            </div>
-                        )}
-
-                        <div className="grid gap-5 sm:grid-cols-3">
-                            <div>
-                                <label className="mb-2.5 block text-xs font-semibold text-[#5F85A8]">
-                                    Password Saat Ini
-                                </label>
-                                <input
-                                    type="password"
-                                    value={passwordForm.password_lama}
-                                    onChange={(e) => setPasswordForm((p) => ({ ...p, password_lama: e.target.value }))}
-                                    className={inputClass}
-                                    placeholder="Masukkan password lama"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="mb-2.5 block text-xs font-semibold text-[#5F85A8]">
-                                    Password Baru
-                                </label>
-                                <input
-                                    type="password"
-                                    value={passwordForm.password_baru}
-                                    onChange={(e) => setPasswordForm((p) => ({ ...p, password_baru: e.target.value }))}
-                                    className={inputClass}
-                                    placeholder="Minimal 6 karakter"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="mb-2.5 block text-xs font-semibold text-[#5F85A8]">
-                                    Konfirmasi Password Baru
-                                </label>
-                                <input
-                                    type="password"
-                                    value={passwordForm.konfirmasi_password_baru}
-                                    onChange={(e) => setPasswordForm((p) => ({ ...p, konfirmasi_password_baru: e.target.value }))}
-                                    className={inputClass}
-                                    placeholder="Ulangi password baru"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="mt-6 flex justify-end">
-                            <button
-                                type="button"
-                                onClick={handleGantiPassword}
-                                disabled={mengubahPassword || !passwordForm.password_lama || !passwordForm.password_baru}
-                                className="rounded-xl bg-gradient-to-r from-[#75ACD5] to-[#5B96C4] px-6 py-3 text-sm font-bold text-white shadow-[0_8px_22px_rgba(91,150,196,0.25)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                                {mengubahPassword ? "Memperbarui..." : "Perbarui Password"}
-                            </button>
-                        </div>
-                    </section>
-                    <div className="flex flex-col justify-between gap-4 rounded-[26px] border border-white/90 bg-white/75 p-5 shadow-[0_16px_45px_rgba(89,145,190,0.09)] backdrop-blur-xl sm:flex-row sm:items-center sm:px-7">
-
-                        <div>
-                            <p className="text-sm font-semibold text-[#527FA5]">
-                                Everything looks good?
+                    {/* ---- Kolom kanan: form ---- */}
+                    <div className="grid gap-5">
+                        <form
+                            onSubmit={simpanProfil}
+                            className="harmoni-panel harmoni-enter rounded-[30px] p-6 sm:p-8"
+                            style={{ animationDelay: "140ms" }}
+                        >
+                            <h3 className="text-xl font-semibold tracking-tight text-[#2b5a84]">
+                                Informasi pribadi
+                            </h3>
+                            <p className="mt-1.5 text-sm text-[#6f93b6]">
+                                Informasi dasar tentang dirimu.
                             </p>
 
-                            <p className="mt-1 text-xs text-[#91ADC6]">
-                                Simpan perubahan informasimu.
+                            <div className="mt-7 grid gap-5 sm:grid-cols-2">
+                                <div>
+                                    <label htmlFor="full_name" className={labelClass}>
+                                        Nama Lengkap
+                                    </label>
+                                    <input
+                                        id="full_name"
+                                        type="text"
+                                        name="full_name"
+                                        value={form.full_name}
+                                        onChange={handleChange}
+                                        className={inputClass}
+                                        placeholder="Nama lengkapmu"
+                                        required
+                                    />
+                                </div>
+
+                                <div>
+                                    <label htmlFor="username" className={labelClass}>
+                                        Username
+                                    </label>
+                                    <input
+                                        id="username"
+                                        type="text"
+                                        name="username"
+                                        value={form.username}
+                                        onChange={handleChange}
+                                        className={inputClass}
+                                        placeholder="Username"
+                                        required
+                                    />
+                                </div>
+
+                                <div>
+                                    <label htmlFor="email" className={labelClass}>
+                                        Email
+                                    </label>
+                                    <input
+                                        id="email"
+                                        type="email"
+                                        name="email"
+                                        value={form.email}
+                                        onChange={handleChange}
+                                        className={inputClass}
+                                        placeholder="Email aktif"
+                                        required
+                                    />
+                                </div>
+
+                                <div>
+                                    <label htmlFor="phone" className={labelClass}>
+                                        Nomor Telepon
+                                    </label>
+                                    <input
+                                        id="phone"
+                                        type="tel"
+                                        name="phone"
+                                        value={form.phone}
+                                        onChange={handleChange}
+                                        className={inputClass}
+                                        placeholder="Nomor telepon"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label htmlFor="birth_date" className={labelClass}>
+                                        Tanggal Lahir
+                                    </label>
+                                    <input
+                                        id="birth_date"
+                                        type="date"
+                                        name="birth_date"
+                                        value={form.birth_date}
+                                        onChange={handleChange}
+                                        className={inputClass}
+                                    />
+                                </div>
+
+                                <div>
+                                    <label htmlFor="address" className={labelClass}>
+                                        Alamat
+                                    </label>
+                                    <input
+                                        id="address"
+                                        type="text"
+                                        name="address"
+                                        value={form.address}
+                                        onChange={handleChange}
+                                        className={inputClass}
+                                        placeholder="Alamat tempat tinggal"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="mt-8 flex flex-col-reverse gap-3 border-t border-white/60 pt-6 sm:flex-row sm:items-center sm:justify-between">
+                                <p className="text-xs text-[#7e9fc0]">
+                                    Simpan perubahan informasi pribadimu.
+                                </p>
+
+                                <div className="flex flex-col-reverse gap-3 sm:flex-row">
+                                    <button
+                                        type="button"
+                                        onClick={() => router.push("/pasien")}
+                                        className="harmoni-chip harmoni-focus rounded-xl px-5 py-3 text-sm font-semibold text-[#5f86ab] transition hover:bg-white/80"
+                                    >
+                                        Batal
+                                    </button>
+
+                                    <button
+                                        type="submit"
+                                        disabled={menyimpan}
+                                        className="harmoni-focus rounded-xl bg-gradient-to-br from-[#5c96c4] to-[#407ba9] px-6 py-3 text-sm font-bold text-white shadow-[0_10px_26px_rgba(63,121,169,0.3)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+                                    >
+                                        {menyimpan ? "Menyimpan..." : "Simpan perubahan"}
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+
+                        <form
+                            onSubmit={handleGantiPassword}
+                            className="harmoni-panel harmoni-enter rounded-[30px] p-6 sm:p-8"
+                            style={{ animationDelay: "220ms" }}
+                        >
+                            <h3 className="text-xl font-semibold tracking-tight text-[#2b5a84]">
+                                Ganti password
+                            </h3>
+                            <p className="mt-1.5 text-sm text-[#6f93b6]">
+                                Perbarui password akunmu untuk menjaga keamanan data.
                             </p>
-                        </div>
 
-                        <div className="flex flex-col-reverse gap-3 sm:flex-row">
-                            <button
-                                type="button"
-                                onClick={() => router.push("/pasien")}
-                                className="rounded-xl border border-[#DCEAF6] bg-white px-5 py-3 text-sm font-semibold text-[#7FA4C4] transition hover:bg-[#F5FAFE]"
-                            >
-                                Batal
-                            </button>
+                            {pesanPassword && (
+                                <div className={`${bannerClass(errorPassword)} mt-5 mb-0`} role="status">
+                                    {pesanPassword}
+                                </div>
+                            )}
 
-                            <button
-                                type="submit"
-                                disabled={menyimpan}
-                                className="rounded-xl bg-gradient-to-r from-[#75ACD5] to-[#5B96C4] px-6 py-3 text-sm font-bold text-white shadow-[0_8px_22px_rgba(91,150,196,0.25)] transition hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(91,150,196,0.32)] disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                                {menyimpan
-                                    ? "Menyimpan..."
-                                    : "Simpan Perubahan  →"}
-                            </button>
-                        </div>
+                            <div className="mt-7 grid gap-5 sm:grid-cols-3">
+                                <div>
+                                    <label htmlFor="password_lama" className={labelClass}>
+                                        Password Saat Ini
+                                    </label>
+                                    <input
+                                        id="password_lama"
+                                        type="password"
+                                        autoComplete="current-password"
+                                        value={passwordForm.password_lama}
+                                        onChange={(e) =>
+                                            setPasswordForm((p) => ({ ...p, password_lama: e.target.value }))
+                                        }
+                                        className={inputClass}
+                                        placeholder="Password lama"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label htmlFor="password_baru" className={labelClass}>
+                                        Password Baru
+                                    </label>
+                                    <input
+                                        id="password_baru"
+                                        type="password"
+                                        autoComplete="new-password"
+                                        value={passwordForm.password_baru}
+                                        onChange={(e) =>
+                                            setPasswordForm((p) => ({ ...p, password_baru: e.target.value }))
+                                        }
+                                        className={inputClass}
+                                        placeholder="Minimal 6 karakter"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label htmlFor="konfirmasi_password_baru" className={labelClass}>
+                                        Konfirmasi Password Baru
+                                    </label>
+                                    <input
+                                        id="konfirmasi_password_baru"
+                                        type="password"
+                                        autoComplete="new-password"
+                                        value={passwordForm.konfirmasi_password_baru}
+                                        onChange={(e) =>
+                                            setPasswordForm((p) => ({
+                                                ...p,
+                                                konfirmasi_password_baru: e.target.value,
+                                            }))
+                                        }
+                                        className={inputClass}
+                                        placeholder="Ulangi password baru"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="mt-8 flex justify-end border-t border-white/60 pt-6">
+                                <button
+                                    type="submit"
+                                    disabled={
+                                        mengubahPassword ||
+                                        !passwordForm.password_lama ||
+                                        !passwordForm.password_baru
+                                    }
+                                    className="harmoni-focus rounded-xl bg-gradient-to-br from-[#5c96c4] to-[#407ba9] px-6 py-3 text-sm font-bold text-white shadow-[0_10px_26px_rgba(63,121,169,0.3)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                    {mengubahPassword ? "Memperbarui..." : "Perbarui password"}
+                                </button>
+                            </div>
+                        </form>
                     </div>
-                </form>
+                </div>
 
-                <footer className="py-8 text-center">
-                    <p className="text-[10px] font-bold tracking-[0.2em] text-[#9BB9D2]">
-                        MADE WITH CARE · HARMONI HEALTHCARE
-                    </p>
+                <footer className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-white/50 px-1 pt-4 text-[10px] text-[#7e9fc0]">
+                    <span className="font-bold tracking-[0.18em]">HARMONI HEALTHCARE</span>
+                    <span>Profil Pasien</span>
                 </footer>
             </div>
         </main>

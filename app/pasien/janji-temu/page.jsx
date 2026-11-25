@@ -2,6 +2,20 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+// Memecah "YYYY-MM-DD" menjadi bagian-bagian untuk tampilan.
+function pecahTanggal(value) {
+    const [y, m, d] = String(value).split("-").map(Number);
+    const dt = new Date(y, m - 1, d);
+
+    return {
+        hari: String(d).padStart(2, "0"),
+        bulan: dt.toLocaleDateString("id-ID", { month: "short" }),
+        bulanPanjang: dt.toLocaleDateString("id-ID", { month: "long" }),
+        tahun: y,
+        namaHari: dt.toLocaleDateString("id-ID", { weekday: "long" }),
+    };
+}
+
 export default function JanjiTemuPage() {
     const [jadwal, setJadwal] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -268,259 +282,263 @@ export default function JanjiTemuPage() {
 
     const jumlahJadwal = jadwal.length;
 
+    const [hariIniAngka, setHariIniAngka] = useState(null);
+
+    const inputKaca =
+        "w-full rounded-2xl border border-white/80 bg-white/55 px-4 py-3.5 text-sm text-[#2b5a84] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] outline-none backdrop-blur-md transition placeholder:text-[#9db7d0] focus:border-white focus:bg-white/85 focus:ring-4 focus:ring-[#9cc9ee]/40";
+
     return (
-        <main className="min-h-screen overflow-hidden bg-gradient-to-br from-[#F5F9FF] via-[#EAF3FF] to-[#D6E9FF] text-[#315B86]">
+        <main className="harmoni-scene relative min-h-screen overflow-hidden px-3 py-4 text-[#244968] sm:px-8 sm:py-8 lg:px-10">
+            <style>{`
+                @keyframes harmoniRise {
+                    from { opacity: 0; transform: translate3d(0, 16px, 0); }
+                    to { opacity: 1; transform: translate3d(0, 0, 0); }
+                }
+                .harmoni-enter { animation: harmoniRise .9s cubic-bezier(.16,.78,.25,1) both; }
 
+                .harmoni-scene {
+                    background:
+                        radial-gradient(70% 50% at 8% 0%, #ffffff 0%, transparent 62%),
+                        linear-gradient(165deg, #eaf4fc 0%, #d3e6f7 55%, #c2dbf1 100%);
+                }
+                .hs { position: absolute; border-radius: 9999px; pointer-events: none; }
+                .hs-1 { width: 520px; height: 520px; left: -150px; top: 140px; background: linear-gradient(145deg, #ffffff 0%, #9fc8ec 100%); opacity: .9; }
+                .hs-2 { width: 430px; height: 430px; right: -70px; top: -90px; background: linear-gradient(145deg, #e3f0fb 0%, #6aa3d4 100%); opacity: .85; }
+                .hs-3 { width: 470px; height: 470px; right: 6%; bottom: -150px; background: linear-gradient(145deg, #bcdcf5 0%, #4a86b8 100%); opacity: .8; }
+                .hs-4 { width: 720px; height: 720px; left: 28%; top: 26%; border: 1px solid rgba(255,255,255,.75); }
+                .hs-5 { width: 240px; height: 240px; left: 16%; bottom: 6%; background: linear-gradient(145deg, #ffffff 0%, #7fb2de 100%); opacity: .85; }
 
-            <header className="mx-auto max-w-[1440px] px-6 pt-8 sm:px-10 lg:px-16">
+                .harmoni-window {
+                    position: relative; z-index: 1;
+                    background: linear-gradient(145deg, rgba(255,255,255,.34), rgba(255,255,255,.12));
+                    backdrop-filter: blur(40px) saturate(1.7);
+                    -webkit-backdrop-filter: blur(40px) saturate(1.7);
+                    border: 1px solid rgba(255,255,255,.7);
+                    box-shadow: 0 40px 100px rgba(55,105,155,.2), inset 0 1.5px 0 rgba(255,255,255,.95), inset 0 -1px 0 rgba(255,255,255,.3);
+                }
+                .harmoni-panel {
+                    position: relative; overflow: hidden; isolation: isolate;
+                    background:
+                        radial-gradient(120% 90% at 0% 0%, rgba(255,255,255,.5), transparent 55%),
+                        linear-gradient(145deg, rgba(255,255,255,.36), rgba(255,255,255,.1));
+                    backdrop-filter: blur(28px) saturate(1.6);
+                    -webkit-backdrop-filter: blur(28px) saturate(1.6);
+                    border: 1px solid rgba(255,255,255,.6);
+                    box-shadow: 0 10px 30px rgba(55,105,155,.1), inset 0 1px 0 rgba(255,255,255,.95);
+                }
+                .harmoni-tile { transition: transform .45s cubic-bezier(.2,.7,.2,1), background .45s ease, box-shadow .45s ease; }
+                .harmoni-tile:hover {
+                    transform: translateY(-3px);
+                    background:
+                        radial-gradient(120% 90% at 0% 0%, rgba(255,255,255,.75), transparent 58%),
+                        linear-gradient(145deg, rgba(255,255,255,.5), rgba(255,255,255,.18));
+                    box-shadow: 0 18px 44px rgba(55,105,155,.16), inset 0 1px 0 rgba(255,255,255,1);
+                }
+                .harmoni-chip {
+                    background: rgba(255,255,255,.5);
+                    border: 1px solid rgba(255,255,255,.85);
+                    box-shadow: inset 0 1px 0 rgba(255,255,255,.95);
+                    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+                }
+                .harmoni-chip-on {
+                    background: rgba(255,255,255,.92);
+                    border: 1px solid #fff;
+                    box-shadow: 0 6px 16px rgba(75,125,165,.18), inset 0 1px 0 #fff;
+                }
+                .harmoni-modal {
+                    background:
+                        radial-gradient(120% 70% at 0% 0%, rgba(255,255,255,.7), transparent 55%),
+                        linear-gradient(145deg, rgba(255,255,255,.78), rgba(236,245,253,.66));
+                    backdrop-filter: blur(40px) saturate(1.7);
+                    -webkit-backdrop-filter: blur(40px) saturate(1.7);
+                    border: 1px solid rgba(255,255,255,.85);
+                    box-shadow: 0 40px 110px rgba(30,70,115,.35), inset 0 1.5px 0 #fff;
+                }
+                .harmoni-focus:focus-visible { outline: 2px solid #3f78a8; outline-offset: 3px; }
+                .harmoni-title {
+                    background: linear-gradient(100deg, #315f88 8%, #6798c5 50%, #3e78a8 92%);
+                    -webkit-background-clip: text; background-clip: text; color: transparent;
+                }
+                @media (prefers-reduced-motion: reduce) {
+                    .harmoni-enter { animation: none !important; }
+                    .harmoni-tile { transition: none !important; }
+                    .harmoni-tile:hover { transform: none !important; }
+                }
+                @keyframes harmoniOrbit { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+                .harmoni-sphere {
+                    width: 190px; height: 190px; border-radius: 9999px;
+                    background: radial-gradient(circle at 32% 26%, #ffffff 0, rgba(255,255,255,.75) 11%, #b9d9f3 42%, #5f98cb 100%);
+                    box-shadow: inset -20px -26px 50px rgba(255,255,255,.35), inset 10px 10px 30px rgba(255,255,255,.5), 0 40px 80px rgba(60,110,160,.35);
+                }
+                .harmoni-ring {
+                    position: absolute; inset: -30px; border-radius: 9999px;
+                    border: 1px solid rgba(255,255,255,.85);
+                    box-shadow: 0 0 30px rgba(255,255,255,.4);
+                    animation: harmoniOrbit 40s linear infinite;
+                }
+                .harmoni-ring::after {
+                    content: ""; position: absolute; top: 12%; left: 8%; width: 12px; height: 12px; border-radius: 9999px;
+                    background: #fff; box-shadow: 0 0 16px 4px rgba(255,255,255,.9);
+                }
+                .harmoni-hairline { background: linear-gradient(90deg, transparent, rgba(255,255,255,.95), transparent); height: 1px; }
+                @media (prefers-reduced-motion: reduce) { .harmoni-ring { animation: none !important; } }
+            `}</style>
 
-                <div className="flex flex-col gap-5 border-b border-white/70 pb-7 sm:flex-row sm:items-center sm:justify-between">
+            <div className="hs hs-1" aria-hidden="true" />
+            <div className="hs hs-2" aria-hidden="true" />
+            <div className="hs hs-3" aria-hidden="true" />
+            <div className="hs hs-4" aria-hidden="true" />
+            <div className="hs hs-5" aria-hidden="true" />
 
+            <div className="harmoni-window harmoni-enter mx-auto max-w-[1180px] rounded-[32px] p-4 sm:rounded-[44px] sm:p-7">
+                {/* ================= HEADER ================= */}
+                <header className="flex flex-wrap items-center justify-between gap-4 px-1">
                     <div className="flex items-center gap-4">
-                        <div>
-                            <p className="text-xl font-bold tracking-[0.28em] text-[#315B86] sm:text-2xl">
-                                HARMONI
-                            </p>
-
-                            <p className="mt-1 text-[10px] tracking-[0.22em] text-[#7CA5D5] sm:text-xs">
-                                HOSPITAL INFORMATION SYSTEM
-                            </p>
-                        </div>
-
-                        <div className="hidden h-8 w-px bg-[#B9D5F4] sm:block" />
-
-                        <p className="hidden text-xs tracking-[0.12em] text-[#7CA5D5] sm:block">
-                            Patient Portal
+                        <p className="text-xl font-extrabold tracking-[0.3em] text-[#315f88] sm:text-2xl">
+                            HARMONI
+                        </p>
+                        <span className="hidden h-6 w-px bg-[#8fb6d8]/60 md:block" />
+                        <p className="hidden text-xs tracking-[0.08em] text-[#6f93b6] md:block">
+                            Hospital Information System
                         </p>
                     </div>
 
                     <a
                         href="/pasien"
-                        className="inline-flex w-fit items-center gap-3 rounded-full border border-white/80 bg-white/45 px-6 py-3 text-sm text-[#4779AD] shadow-[0_8px_24px_rgba(83,132,185,0.08)] backdrop-blur-xl transition hover:bg-white/75"
+                        className="harmoni-chip harmoni-focus group flex items-center gap-2 rounded-full px-5 py-3 text-xs font-semibold text-[#477aa5] transition hover:bg-white/80"
                     >
-                        <span className="text-lg">←</span>
+                        <span className="transition group-hover:-translate-x-1">←</span>
                         Dashboard
                     </a>
-                </div>
+                </header>
 
-            </header>
-
-
-            <section className="mx-auto max-w-[1440px] px-6 pb-12 pt-12 sm:px-10 sm:pt-16 lg:px-16">
-
-                <div className="grid gap-10 lg:grid-cols-[1.4fr_0.6fr] lg:items-end">
-
-                    <div>
-                        <div className="mb-7 flex items-center gap-4">
-                            <span className="h-px w-10 bg-[#7CA5D5]" />
-
-                            <p className="text-xs font-semibold tracking-[0.3em] text-[#7CA5D5]">
-                                PATIENT / APPOINTMENT
-                            </p>
-                        </div>
-
-                        <h1 className="max-w-3xl text-4xl font-medium leading-tight tracking-[-0.04em] text-[#315B86] sm:text-5xl lg:text-6xl">
-                            Temukan dokter,
-                            <br />
-
-                            <span className="font-normal text-[#79A8DE]">
-                                pilih waktu terbaik.
-                            </span>
-                        </h1>
-
-                        <p className="mt-6 max-w-2xl text-base leading-8 text-[#7299C3] sm:text-lg">
-                            Atur kunjungan kesehatan dengan lebih nyaman.
-                            Temukan dokter, lihat jadwal praktik, lalu
-                            tentukan tanggal konsultasi yang sesuai.
-                        </p>
-                    </div>
-
-                    <div className="relative hidden min-h-[190px] items-end justify-end lg:flex">
-
-                        <div className="absolute right-0 top-0 text-[150px] font-semibold leading-none tracking-[-0.08em] text-[#C6DFF8]/60">
-                            06
-                        </div>
-
-                        <div className="relative z-10 max-w-[260px] pb-3 text-right">
-                            <p className="text-xs tracking-[0.28em] text-[#7CA5D5]">
-                                DOCTOR DIRECTORY
-                            </p>
-
-                            <p className="mt-5 text-lg leading-8 text-[#6D9ACB]">
-                                Perawatan dimulai
-                                <br />
-                                dari pilihan yang tepat.
-                            </p>
-                        </div>
-                    </div>
-
-                </div>
-
-                <div className="mt-12 grid gap-4 sm:grid-cols-3">
-
-                    <div className="rounded-[24px] border border-white/80 bg-white/45 p-5 shadow-[0_12px_35px_rgba(91,139,190,0.08)] backdrop-blur-2xl sm:p-6">
-                        <p className="text-xs tracking-[0.16em] text-[#8BAACD]">
-                            DOKTER TERSEDIA
-                        </p>
-
-                        <div className="mt-3 flex items-end justify-between">
-                            <p className="text-3xl font-semibold text-[#315B86]">
-                                {loading ? "—" : daftarDokter.length}
-                            </p>
-
-                            <span className="text-xs text-[#8BAACD]">
-                                dokter
-                            </span>
-                        </div>
-                    </div>
-
-                    <div className="rounded-[24px] border border-white/80 bg-white/45 p-5 shadow-[0_12px_35px_rgba(91,139,190,0.08)] backdrop-blur-2xl sm:p-6">
-                        <p className="text-xs tracking-[0.16em] text-[#8BAACD]">
-                            JADWAL PRAKTIK
-                        </p>
-
-                        <div className="mt-3 flex items-end justify-between">
-                            <p className="text-3xl font-semibold text-[#315B86]">
-                                {loading ? "—" : jumlahJadwal}
-                            </p>
-
-                            <span className="text-xs text-[#8BAACD]">
-                                jadwal
-                            </span>
-                        </div>
-                    </div>
-
-                    <div className="rounded-[24px] border border-white/80 bg-white/45 p-5 shadow-[0_12px_35px_rgba(91,139,190,0.08)] backdrop-blur-2xl sm:p-6">
-                        <p className="text-xs tracking-[0.16em] text-[#8BAACD]">
-                            PILIHAN POLI
-                        </p>
-
-                        <div className="mt-3 flex items-end justify-between">
-                            <p className="text-3xl font-semibold text-[#315B86]">
-                                {loading ? "—" : daftarPoli.length - 1}
-                            </p>
-
-                            <span className="text-xs text-[#8BAACD]">
-                                spesialisasi
-                            </span>
-                        </div>
-                    </div>
-
-                </div>
-
-            </section>
-
-
-            <section className="mx-auto max-w-[1440px] px-6 pb-16 sm:px-10 lg:px-16">
-
-                <div className="overflow-hidden rounded-[30px] border border-white/80 bg-white/40 shadow-[0_25px_80px_rgba(78,127,180,0.12)] backdrop-blur-2xl">
-
-
-                    <div className="flex flex-col gap-6 border-b border-white/80 p-6 sm:p-8 lg:flex-row lg:items-end lg:justify-between">
-
+                {/* ================= HERO ================= */}
+                <section
+                    className="harmoni-panel harmoni-enter mt-7 rounded-[36px] p-7 sm:p-11"
+                    style={{ animationDelay: "100ms" }}
+                >
+                    <div className="grid gap-10 sm:grid-cols-[1fr_auto] sm:items-center">
                         <div>
-                            <p className="text-[11px] tracking-[0.25em] text-[#8BAACD]">
-                                06 — DIRECTORY
-                            </p>
-
-                            <h2 className="mt-3 text-2xl font-medium tracking-tight text-[#315B86] sm:text-3xl">
-                                Daftar dokter
-                            </h2>
-
-                            <p className="mt-2 text-sm text-[#7B9FC5] sm:text-base">
-                                Pilih dokter dan jadwal konsultasimu.
-                            </p>
-                        </div>
-
-                        <div className="rounded-full border border-white/80 bg-white/55 px-5 py-3 text-sm text-[#5E8BBE]">
-                            {loading
-                                ? "Memuat direktori..."
-                                : `${dokterTampil.length} dokter ditampilkan`}
-                        </div>
-
-                    </div>
-
-
-                    <div className="grid gap-4 border-b border-white/70 p-6 sm:p-8 md:grid-cols-[1fr_240px]">
-
-                        <div className="relative">
-                            <span className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-[#8BAACD]">
-                                /
+                            <span className="harmoni-chip inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold text-[#5f8fb8]">
+                                <span className="h-2 w-2 rounded-full bg-[#7fcaae]" />
+                                Janji temu
                             </span>
 
-                            <input
-                                type="text"
-                                value={pencarian}
-                                onChange={(e) => setPencarian(e.target.value)}
-                                placeholder="Cari nama dokter atau poli..."
-                                className="w-full rounded-2xl border border-white/90 bg-white/60 py-4 pl-11 pr-5 text-sm text-[#315B86] outline-none transition placeholder:text-[#9AB5D3] focus:border-[#A9CBEF] focus:bg-white/80 focus:ring-4 focus:ring-[#C7DFF8]/40"
-                            />
+                            <h1 className="mt-6 text-4xl font-bold leading-[1.08] tracking-[-0.04em] sm:text-6xl">
+                                <span className="harmoni-title">Temukan dokter,</span>
+                                <br />
+                                <span className="font-medium text-[#86b0d8]">pilih waktu terbaik.</span>
+                            </h1>
+
+                            <p className="mt-5 max-w-md text-sm leading-7 text-[#6f93b6] sm:text-base">
+                                Atur kunjungan kesehatan dengan lebih nyaman. Lihat jadwal praktik,
+                                lalu tentukan tanggal konsultasi yang sesuai.
+                            </p>
+
+                            <p className="mt-7 text-sm text-[#7e9fc0]">
+                                <span className="font-semibold text-[#2b5a84]">{loading ? "…" : jumlahJadwal}</span>{" "}
+                                jadwal praktik di{" "}
+                                <span className="font-semibold text-[#2b5a84]">{loading ? "…" : daftarPoli.length - 1}</span>{" "}
+                                poli
+                            </p>
                         </div>
 
-                        <select
-                            value={poliDipilih}
-                            onChange={(e) => setPoliDipilih(e.target.value)}
-                            className="w-full rounded-2xl border border-white/90 bg-white/60 px-5 py-4 text-sm text-[#4779AD] outline-none transition focus:border-[#A9CBEF] focus:ring-4 focus:ring-[#C7DFF8]/40"
-                        >
-                            {daftarPoli.map((poli) => (
-                                <option key={poli} value={poli}>
-                                    {poli}
-                                </option>
-                            ))}
-                        </select>
+                        {/* Bola kaca: jumlah dokter */}
+                        <div className="relative mx-auto flex h-[250px] w-[250px] items-center justify-center">
+                            <div className="harmoni-ring" />
+                            <div className="harmoni-sphere flex flex-col items-center justify-center text-white">
+                                <span className="text-6xl font-semibold tracking-tight drop-shadow-[0_4px_14px_rgba(40,90,140,0.35)]">
+                                    {loading ? "…" : daftarDokter.length}
+                                </span>
+                                <span className="mt-1 text-xs font-medium text-white/90">dokter tersedia</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
 
+                {/* ================= PENCARIAN + POLI ================= */}
+                <section className="harmoni-panel mt-5 flex flex-col gap-3 rounded-[30px] p-3 lg:flex-row lg:items-center">
+                    <label className="flex items-center gap-3 rounded-full bg-white/55 px-5 py-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.95)] lg:w-[300px] lg:shrink-0">
+                        <span className="text-sm text-[#7e9fc0]" aria-hidden="true">⌕</span>
+                        <input
+                            type="search"
+                            value={pencarian}
+                            onChange={(e) => setPencarian(e.target.value)}
+                            placeholder="Cari dokter atau poli"
+                            aria-label="Cari nama dokter atau poli"
+                            className="w-full bg-transparent text-sm text-[#2b5a84] placeholder:text-[#8aa9c6] focus:outline-none"
+                        />
+                    </label>
+
+                    <div
+                        className="flex gap-2 overflow-x-auto px-1 pb-1 lg:flex-wrap lg:overflow-visible lg:pb-0"
+                        role="group"
+                        aria-label="Filter poli"
+                    >
+                        {daftarPoli.map((poli) => (
+                            <button
+                                key={poli}
+                                type="button"
+                                onClick={() => setPoliDipilih(poli)}
+                                aria-pressed={poliDipilih === poli}
+                                className={`harmoni-focus shrink-0 rounded-full px-4 py-2.5 text-xs font-semibold transition ${poliDipilih === poli
+                                    ? "harmoni-chip-on text-[#2b5a84]"
+                                    : "text-[#6388a9] hover:bg-white/60"
+                                    }`}
+                            >
+                                {poli}
+                            </button>
+                        ))}
+                    </div>
+                </section>
+
+                {/* ================= DAFTAR DOKTER ================= */}
+                <section className="mt-8">
+                    <div className="mb-6 flex items-end justify-between px-1">
+                        <h2 className="text-2xl font-semibold tracking-tight text-[#254968]">
+                            Daftar dokter
+                        </h2>
+                        <p className="text-xs text-[#7e9fc0]">
+                            {loading ? "Memuat..." : `${dokterTampil.length} dokter ditampilkan`}
+                        </p>
                     </div>
 
-
-                    <div className="px-7 py-8 sm:px-10 sm:py-10">
-
-                        {loading ? (
-                            <div className="rounded-2xl border border-white/80 bg-white/50 px-6 py-16 text-center">
-                                <p className="text-sm text-[#7B9FC5]">
-                                    Memuat daftar dokter dan jadwal praktik...
-                                </p>
-                            </div>
-                        ) : pesan && jadwal.length === 0 ? (
-                            <div className="rounded-2xl border border-white/80 bg-white/50 px-6 py-16 text-center">
-                                <p className="text-sm text-[#7B9FC5]">
-                                    {pesan}
-                                </p>
-
-                                <button
-                                    onClick={ambilJadwal}
-                                    className="mt-5 rounded-full bg-[#477DB5] px-6 py-3 text-sm text-white transition hover:bg-[#315B86]"
+                    {loading ? (
+                        <div className="grid gap-5 lg:grid-cols-2">
+                            {[1, 2].map((n) => (
+                                <div key={n} className="harmoni-panel h-80 animate-pulse rounded-[32px]" />
+                            ))}
+                        </div>
+                    ) : pesan && jadwal.length === 0 ? (
+                        <div className="harmoni-panel flex min-h-[240px] flex-col items-center justify-center rounded-[32px] px-6 text-center">
+                            <p className="text-sm text-[#6f93b6]">{pesan}</p>
+                            <button
+                                onClick={ambilJadwal}
+                                className="harmoni-focus mt-5 rounded-2xl bg-gradient-to-br from-[#5c96c4] to-[#407ba9] px-6 py-3 text-xs font-bold text-white shadow-[0_10px_26px_rgba(63,121,169,0.3)] transition hover:-translate-y-0.5"
+                            >
+                                Coba lagi
+                            </button>
+                        </div>
+                    ) : dokterTampil.length === 0 ? (
+                        <div className="harmoni-panel flex min-h-[240px] flex-col items-center justify-center rounded-[32px] px-6 text-center">
+                            <p className="text-lg font-semibold text-[#2b5a84]">Dokter tidak ditemukan.</p>
+                            <p className="mt-2 text-sm text-[#6f93b6]">
+                                Coba gunakan nama atau poli yang berbeda.
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="grid gap-5 lg:grid-cols-2">
+                            {dokterTampil.map((dokter, i) => (
+                                <article
+                                    key={dokter.id}
+                                    style={{ animationDelay: `${Math.min(i, 8) * 70}ms` }}
+                                    className="harmoni-panel harmoni-tile harmoni-enter flex flex-col rounded-[32px] p-6 sm:p-8"
                                 >
-                                    Coba lagi
-                                </button>
-                            </div>
-                        ) : dokterTampil.length === 0 ? (
-                            <div className="rounded-2xl border border-white/80 bg-white/50 px-6 py-16 text-center">
-                                <p className="text-lg font-medium text-[#4779AD]">
-                                    Dokter tidak ditemukan.
-                                </p>
-
-                                <p className="mt-2 text-sm text-[#8BAACD]">
-                                    Coba gunakan nama atau poli yang berbeda.
-                                </p>
-                            </div>
-                        ) : (
-                            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-
-                                {dokterTampil.map((dokter, index) => (
-                                    <article
-                                        key={dokter.id}
-                                        className="group relative flex flex-col overflow-hidden rounded-[26px] border border-white/90 bg-gradient-to-br from-white/80 via-white/55 to-[#E4F1FF]/65 p-5 shadow-[0_14px_35px_rgba(91,139,190,0.09)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_45px_rgba(91,139,190,0.16)] sm:p-6"
-                                    >
-
-                                        <div className="pointer-events-none absolute right-5 top-4 text-5xl font-semibold tracking-[-0.08em] text-[#D5E7F9]/70">
-                                            {String(index + 1).padStart(2, "0")}
-                                        </div>
-
-
-                                        <div className="relative flex items-center gap-4">
-
-                                            <div className="flex h-[76px] w-[76px] shrink-0 items-center justify-center overflow-hidden rounded-[22px] border border-white/90 bg-gradient-to-br from-[#F8FBFF] to-[#DCEBFA] shadow-[0_8px_22px_rgba(91,139,190,0.12)]">
-
+                                    {/* Identitas dokter */}
+                                    <div className="flex items-center gap-5">
+                                        <div className="relative shrink-0">
+                                            <div className="absolute -inset-2 rounded-full border border-white/80" />
+                                            <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border-[4px] border-white/90 bg-gradient-to-br from-[#f7fcff] to-[#c4dff3] shadow-[0_16px_36px_rgba(60,110,160,0.25)]">
                                                 {dokter.foto ? (
                                                     <img
                                                         src={dokter.foto}
@@ -528,363 +546,326 @@ export default function JanjiTemuPage() {
                                                         className="h-full w-full object-cover"
                                                     />
                                                 ) : (
-                                                    <span className="text-2xl font-medium text-[#6C9ACB]">
-                                                        {dokter.nama
-                                                            ?.charAt(0)
-                                                            ?.toUpperCase() || "D"}
+                                                    <span className="text-3xl font-semibold text-[#5c8db5]">
+                                                        {dokter.nama?.charAt(0)?.toUpperCase() || "D"}
                                                     </span>
                                                 )}
-
                                             </div>
-
-                                            <div className="min-w-0">
-                                                <p className="text-[10px] tracking-[0.18em] text-[#8BAACD]">
-                                                    MEDICAL SPECIALIST
-                                                </p>
-
-                                                <h3 className="mt-1 break-words text-lg font-semibold leading-snug text-[#315B86]">
-                                                    {dokter.nama}
-                                                </h3>
-
-                                                <p className="mt-1 text-sm text-[#7B9FC5]">
-                                                    {dokter.poli || "Poli belum tersedia"}
-                                                </p>
-                                            </div>
-
+                                            <span className="absolute bottom-1 right-1 h-4 w-4 rounded-full border-[3px] border-white bg-[#7fcaae]" />
                                         </div>
 
-                                        <div className="my-6 h-px bg-gradient-to-r from-transparent via-[#C8DDF3] to-transparent" />
-                                        <div className="flex-1">
-
-                                            <div className="mb-4 flex items-center justify-between">
-                                                <p className="text-xs font-semibold tracking-[0.16em] text-[#6D97C3]">
-                                                    PRACTICE SCHEDULE
-                                                </p>
-
-                                                <span className="rounded-full bg-[#E3F0FC] px-3 py-1 text-[10px] text-[#6D97C3]">
-                                                    {dokter.jadwal.length} jadwal
-                                                </span>
-                                            </div>
-
-                                            <div className="space-y-3">
-
-                                                {dokter.jadwal.map((item) => (
-                                                    <div
-                                                        key={item.id}
-                                                        className="rounded-[17px] border border-white/80 bg-white/55 p-4 transition group-hover:bg-white/75"
-                                                    >
-
-                                                        <div className="flex items-center justify-between gap-3">
-                                                            <p className="font-medium text-[#315B86]">
-                                                                {daftarHari[Number(item.hari)] || "-"}
-                                                            </p>
-
-                                                            <p className="text-sm font-semibold text-[#6D97C3]">
-                                                                {formatJam(item.jam_mulai)}
-                                                            </p>
-                                                        </div>
-
-                                                        <div className="mt-2 flex items-center justify-between text-xs text-[#91ADCA]">
-                                                            <span>
-                                                                Durasi konsultasi
-                                                            </span>
-
-                                                            <span>
-                                                                {item.durasi || 30} menit
-                                                            </span>
-                                                        </div>
-
-                                                    </div>
-                                                ))}
-
-                                            </div>
-
-                                        </div>
-                                        <button
-                                            onClick={() => bukaForm(dokter)}
-                                            className="mt-6 flex w-full items-center justify-between rounded-2xl bg-gradient-to-r from-[#315B86] to-[#6D9FD2] px-5 py-4 text-sm font-medium text-white shadow-[0_10px_25px_rgba(73,126,181,0.2)] transition hover:from-[#274D75] hover:to-[#5C91C8] focus:outline-none focus:ring-4 focus:ring-[#C7DFF8]"
-                                        >
-                                            <span>Pesan janji temu</span>
-
-                                            <span className="text-lg transition group-hover:translate-x-1">
-                                                →
+                                        <div className="min-w-0">
+                                            <h3 className="break-words text-xl font-semibold leading-snug tracking-tight text-[#254968] sm:text-2xl">
+                                                {dokter.nama}
+                                            </h3>
+                                            <span className="harmoni-chip mt-2 inline-block rounded-full px-4 py-1.5 text-xs font-medium text-[#5f8fb8]">
+                                                {dokter.poli || "Poli belum tersedia"}
                                             </span>
-                                        </button>
+                                        </div>
+                                    </div>
 
-                                    </article>
-                                ))}
+                                    <div className="harmoni-hairline my-6" />
 
-                            </div>
-                        )}
+                                    {/* Jadwal praktik */}
+                                    <div className="flex-1">
+                                        <div className="mb-1 flex items-center justify-between">
+                                            <p className="text-xs font-semibold text-[#7e9fc0]">Jadwal praktik</p>
+                                            <p className="text-xs text-[#8aa9c6]">{dokter.jadwal.length} jadwal</p>
+                                        </div>
 
-                    </div>
+                                        <ul>
+                                            {dokter.jadwal.map((item) => {
+                                                const hariIni = Number(item.hari) === hariIniAngka;
 
-                </div>
+                                                return (
+                                                    <li
+                                                        key={item.id}
+                                                        className="grid grid-cols-[1fr_auto_auto] items-center gap-4 border-b border-white/60 py-3.5 last:border-0"
+                                                    >
+                                                        <span className="flex items-center gap-2.5">
+                                                            <span className="text-base font-semibold text-[#2b5a84]">
+                                                                {daftarHari[Number(item.hari)] || "-"}
+                                                            </span>
+                                                            {hariIni && (
+                                                                <span className="rounded-full border border-emerald-200/80 bg-emerald-50/60 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-700">
+                                                                    Hari ini
+                                                                </span>
+                                                            )}
+                                                        </span>
 
+                                                        <span className="text-base font-semibold text-[#477aa5]">
+                                                            {formatJam(item.jam_mulai)}
+                                                        </span>
 
-                <footer className="mt-10 flex flex-col gap-4 border-t border-white/70 py-6 sm:flex-row sm:items-center sm:justify-between">
+                                                        <span className="w-16 text-right text-xs text-[#8aa9c6]">
+                                                            {item.durasi || 30} menit
+                                                        </span>
+                                                    </li>
+                                                );
+                                            })}
+                                        </ul>
+                                    </div>
 
-                    <div>
-                        <p className="text-xs tracking-[0.2em] text-[#6D97C3]">
-                            HARMONI
-                        </p>
+                                    <button
+                                        onClick={() => bukaForm(dokter)}
+                                        className="harmoni-focus group mt-6 flex w-full items-center justify-between rounded-2xl bg-gradient-to-br from-[#5c96c4] to-[#407ba9] px-6 py-4 text-sm font-bold text-white shadow-[0_12px_28px_rgba(63,121,169,0.3)] transition hover:-translate-y-0.5"
+                                    >
+                                        <span>Pesan janji temu</span>
+                                        <span className="transition group-hover:translate-x-1">→</span>
+                                    </button>
+                                </article>
+                            ))}
+                        </div>
+                    )}
+                </section>
 
-                        <p className="mt-1 text-[11px] text-[#9AB5D3]">
-                            Hospital Information System
-                        </p>
-                    </div>
-
-                    <p className="text-xs text-[#8BAACD]">
-                        A healthier journey, one step at a time.
-                    </p>
-
+                <footer className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-white/50 px-1 pt-4 text-[10px] text-[#7e9fc0]">
+                    <span className="font-bold tracking-[0.18em]">HARMONI HEALTHCARE</span>
+                    <span>Janji Temu</span>
                 </footer>
+            </div>
 
-            </section>
+            {/* ================= MODAL PESAN JANJI ================= */}
             {dokterDipilih && (
                 <div
-                    className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[#1D3D60]/35 p-4 backdrop-blur-md"
+                    className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[#1d3d60]/30 p-4 backdrop-blur-md"
                     onMouseDown={(e) => {
                         if (e.target === e.currentTarget) {
                             tutupForm();
                         }
                     }}
                 >
+                    <div
+                        className="harmoni-modal relative my-6 w-full max-w-3xl overflow-hidden rounded-[36px] sm:my-8"
+                        style={{ maxHeight: "calc(100vh - 3rem)" }}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-label="Pesan janji temu"
+                    >
+                        <button
+                            type="button"
+                            onClick={tutupForm}
+                            disabled={menyimpan}
+                            aria-label="Tutup formulir"
+                            className="harmoni-chip harmoni-focus absolute right-5 top-5 z-20 flex h-9 w-9 items-center justify-center rounded-full text-lg text-[#5f8fb8] transition hover:bg-white disabled:opacity-50"
+                        >
+                            ×
+                        </button>
 
-                    <div className="my-6 w-full max-w-2xl overflow-y-auto rounded-[30px] border border-white/90 bg-gradient-to-br from-[#F9FCFF] via-[#F1F7FF] to-[#E0EEFF] shadow-[0_35px_100px_rgba(36,76,119,0.3)] sm:my-8" style={{ maxHeight: "calc(100vh - 3rem)" }}>
+                        <div className="grid max-h-[calc(100vh-3rem)] overflow-y-auto md:grid-cols-[260px_1fr]">
+                            {/* Ringkasan */}
+                            <aside className="relative overflow-hidden bg-gradient-to-b from-[#5c96c4]/90 to-[#3f78a8]/90 p-7 text-white sm:p-8">
+                                <div className="pointer-events-none absolute -right-16 -top-16 h-52 w-52 rounded-full border border-white/30" />
+                                <div className="pointer-events-none absolute -bottom-20 -left-14 h-56 w-56 rounded-full bg-white/10" />
 
-                        <div className="relative border-b border-white/80 px-7 py-8 sm:px-10 sm:py-9">
+                                <div className="relative flex h-full flex-col">
+                                    <div className="flex flex-col items-center text-center md:items-start md:text-left">
+                                        <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-[3px] border-white/80 bg-white/25 shadow-[0_14px_30px_rgba(20,60,100,0.3)]">
+                                            {dokterDipilih.foto ? (
+                                                <img
+                                                    src={dokterDipilih.foto}
+                                                    alt={dokterDipilih.nama}
+                                                    className="h-full w-full object-cover"
+                                                />
+                                            ) : (
+                                                <span className="text-2xl font-semibold">
+                                                    {dokterDipilih.nama?.charAt(0)?.toUpperCase() || "D"}
+                                                </span>
+                                            )}
+                                        </div>
 
-                            <div className="absolute right-6 top-5 text-6xl font-semibold tracking-[-0.08em] text-[#D6E8FA]/70">
-                                06
-                            </div>
-
-                            <div className="relative">
-                                <p className="text-[10px] tracking-[0.25em] text-[#8BAACD]">
-                                    APPOINTMENT REQUEST
-                                </p>
-
-                                <h2 className="mt-3 text-2xl font-medium text-[#315B86]">
-                                    Pesan janji temu
-                                </h2>
-
-                                <p className="mt-2 max-w-sm text-sm leading-6 text-[#7B9FC5]">
-                                    Lengkapi detail kunjungan untuk
-                                    melanjutkan pendaftaran.
-                                </p>
-                            </div>
-
-                            <button
-                                type="button"
-                                onClick={tutupForm}
-                                disabled={menyimpan}
-                                aria-label="Tutup formulir"
-                                className="absolute right-5 top-5 flex h-9 w-9 items-center justify-center rounded-full border border-white/90 bg-white/60 text-lg text-[#6D97C3] transition hover:bg-white disabled:opacity-50"
-                            >
-                                ×
-                            </button>
-
-                        </div>
-
-                        <div className="px-7 py-8 sm:px-10 sm:py-10">
-
-                            <div className="mb-8 flex items-center gap-5 rounded-2xl border border-white/90 bg-white/60 p-5 sm:p-6">
-
-                                <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#DCEBFA]">
-                                    {dokterDipilih.foto ? (
-                                        <img
-                                            src={dokterDipilih.foto}
-                                            alt={dokterDipilih.nama}
-                                            className="h-full w-full object-cover"
-                                        />
-                                    ) : (
-                                        <span className="font-medium text-[#6D97C3]">
-                                            {dokterDipilih.nama
-                                                ?.charAt(0)
-                                                ?.toUpperCase() || "D"}
-                                        </span>
-                                    )}
-                                </div>
-
-                                <div>
-                                    <p className="font-semibold text-[#315B86]">
-                                        {dokterDipilih.nama}
-                                    </p>
-
-                                    <p className="mt-1 text-sm text-[#7B9FC5]">
-                                        {dokterDipilih.poli}
-                                    </p>
-                                </div>
-
-                            </div>
-
-                            {pesan && (
-                                <div
-                                    className={`mb-5 rounded-xl border px-4 py-3 text-sm ${berhasil
-                                        ? "border-[#B9E4D3] bg-[#E7F8F0] text-[#347D65]"
-                                        : "border-[#F2C7CE] bg-[#FFF0F2] text-[#B44E61]"
-                                        }`}
-                                >
-                                    {pesan}
-                                </div>
-                            )}
-
-                            {!berhasil && (
-                                <form
-                                    onSubmit={daftarJanjiTemu}
-                                    className="space-y-7"
-                                >
-
-                                    <div>
-                                        <label className="mb-3 block text-xs font-semibold tracking-[0.12em] text-[#527DA8]">
-                                            JADWAL PRAKTIK
-                                        </label>
-
-                                        <select
-                                            name="schedule_id"
-                                            value={form.schedule_id}
-                                            onChange={handleChange}
-                                            required
-                                            className="w-full rounded-2xl border border-white/90 bg-white/75 px-5 py-5 text-base text-[#315B86] outline-none transition focus:border-[#A9CBEF] focus:ring-4 focus:ring-[#C7DFF8]/40"
-                                        >
-                                            {dokterDipilih.jadwal.map((item) => (
-                                                <option
-                                                    key={item.id}
-                                                    value={item.id}
-                                                >
-                                                    {daftarHari[Number(item.hari)] || "-"}{" "}
-                                                    — {formatJam(item.jam_mulai)}
-                                                </option>
-                                            ))}
-                                        </select>
+                                        <p className="mt-5 text-lg font-semibold leading-snug">{dokterDipilih.nama}</p>
+                                        <p className="mt-1 text-sm text-white/80">{dokterDipilih.poli}</p>
                                     </div>
 
+                                    <div className="mt-7 hidden border-t border-white/25 pt-6 md:block">
+                                        <p className="text-[11px] text-white/70">Jadwal praktik</p>
+                                        <p className="mt-1 text-sm font-semibold">
+                                            {jadwalTerpilih
+                                                ? `${daftarHari[Number(jadwalTerpilih.hari)] || "-"}, ${formatJam(jadwalTerpilih.jam_mulai)}`
+                                                : "-"}
+                                        </p>
 
-                                    <div>
-                                        <label className="mb-3 block text-xs font-semibold tracking-[0.12em] text-[#527DA8]">
-                                            TANGGAL KUNJUNGAN
-                                        </label>
+                                        <p className="mt-6 text-[11px] text-white/70">Tanggal kunjungan</p>
+                                        {form.tanggal_booking ? (
+                                            (() => {
+                                                const p = pecahTanggal(form.tanggal_booking);
+                                                return (
+                                                    <div className="mt-2">
+                                                        <p className="text-6xl font-light leading-none tracking-tight">{p.hari}</p>
+                                                        <p className="mt-2 text-sm capitalize text-white/85">
+                                                            {p.namaHari}, {p.bulanPanjang} {p.tahun}
+                                                        </p>
+                                                    </div>
+                                                );
+                                            })()
+                                        ) : (
+                                            <p className="mt-1 text-sm font-semibold">Belum dipilih</p>
+                                        )}
+                                    </div>
+                                </div>
+                            </aside>
 
-                                        <div className="relative">
+                            {/* Form */}
+                            <div className="p-7 sm:p-9">
+                                <h2 className="pr-10 text-2xl font-semibold tracking-tight text-[#2b5a84]">
+                                    Pesan janji temu
+                                </h2>
+                                <p className="mt-1.5 text-sm leading-6 text-[#6f93b6]">
+                                    Lengkapi detail kunjungan untuk melanjutkan pendaftaran.
+                                </p>
+
+                                {pesan && (
+                                    <div
+                                        role="status"
+                                        className={`mt-5 rounded-2xl border px-4 py-3 text-sm backdrop-blur-md ${berhasil
+                                            ? "border-emerald-200/80 bg-emerald-50/70 text-emerald-700"
+                                            : "border-rose-200/80 bg-rose-50/70 text-rose-600"
+                                            }`}
+                                    >
+                                        {pesan}
+                                    </div>
+                                )}
+
+                                {!berhasil && (
+                                    <form onSubmit={daftarJanjiTemu} className="mt-6 space-y-5">
+                                        <div>
+                                            <label htmlFor="schedule_id" className="mb-2 block text-xs font-semibold text-[#5f86ab]">
+                                                Jadwal praktik
+                                            </label>
+
+                                            <select
+                                                id="schedule_id"
+                                                name="schedule_id"
+                                                value={form.schedule_id}
+                                                onChange={handleChange}
+                                                required
+                                                className={inputKaca}
+                                            >
+                                                {dokterDipilih.jadwal.map((item) => (
+                                                    <option key={item.id} value={item.id}>
+                                                        {daftarHari[Number(item.hari)] || "-"} — {formatJam(item.jam_mulai)}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        <div>
+                                            <p className="mb-2 text-xs font-semibold text-[#5f86ab]">
+                                                Tanggal kunjungan
+                                            </p>
+
                                             <button
                                                 type="button"
                                                 disabled={!jadwalTerpilih || tanggalTersedia.length === 0}
                                                 onClick={() => setTanggalPickerTerbuka((terbuka) => !terbuka)}
-                                                className={`flex w-full items-center justify-between rounded-2xl border px-5 py-5 text-left transition focus:outline-none focus:ring-4 focus:ring-[#C7DFF8]/45 disabled:cursor-not-allowed disabled:opacity-60 ${form.tanggal_booking
-                                                    ? "border-[#A9CBEF] bg-white"
-                                                    : "border-white/90 bg-white/70 hover:border-[#B9D5F4] hover:bg-white/90"
-                                                    }`}
+                                                aria-expanded={tanggalPickerTerbuka}
+                                                className={`${inputKaca} harmoni-focus flex items-center justify-between text-left disabled:cursor-not-allowed disabled:opacity-60`}
                                             >
-                                                <span className={form.tanggal_booking ? "text-base font-medium text-[#315B86]" : "text-base text-[#8AAACD]"}>
+                                                <span className={form.tanggal_booking ? "font-medium text-[#2b5a84]" : "text-[#8aa9c6]"}>
                                                     {form.tanggal_booking
                                                         ? formatTanggal(form.tanggal_booking)
                                                         : jadwalTerpilih
                                                             ? "Pilih tanggal kunjungan"
                                                             : "Pilih jadwal praktik terlebih dahulu"}
                                                 </span>
-                                                <span className={`ml-3 text-[#6D97C3] transition-transform ${tanggalPickerTerbuka ? "rotate-180" : ""}`}>
+                                                <span className={`ml-3 text-[#5f8fb8] transition-transform ${tanggalPickerTerbuka ? "rotate-180" : ""}`}>
                                                     ▾
                                                 </span>
                                             </button>
 
                                             {tanggalPickerTerbuka && jadwalTerpilih && (
-                                                <div className="mt-5 overflow-hidden rounded-[24px] border border-[#D7E7F7] bg-white/90 p-5 shadow-[0_12px_32px_rgba(63,112,165,0.10)] sm:p-6">
-                                                    <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-                                                        <div>
-                                                            <p className="text-sm font-semibold text-[#315B86]">Tanggal tersedia</p>
-                                                            <p className="mt-1 text-[11px] text-[#91ADCA]">Khusus hari praktik {daftarHari[Number(jadwalTerpilih.hari)]}</p>
-                                                        </div>
-                                                        <span className="rounded-full bg-[#EEF6FF] px-3 py-1 text-[10px] font-medium text-[#6D97C3]">{tanggalTersedia.length} tanggal</span>
+                                                <div className="mt-3 rounded-[24px] border border-white/80 bg-white/55 p-4">
+                                                    <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                                                        <p className="text-xs text-[#6f93b6]">
+                                                            Hari praktik {daftarHari[Number(jadwalTerpilih.hari)]}
+                                                        </p>
+                                                        <span className="harmoni-chip rounded-full px-3 py-1 text-[11px] font-medium text-[#5f8fb8]">
+                                                            {tanggalTersedia.length} tanggal
+                                                        </span>
                                                     </div>
 
-                                                    <div className="grid max-h-72 grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3 sm:gap-4">
+                                                    <div className="grid max-h-60 grid-cols-3 gap-2 overflow-y-auto pr-1 sm:grid-cols-4">
                                                         {tanggalTersedia.map((tanggal) => {
-                                                            const bagianTanggal = tanggal.label.split(", ");
+                                                            const p = pecahTanggal(tanggal.value);
                                                             const aktif = form.tanggal_booking === tanggal.value;
 
                                                             return (
                                                                 <button
                                                                     key={tanggal.value}
                                                                     type="button"
+                                                                    aria-label={tanggal.label}
                                                                     onClick={() => {
                                                                         setForm((sebelumnya) => ({ ...sebelumnya, tanggal_booking: tanggal.value }));
                                                                         setTanggalPickerTerbuka(false);
                                                                         setPesan("");
                                                                         setBerhasil(false);
                                                                     }}
-                                                                    className={`min-h-[96px] rounded-2xl border px-4 py-4 text-left transition sm:px-5 sm:py-5 ${aktif
-                                                                        ? "border-[#5E98D2] bg-gradient-to-br from-[#477DB5] to-[#78A9D8] text-white shadow-[0_6px_15px_rgba(73,126,181,0.2)]"
-                                                                        : "border-[#E4EEF9] bg-[#F7FAFE] text-[#4779AD] hover:border-[#B8D5F0] hover:bg-[#EDF6FF]"
+                                                                    className={`harmoni-focus flex flex-col items-center rounded-2xl border px-2 py-3 text-center transition ${aktif
+                                                                        ? "border-transparent bg-gradient-to-br from-[#5c96c4] to-[#407ba9] text-white shadow-[0_8px_20px_rgba(63,121,169,0.3)]"
+                                                                        : "border-white/80 bg-white/60 text-[#477aa5] hover:bg-white/90"
                                                                         }`}
                                                                 >
-                                                                    <span className={`block text-[11px] uppercase tracking-[0.12em] ${aktif ? "text-white/80" : "text-[#8BAACD]"}`}>{bagianTanggal[0]}</span>
-                                                                    <span className="mt-2 block text-sm font-semibold leading-6 sm:text-base">{bagianTanggal[1]}</span>
+                                                                    <span className={`text-3xl font-light leading-none tracking-tight ${aktif ? "text-white" : "text-[#2b5a84]"}`}>
+                                                                        {p.hari}
+                                                                    </span>
+                                                                    <span className={`mt-1.5 text-[11px] font-medium capitalize ${aktif ? "text-white/90" : "text-[#6f93b6]"}`}>
+                                                                        {p.bulan} {p.tahun}
+                                                                    </span>
                                                                 </button>
                                                             );
                                                         })}
                                                     </div>
                                                 </div>
                                             )}
+
+                                            <p className="mt-2.5 text-xs leading-5 text-[#7e9fc0]">
+                                                Tanggal mengikuti hari praktik dokter, bisa dipilih untuk 90 hari ke depan.
+                                            </p>
                                         </div>
 
-                                        <p className="mt-4 text-sm leading-6 text-[#8BAACD]">
-                                            Tanggal yang tersedia mengikuti hari praktik dokter dan dapat dipilih untuk 90 hari ke depan.
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <label className="mb-3 block text-xs font-semibold tracking-[0.12em] text-[#527DA8]">
-                                            KELUHAN
-                                        </label>
+                                        <div>
+                                            <label htmlFor="keluhan" className="mb-2 block text-xs font-semibold text-[#5f86ab]">
+                                                Keluhan
+                                            </label>
 
-                                        <textarea
-                                            name="keluhan"
-                                            value={form.keluhan}
-                                            onChange={handleChange}
-                                            rows={5}
-                                            required
-                                            placeholder="Ceritakan keluhan yang sedang kamu rasakan..."
-                                            className="w-full resize-none rounded-2xl border border-white/90 bg-white/75 px-5 py-5 text-base leading-7 text-[#315B86] outline-none transition placeholder:text-[#A0B9D3] focus:border-[#A9CBEF] focus:ring-4 focus:ring-[#C7DFF8]/40"
-                                        />
-                                    </div>
+                                            <textarea
+                                                id="keluhan"
+                                                name="keluhan"
+                                                value={form.keluhan}
+                                                onChange={handleChange}
+                                                rows={4}
+                                                required
+                                                placeholder="Ceritakan keluhan yang sedang kamu rasakan..."
+                                                className={`${inputKaca} resize-none leading-7`}
+                                            />
+                                        </div>
 
-                                    {/* SUBMIT */}
+                                        <button
+                                            type="submit"
+                                            disabled={menyimpan}
+                                            className="harmoni-focus group flex w-full items-center justify-between rounded-2xl bg-gradient-to-br from-[#5c96c4] to-[#407ba9] px-6 py-4 text-sm font-bold text-white shadow-[0_12px_28px_rgba(63,121,169,0.3)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+                                        >
+                                            <span>{menyimpan ? "Mengirim pendaftaran..." : "Konfirmasi janji temu"}</span>
+                                            <span className="transition group-hover:translate-x-1">→</span>
+                                        </button>
+                                    </form>
+                                )}
 
+                                {berhasil && (
                                     <button
-                                        type="submit"
-                                        disabled={menyimpan}
-                                        className="flex w-full items-center justify-between rounded-2xl bg-gradient-to-r from-[#315B86] to-[#6D9FD2] px-6 py-5 text-base font-medium text-white shadow-[0_12px_28px_rgba(73,126,181,0.2)] transition hover:from-[#274D75] hover:to-[#5C91C8] disabled:cursor-not-allowed disabled:opacity-60"
+                                        type="button"
+                                        onClick={tutupForm}
+                                        className="harmoni-focus mt-6 w-full rounded-2xl bg-gradient-to-br from-[#5c96c4] to-[#407ba9] px-5 py-4 text-sm font-bold text-white shadow-[0_12px_28px_rgba(63,121,169,0.3)] transition hover:-translate-y-0.5"
                                     >
-                                        <span>
-                                            {menyimpan
-                                                ? "Mengirim pendaftaran..."
-                                                : "Konfirmasi janji temu"}
-                                        </span>
-
-                                        <span className="text-lg">
-                                            →
-                                        </span>
+                                        Kembali ke daftar dokter
                                     </button>
-
-                                </form>
-                            )}
-
-                            {berhasil && (
-                                <button
-                                    type="button"
-                                    onClick={tutupForm}
-                                    className="w-full rounded-2xl bg-gradient-to-r from-[#315B86] to-[#6D9FD2] px-5 py-4 text-sm font-medium text-white shadow-[0_12px_28px_rgba(73,126,181,0.2)] transition hover:from-[#274D75] hover:to-[#5C91C8]"
-                                >
-                                    Kembali ke daftar dokter
-                                </button>
-                            )}
-
+                                )}
+                            </div>
                         </div>
-
                     </div>
-
                 </div>
             )}
-
         </main>
     );
 }

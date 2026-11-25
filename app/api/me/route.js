@@ -7,6 +7,9 @@ import path from "path";
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
 
+// ========================================
+// AMBIL USER YANG SEDANG LOGIN
+// ========================================
 async function ambilUserLogin() {
     const cookieStore = await cookies();
     const token = cookieStore.get("token")?.value;
@@ -18,7 +21,9 @@ async function ambilUserLogin() {
     return user || null;
 }
 
-// Fungsi untuk menyimpan foto ke folder uploads
+// ========================================
+// SIMPAN FOTO
+// ========================================
 async function simpanFoto(foto) {
     if (!foto || foto.size === 0) {
         return null;
@@ -64,9 +69,9 @@ async function simpanFoto(foto) {
     return "/uploads/" + namaFile;
 }
 
-// ================================
+// ========================================
 // GET PROFIL
-// ================================
+// ========================================
 export async function GET() {
     try {
         const user = await ambilUserLogin();
@@ -129,9 +134,9 @@ export async function GET() {
     }
 }
 
-// ================================
+// ========================================
 // PUT UPDATE PROFIL
-// ================================
+// ========================================
 export async function PUT(request) {
     try {
         const user = await ambilUserLogin();
@@ -153,7 +158,7 @@ export async function PUT(request) {
         const contentType =
             request.headers.get("content-type") || "";
 
-        // Jika request menggunakan FormData
+        // Request menggunakan FormData
         if (contentType.includes("multipart/form-data")) {
             const formData = await request.formData();
 
@@ -166,10 +171,7 @@ export async function PUT(request) {
                 birth_date: formData.get("birth_date")
             };
 
-            // Foto profil
             foto = formData.get("photo");
-
-            // Foto hero dashboard
             fotoHero = formData.get("hero_photo");
 
         } else {
@@ -185,6 +187,7 @@ export async function PUT(request) {
             birth_date
         } = data;
 
+        // Bersihkan data
         const usernameBersih =
             typeof username === "string"
                 ? username.trim()
@@ -205,7 +208,9 @@ export async function PUT(request) {
                 ? phone.trim()
                 : "";
 
-        // Validasi data wajib
+        // ========================================
+        // VALIDASI DATA WAJIB
+        // ========================================
         if (
             !usernameBersih ||
             !emailBersih ||
@@ -221,21 +226,124 @@ export async function PUT(request) {
             );
         }
 
-        // Validasi email
+        // ========================================
+        // VALIDASI EMAIL GMAIL
+        // Email harus berakhiran @gmail.com
+        // ========================================
         const formatEmail =
-            /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+            /^[A-Za-z0-9._%+-]+@gmail\.com$/i;
 
         if (!formatEmail.test(emailBersih)) {
             return NextResponse.json(
                 {
                     success: false,
-                    message: "Format email tidak valid."
+                    message:
+                        "Email harus menggunakan format lengkap @gmail.com."
                 },
                 { status: 400 }
             );
         }
 
-        // Validasi nomor telepon
+        // ========================================
+        // CEK EMAIL DUPLIKAT
+        // Tidak boleh sama dengan email pasien
+        // atau dokter lain.
+        // Akun sendiri tidak dihitung duplikat.
+        // ========================================
+        const emailDuplikat = await pool.query(
+            `SELECT id
+             FROM users
+             WHERE LOWER(email) = LOWER($1)
+               AND id <> $2
+               AND role IN ('pasien', 'dokter')
+             LIMIT 1`,
+            [emailBersih, user.id]
+        );
+
+        if (emailDuplikat.rowCount > 0) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    message:
+                        "Email ini sudah digunakan pasien atau dokter lain. Gunakan email berbeda."
+                },
+                { status: 409 }
+            );
+        }
+
+        // ========================================
+        // VALIDASI TANGGAL LAHIR
+        // Tahun minimal 1945
+        // Tahun maksimal tahun sekarang
+        // ========================================
+        if (
+            birth_date !== undefined &&
+            birth_date !== null &&
+            birth_date !== ""
+        ) {
+            if (
+                typeof birth_date !== "string" ||
+                !/^\d{4}-\d{2}-\d{2}$/.test(birth_date)
+            ) {
+                return NextResponse.json(
+                    {
+                        success: false,
+                        message: "Tanggal lahir tidak valid."
+                    },
+                    { status: 400 }
+                );
+            }
+
+            const [
+                tahunLahir,
+                bulanLahir,
+                hariLahir
+            ] = birth_date.split("-").map(Number);
+
+            const tanggalLahir = new Date(
+                Date.UTC(
+                    tahunLahir,
+                    bulanLahir - 1,
+                    hariLahir
+                )
+            );
+
+            // Memastikan tanggal benar-benar valid
+            const tanggalValid =
+                tanggalLahir.getUTCFullYear() === tahunLahir &&
+                tanggalLahir.getUTCMonth() === bulanLahir - 1 &&
+                tanggalLahir.getUTCDate() === hariLahir;
+
+            const sekarang = new Date();
+
+            const tahunSekarang = sekarang.getFullYear();
+
+            const tanggalSekarang = [
+                tahunSekarang,
+                String(sekarang.getMonth() + 1).padStart(2, "0"),
+                String(sekarang.getDate()).padStart(2, "0")
+            ].join("-");
+
+            if (
+                !tanggalValid ||
+                tahunLahir < 1945 ||
+                tahunLahir > tahunSekarang ||
+                birth_date > tanggalSekarang
+            ) {
+                return NextResponse.json(
+                    {
+                        success: false,
+                        message:
+                            `Tahun lahir harus antara 1945 sampai ${tahunSekarang} dan tanggal tidak boleh di masa depan.`
+                    },
+                    { status: 400 }
+                );
+            }
+        }
+
+        // ========================================
+        // VALIDASI NOMOR TELEPON
+        // ========================================
         if (
             phone !== undefined &&
             phone !== null &&
@@ -264,13 +372,56 @@ export async function PUT(request) {
             );
         }
 
+        // ========================================
+        // CEK NOMOR TELEPON DUPLIKAT
+        // Tidak boleh sama dengan pasien lain.
+        // ========================================
+        if (teleponBersih) {
+            const teleponDuplikat = await pool.query(
+                `SELECT id
+                 FROM users
+                 WHERE role = 'pasien'
+                   AND id <> $1
+                   AND regexp_replace(
+                       COALESCE(phone, ''),
+                       '[^0-9]',
+                       '',
+                       'g'
+                   ) = regexp_replace(
+                       $2,
+                       '[^0-9]',
+                       '',
+                       'g'
+                   )
+                 LIMIT 1`,
+                [user.id, teleponBersih]
+            );
+
+            if (teleponDuplikat.rowCount > 0) {
+                return NextResponse.json(
+                    {
+                        success: false,
+                        message:
+                            "Nomor telepon ini sudah digunakan pasien lain."
+                    },
+                    { status: 409 }
+                );
+            }
+        }
+
+        // ========================================
+        // FOTO PROFIL DAN FOTO HERO
+        // ========================================
         let fotoPath = null;
         let fotoHeroPath = null;
 
-        // Pasien hanya bisa upload photo (bukan hero_photo)
-        // Dokter bisa upload keduanya
+        // Pasien hanya bisa upload foto profil.
+        // Dokter bisa upload foto profil dan hero.
         if (foto && foto.size > 0) {
-            if (user.role === "dokter" || user.role === "pasien") {
+            if (
+                user.role === "dokter" ||
+                user.role === "pasien"
+            ) {
                 fotoPath = await simpanFoto(foto);
             } else {
                 return NextResponse.json(
@@ -295,10 +446,13 @@ export async function PUT(request) {
                     { status: 403 }
                 );
             }
+
             fotoHeroPath = await simpanFoto(fotoHero);
         }
 
-        // Update data pengguna dan kedua foto
+        // ========================================
+        // UPDATE PROFIL KE DATABASE
+        // ========================================
         const result = await pool.query(
             `UPDATE users
              SET username = $1,
@@ -396,9 +550,9 @@ export async function PUT(request) {
     }
 }
 
-// ================================
+// ========================================
 // PATCH GANTI PASSWORD
-// ================================
+// ========================================
 export async function PATCH(request) {
     try {
         const user = await ambilUserLogin();
@@ -414,13 +568,21 @@ export async function PATCH(request) {
         }
 
         const body = await request.json();
-        const { password_lama, password_baru } = body;
 
-        if (!password_lama || !password_baru) {
+        const {
+            password_lama,
+            password_baru
+        } = body;
+
+        if (
+            !password_lama ||
+            !password_baru
+        ) {
             return NextResponse.json(
                 {
                     success: false,
-                    message: "Password lama dan password baru wajib diisi."
+                    message:
+                        "Password lama dan password baru wajib diisi."
                 },
                 { status: 400 }
             );
@@ -430,15 +592,18 @@ export async function PATCH(request) {
             return NextResponse.json(
                 {
                     success: false,
-                    message: "Password baru minimal 6 karakter."
+                    message:
+                        "Password baru minimal 6 karakter."
                 },
                 { status: 400 }
             );
         }
 
-        // Ambil password_hash dari DB
+        // Ambil password_hash dari database
         const result = await pool.query(
-            `SELECT password_hash FROM users WHERE id = $1`,
+            `SELECT password_hash
+             FROM users
+             WHERE id = $1`,
             [user.id]
         );
 
@@ -452,7 +617,8 @@ export async function PATCH(request) {
             );
         }
 
-        const passwordHash = result.rows[0].password_hash;
+        const passwordHash =
+            result.rows[0].password_hash;
 
         // Verifikasi password lama
         const passwordCocok = await bcrypt.compare(
@@ -464,17 +630,22 @@ export async function PATCH(request) {
             return NextResponse.json(
                 {
                     success: false,
-                    message: "Password lama tidak sesuai."
+                    message:
+                        "Password lama tidak sesuai."
                 },
                 { status: 400 }
             );
         }
 
-        // Hash password baru dan simpan
-        const passwordBaruHash = await bcrypt.hash(password_baru, 10);
+        // Hash password baru
+        const passwordBaruHash =
+            await bcrypt.hash(password_baru, 10);
 
+        // Simpan password baru
         await pool.query(
-            `UPDATE users SET password_hash = $1 WHERE id = $2`,
+            `UPDATE users
+             SET password_hash = $1
+             WHERE id = $2`,
             [passwordBaruHash, user.id]
         );
 
@@ -484,12 +655,16 @@ export async function PATCH(request) {
         });
 
     } catch (error) {
-        console.error("Gagal mengganti password:", error);
+        console.error(
+            "Gagal mengganti password:",
+            error
+        );
 
         return NextResponse.json(
             {
                 success: false,
-                message: "Gagal mengganti password. Silakan coba lagi."
+                message:
+                    "Gagal mengganti password. Silakan coba lagi."
             },
             { status: 500 }
         );
