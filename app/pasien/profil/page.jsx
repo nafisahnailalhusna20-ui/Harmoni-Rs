@@ -609,7 +609,8 @@ export default function ProfilPasienPage() {
                                 </div>
 
                                 <div>
-                                    <label htmlFor="password_baru" className="mb-1 block text-sm font-semibold">
+                                    <label htmlFor="password_baru" className="mb-1 block text-sm font-semibold"
+                                    >
                                         Password Baru
                                     </label>
                                     <input
