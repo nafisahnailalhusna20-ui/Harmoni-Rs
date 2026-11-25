@@ -307,25 +307,12 @@ export default function PasienPage() {
                 {/* ================= BODY ================= */}
                 <div className="mt-5 grid gap-5 lg:grid-cols-[170px_1fr]">
                     {/* ---- Sidebar ---- */}
-                    <nav
-                        aria-label="Menu portal pasien"
-                        className="harmoni-panel hidden h-fit flex-col gap-1 rounded-[26px] p-3 lg:flex"
-                    >
-                        <span className="rounded-2xl bg-white/75 px-4 py-3 text-xs font-semibold text-[#2b5a84] shadow-[0_6px_18px_rgba(75,125,165,0.12)]">
-                            Beranda
-                        </span>
-                        {LAYANAN.map((l) => (
-                            <button
-                                key={l.judul}
-                                onClick={() => router.push(l.href)}
-                                className="harmoni-focus rounded-2xl px-4 py-3 text-left text-xs font-medium text-[#6388a9] transition hover:bg-white/50 hover:text-[#2b5a84]"
-                            >
-                                {l.judul}
-                            </button>
-                        ))}
-                    </nav>
+                   {/* ---- Sidebar ---- */}
+<nav className="flex flex-col gap-3 w-full">
 
-                    <div className="grid gap-5">
+</nav>
+
+<div className="grid gap-5">
                         {/* ---- Hero + jam + kalender ---- */}
                         <div className="grid gap-5 xl:grid-cols-12">
                             {/* Hero */}

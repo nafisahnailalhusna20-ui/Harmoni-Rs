@@ -449,7 +449,7 @@ export default function ProfilPasienPage() {
                                 Informasi dasar tentang dirimu.
                             </p>
 
-                            <div className="mt-7 grid gap-5 sm:grid-cols-2">
+                            <div className="mb-2 block min-h-[44px] text-sm font-semibold">
                                 <div>
                                     <label htmlFor="full_name" className={labelClass}>
                                         Nama Lengkap
@@ -586,11 +586,15 @@ export default function ProfilPasienPage() {
                                 </div>
                             )}
 
-                            <div className="mt-7 grid gap-5 sm:grid-cols-3">
+                      <div className="mt-7 grid gap-5 sm:grid-cols-3">
                                 <div>
-                                    <label htmlFor="password_lama" className={labelClass}>
-                                        Password Saat Ini
+                                <label
+                                
+                                htmlFor="password_lama"
+                                className="mb-2 flex h-12 items-end text-sm font-semibold">
+                                    Password Saat Ini
                                     </label>
+                                    
                                     <input
                                         id="password_lama"
                                         type="password"
@@ -605,7 +609,7 @@ export default function ProfilPasienPage() {
                                 </div>
 
                                 <div>
-                                    <label htmlFor="password_baru" className={labelClass}>
+                                    <label htmlFor="password_baru" className="mb-2 flex h-12 items-end text-sm font-semibold">
                                         Password Baru
                                     </label>
                                     <input
@@ -622,7 +626,7 @@ export default function ProfilPasienPage() {
                                 </div>
 
                                 <div>
-                                    <label htmlFor="konfirmasi_password_baru" className={labelClass}>
+                                    <label htmlFor="konfirmasi_password_baru" className="mb-2 flex h-12 items-end text-sm font-semibold">
                                         Konfirmasi Password Baru
                                     </label>
                                     <input
