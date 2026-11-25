@@ -586,12 +586,12 @@ export default function ProfilPasienPage() {
                                 </div>
                             )}
 
-                      <div className="mt-7 grid gap-5 sm:grid-cols-3">
+                    <div className="mt-4 grid grid-cols-1 gap-3">
                                 <div>
                                 <label
                                 
                                 htmlFor="password_lama"
-                                className="mb-2 flex h-12 items-end text-sm font-semibold">
+                                className="mb-1 block text-sm font-semibold">
                                     Password Saat Ini
                                     </label>
                                     
@@ -609,7 +609,7 @@ export default function ProfilPasienPage() {
                                 </div>
 
                                 <div>
-                                    <label htmlFor="password_baru" className="mb-2 flex h-12 items-end text-sm font-semibold">
+                                    <label htmlFor="password_baru" className="mb-1 block text-sm font-semibold">
                                         Password Baru
                                     </label>
                                     <input
@@ -626,7 +626,7 @@ export default function ProfilPasienPage() {
                                 </div>
 
                                 <div>
-                                    <label htmlFor="konfirmasi_password_baru" className="mb-2 flex h-12 items-end text-sm font-semibold">
+                                    <label htmlFor="konfirmasi_password_baru" className="mb-1 block text-sm font-semibold">
                                         Konfirmasi Password Baru
                                     </label>
                                     <input
